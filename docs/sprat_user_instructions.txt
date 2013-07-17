@@ -1,0 +1,49 @@
+SPRAT User Instructions
+-----------------------
+$Header: /home/dev/src/sprat/docs/RCS/sprat_user_instructions.txt,v 1.2 2012/08/14 13:33:14 cjm Exp cjm $
+
+The sprat test programs are located in the following directory:
+
+Temperature
+-----------
+
+Set target temperature to -60.0 and retrieve current CCD temperature/status:
+cd /icc/bin/sprat/ccd/test/i386-linux
+./test_temperature_andor_lowlevel -camera_index 0 -target_temperature -60.0
+
+You must reset the temperature every time you run test_temperature_andor_lowlevel or test_exposure_andor_lowlevel,
+otherwise the Andor initialisation routine switches off the cooler and the camera warms up.
+
+Exposure
+--------
+
+cd /icc/bin/sprat/ccd/test/i386-linux
+./test_exposure_andor_lowlevel -camera_index 0 -xsize 1024 -ysize 255 -target_temperature -60.0 -expose 1000 -filename test1.fits
+
+Use gaia to view the images:
+gaia test1.fits
+
+Dark
+----
+cd /icc/bin/sprat/ccd/test/i386-linux
+./test_exposure_andor_lowlevel -camera_index 0 -xsize 1024 -ysize 255 -target_temperature -60.0 -dark 1000 -filename dark1.fits
+
+Warming Up
+----------
+
+Before turning the camera off, you should warm up the ccd slowly. Use the test_temperature_andor_lowlevel command
+to set the temperature to room temperature:
+cd /icc/bin/sprat/ccd/test/i386-linux
+./test_temperature_andor_lowlevel -camera_index 0 -target_temperature 20.0
+
+Keep running the program, which will also display the current temperature of the system, until
+the current temperature of the system is warm enough.
+
+
+$Log: sprat_user_instructions.txt,v $
+Revision 1.2  2012/08/14 13:33:14  cjm
+Added warming up section.
+
+Revision 1.1  2012/08/14 11:27:04  cjm
+Initial revision
+
