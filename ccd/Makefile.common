@@ -1,10 +1,12 @@
-# $Header$
+# $HeadURL$
 
 SPRAT_CCD_HOME			=	ccd
 SPRAT_CCD_SRC_HOME		= 	$(SPRAT_SRC_HOME)/$(SPRAT_CCD_HOME)
 SPRAT_CCD_BIN_HOME		= 	$(SPRAT_BIN_HOME)/$(SPRAT_CCD_HOME)
 SPRAT_CCD_DOC_HOME		= 	$(SPRAT_DOC_HOME)/$(SPRAT_CCD_HOME)
 
-#
-# $Log$
-#
+SPRAT_CCD_LIBNAME		= 	$(SPRAT_HOME)_$(SPRAT_CCD_HOME)
+
+# Andor library
+ANDOR_CFLAGS    = -I$(LT_SRC_HOME)/andor/andor-2.85.30000/include/
+ANDOR_LDFLAGS	= -L$(LT_SRC_HOME)/andor/andor-2.85.30000/lib/ -landor

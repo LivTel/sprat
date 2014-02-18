@@ -1,0 +1,30 @@
+Command line arguments are optional.
+Commands return a string describing current state of mechanism.
+Commands return immediately, and can therefore be called repeatedly in a higher level loop which contains the timeout code. This prevents a slow mechanism movement stopping other threads accessing the arduino (useful because of the way the robotic software asks mechanisms for status).
+
+- slit [in|out]
+Returns string one of: [in|out|unknown|error [error description]]
+
+- grism [in|out}
+Returns string one of: [in|out|unknown|error [error description]]
+
+- mirror [in|out]
+Returns string one of: [in|out|unknown|error [error description]]
+
+- arclamp [on|off]
+Returns string one of: [on|off|error [error description]]
+
+- wlamp [on|off]
+Returns string one of: [on|off|error [error description]]
+
+- rotation [normal|blue]
+Returns string one of: [normal|blue|unknown|error [error description]]
+
+- temperature <n> (where n is 0 to the number of temperature sensors supported, or we can name sensors).
+Returns "ok [-]d.ddd" (or an ADC number?) or "error [error description]"
+
+- humidity
+Returns "ok <some number>" or "error [error description]" 
+
+- gyro
+Returns "ok x.xx y.yy z.zz" angles in degrees or "error [error description]" if the sensor fails to reply. 

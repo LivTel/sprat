@@ -10,9 +10,11 @@ BINDIR 		= $(SPRAT_CCD_BIN_HOME)/$(TESTDIR)/$(HOSTTYPE)
 DOCSDIR 	= $(SPRAT_CCD_DOC_HOME)/$(TESTDIR)
 
 CFLAGS 		= -g -I$(INCDIR) -I$(CFITSIOINCDIR) -I$(JNIINCDIR) -I$(JNIMDINCDIR) $(LOG_UDP_CFLAGS)
+LDFLAGS		= -L$(LT_LIB_HOME) $(ANDOR_LDFLAGS) -l$(LIBNAME) -lcfitsio $(TIMELIB) $(SOCKETLIB) -lm -lc 
 DOCFLAGS 	= -static
 
-SRCS 		= test_exposure_andor_lowlevel.c test_temperature_andor_lowlevel.c test_camera_select.c
+SRCS 		= test_exposure_andor_lowlevel.c test_temperature_andor_lowlevel.c test_camera_select.c \
+		test_temperature.c test_exposure.c
 OBJS 		= $(SRCS:%.c=%.o)
 PROGS 		= $(SRCS:%.c=$(BINDIR)/%)
 DOCS 		= $(SRCS:%.c=$(DOCSDIR)/%.html)
@@ -42,6 +44,9 @@ $(BINDIR)/test_camera_select: $(BINDIR)/test_camera_select.o
 
 $(BINDIR)/test_camera_select.o: test_camera_select.c
 	$(CC) -o $@ -c $< -I$(CFITSIOINCDIR) $(ANDOR_CFLAGS)
+
+$(BINDIR)/%: %.o
+	$(CC) -o $@ $< $(LDFLAGS) 
 
 scripts: $(SCRIPT_BINS)
 
