@@ -25,8 +25,8 @@
 
 /**
  * Low level temperature control/status.
- * @author $Author: cjm $
- * @version $Revision: 1.1 $
+ * @author $Author$
+ * @version $Revision$
  */
 /* hash definitions */
 /**
@@ -61,7 +61,7 @@
 /**
  * Revision control system identifier.
  */
-static char rcsid[] = "$Id: test_temperature_andor_lowlevel.c,v 1.1 2012/08/14 11:26:43 cjm Exp $";
+static char rcsid[] = "$Id$";
 /**
  * Andor installation dir to pass to Initialize.
  * @see #DEFAULT_ANDOR_DIR

@@ -5,8 +5,8 @@
  * This program tests the exposure code.
  * <pre>
  * </pre>
- * @author $Author: cjm $
- * @version $Revision: 1.2 $
+ * @author $Author$
+ * @version $Revision$
  */
 
 #include <stdio.h>

@@ -5,7 +5,7 @@
 /**
  * Routines to look after lists of FITS headers to go into images.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes.

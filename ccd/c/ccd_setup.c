@@ -5,7 +5,7 @@
 /**
  * ccd_setup.c contains routines for performing an setup with the CCD Controller.
  * @author Chris Mottram
- * @version $Revision: 1.4 $
+ * @version $Revision$
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes

@@ -5,7 +5,7 @@
 /**
  * Routines to look after fits filename generation.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes.
@@ -68,7 +68,7 @@ struct Fits_Filename_Struct
 /**
  * Revision Control System identifier.
  */
-static char rcsid[] = "$Id: ccd_fits_filename.c,v 1.1 2012/11/12 16:29:03 cjm Exp $";
+static char rcsid[] = "$Id$";
 /**
  * Variable holding error code of last operation performed by the fits filename routines.
  */

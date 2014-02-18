@@ -5,7 +5,7 @@
 /**
  * ccd_exposure.c contains routines for performing an exposure with the Andor CCD Controller.
  * @author Chris Mottram
- * @version $Revision: 1.5 $
+ * @version $Revision$
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes

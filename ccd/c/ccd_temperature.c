@@ -7,7 +7,7 @@
  * ccd_temperature holds the routines for calulating the current CCD temperature and setting the CCDs
  * temperature.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes.
@@ -30,7 +30,7 @@
 /**
  * Revision Control System identifier.
  */
-static char rcsid[] = "$Id: ccd_temperature.c,v 1.1 2012/11/12 16:29:03 cjm Exp $";
+static char rcsid[] = "$Id$";
 
 /* data types */
 /**

@@ -4,8 +4,8 @@
 */
 /**
  * This program tests the temperature code.
- * @author $Author: cjm $
- * @version $Revision: 1.2 $
+ * @author $Author$
+ * @version $Revision$
  */
 #include <stdio.h>
 #include <string.h>
