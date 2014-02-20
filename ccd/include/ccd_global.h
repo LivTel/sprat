@@ -70,7 +70,7 @@
 extern void CCD_Global_Initialise(void);
 extern int CCD_Global_Is_Error(void);
 extern void CCD_Global_Error(void);
-extern void CCD_Global_Error_String(char *error_string);
+extern void CCD_Global_Error_To_String(char *error_string);
 
 /* routine used by other modules error code */
 extern void CCD_Global_Get_Current_Time_String(char *time_string,int string_length);

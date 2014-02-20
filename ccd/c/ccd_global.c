@@ -159,7 +159,7 @@ int CCD_Global_Is_Error(void)
 /**
  * A general error routine. This checks the error numbers for all the modules that make up the library, and
  * for any non-zero numbers prints out the error message to stderr.
- * <b>Note</b> you cannot call both CCD_Global_Error and CCD_Global_Error_String to print the error string and 
+ * <b>Note</b> you cannot call both CCD_Global_Error and CCD_Global_Error_To_String to print the error string and 
  * get a string copy of it, only one of the error routines can be called after libccd has generated an error.
  * A second call to one of these routines will generate a 'Error not found' error!.
  * @see ccd_setup.html#CCD_Setup_Get_Error_Number
@@ -226,7 +226,7 @@ void CCD_Global_Error(void)
  * A general error routine. This checks the error numbers for all the modules that make up the library, and
  * for any non-zero numbers adds the error message to a passed in string. The string parameter is set to the
  * blank string initially.
- * <b>Note</b> you cannot call both CCD_Global_Error and CCD_Global_Error_String to print the error string and 
+ * <b>Note</b> you cannot call both CCD_Global_Error and CCD_Global_Error_To_String to print the error string and 
  * get a string copy of it, only one of the error routines can be called after libccd has generated an error.
  * A second call to one of these routines will generate a 'Error not found' error!.
  * @param error_string A character buffer big enough to store the longest possible error message. It is
@@ -245,7 +245,7 @@ void CCD_Global_Error(void)
  * @see #Global_Error_Number
  * @see #Global_Error_String
  */
-void CCD_Global_Error_String(char *error_string)
+void CCD_Global_Error_To_String(char *error_string)
 {
 	char time_string[32];
 

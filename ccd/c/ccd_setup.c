@@ -174,10 +174,6 @@ int CCD_Setup_Config_Directory_Set(char *directory)
 
 /**
  * Do initial setup and configuration for an Andor CCD.
- * @param vs_amplitude Amplitude of vertical clock voltage. Used for increasing vertical clock speed :- therefore
- *        readout speed, at the expense of a higher read noise. Values 0 (normal), 1-4.
- * @param use_recommended_vs Whether to use the fastest recommended VS, or vs_speed_index.
- * @param vs_speed_index Vertical clock shift speed index to use, if use_recommended_vs is FALSE.
  * <ul>
  * <li>Uses <b>GetAvailableCameras</b> to get the available number of cameras.
  * <li>Uses <b>GetCameraHandle</b> to get a camera handle for the selected camera and store it in 
@@ -195,6 +191,10 @@ int CCD_Setup_Config_Directory_Set(char *directory)
  * <li>Calls <b>GetDetector</b> to get the detector dimensions and save then to <b>Setup_Data</b>.
  * <li>Calls <b>SetShutter</b> to set the Andor library shutter settings to auto with no shutter delay.
  * <li>Calls <b>SetFrameTransferMode(1)</b> to use the frame transfer.
+ * @param vs_amplitude Amplitude of vertical clock voltage. Used for increasing vertical clock speed :- therefore
+ *        readout speed, at the expense of a higher read noise. Values 0 (normal), 1-4.
+ * @param use_recommended_vs Whether to use the fastest recommended VS, or vs_speed_index.
+ * @param vs_speed_index Vertical clock shift speed index to use, if use_recommended_vs is FALSE.
  * @return The routine returns TRUE on success, and FALSE if an error occurs.
  * @see #Setup_Data
  * @see #Setup_Error_Number
@@ -213,7 +213,7 @@ int CCD_Setup_Startup(int vs_amplitude,int use_recommended_vs,int vs_speed_index
 	Setup_Error_Number = 0;
 #if LOGGING > 1
 	CCD_Global_Log("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_TERSE,"CCD",
-			"CCD_Setup_Startup Started.");
+		       "CCD_Setup_Startup Started.");
 #endif /* LOGGING */
 	if(!CCD_GLOBAL_IS_BOOLEAN(use_recommended_vs))
 	{
@@ -233,7 +233,7 @@ int CCD_Setup_Startup(int vs_amplitude,int use_recommended_vs,int vs_speed_index
 	}
 #if LOGGING > 5
 	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,NULL,
-			       "Andor library reports %d cameras.",camera_count);
+			      "Andor library reports %d cameras.",camera_count);
 #endif /* LOGGING */
 	if((Setup_Data.Selected_Camera >= camera_count) || (Setup_Data.Selected_Camera < 0))
 	{
@@ -254,7 +254,7 @@ int CCD_Setup_Startup(int vs_amplitude,int use_recommended_vs,int vs_speed_index
 	/* set current camera */
 #if LOGGING > 5
 	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,NULL,
-			       "SetCurrentCamera(%d).",Setup_Data.Camera_Handle);
+			      "SetCurrentCamera(%d).",Setup_Data.Camera_Handle);
 #endif /* LOGGING */
 	andor_retval = SetCurrentCamera(Setup_Data.Camera_Handle);
 	if(andor_retval != DRV_SUCCESS)
@@ -278,7 +278,7 @@ int CCD_Setup_Startup(int vs_amplitude,int use_recommended_vs,int vs_speed_index
 	}
 #if LOGGING > 1
 	CCD_Global_Log("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
-			"Sleeping whilst waiting for Initialize to complete.");
+		       "Sleeping whilst waiting for Initialize to complete.");
 #endif /* LOGGING */
 	sleep(2);
 	/* get some camera information against this camera index and log */

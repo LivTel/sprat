@@ -15,6 +15,10 @@ LOG_UDP_HOME		= log_udp
 LOG_UDP_SRC_HOME	= $(LT_SRC_HOME)/$(LOG_UDP_HOME)
 LOG_UDP_CFLAGS		= -I$(LOG_UDP_SRC_HOME)/include
 
+# commandserver
+COMMANDSERVER_HOME	= 	commandserver
+COMMANDSERVER_SRC_HOME	= 	$(LT_SRC_HOME)/$(COMMANDSERVER_HOME)
+
 #
 # $Log$
 #

@@ -20,10 +20,10 @@ Returns string one of: [on|off|error [error description]]
 - rotation [normal|blue]
 Returns string one of: [normal|blue|unknown|error [error description]]
 
-- temperature <n> (where n is 0 to the number of temperature sensors supported, or we can name sensors).
+- temperature <n> (where n is 0 to the number of temperature sensors supported).
 Returns "ok [-]d.ddd" (or an ADC number?) or "error [error description]"
 
-- humidity
+- humidity <n> (where n is 0 to the number of humidity sensors supported).
 Returns "ok <some number>" or "error [error description]" 
 
 - gyro
