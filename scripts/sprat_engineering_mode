@@ -1,0 +1,48 @@
+#!/bin/csh
+# $HeadURL$
+# Version: $Revision$
+# By $Author: cjm $
+# Change the icc into engineering mode - kill all robotic control processes
+# Usage:
+#	sprat_engineering_mode
+# To return to robotic control, reboot the icc.
+echo "Switching to engineering mode."
+echo "This will only succeed if you are root."
+#
+# Kill any running processes
+#
+if ( -x /icc/bin/scripts/killhup.csh ) then
+    echo "Trying to kill AutoBooter."
+    /icc/bin/scripts/killhup.csh AutoBooter
+else
+    echo "killhup not found:FAILED to stop running processess."
+endif
+# setup LD_LIBRARY_PATH for send_command
+if ( ${?LD_LIBRARY_PATH} == 0 ) then
+    setenv LD_LIBRARY_PATH ".:/icc/bin/lib/i386-linux"
+endif
+foreach directory ( /icc/bin/lib/i386-linux )
+    echo "$LD_LIBRARY_PATH" | /bin/grep -q $directory
+    if ( $status != 0 ) then
+	setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}":"${directory}
+    endif
+end
+# Send a shutdown command to sprat C layer, after killing the autobooter
+if ( -x /icc/bin/commandserver/test/i386-linux/send_command  ) then
+    echo "Sending shutdown to sprat C layer."
+    /icc/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "shutdown"
+    echo "Waiting to see if that worked..."
+    /bin/sleep 5
+else
+    echo "send_command not found:FAILED to stop running sprat."
+endif
+if ( -x /icc/bin/scripts/killhup.csh ) then
+    echo "Trying to kill sprat (if shutdown didn't already kill it)."
+    /icc/bin/scripts/killhup.csh sprat
+    echo "Trying to kill Sprat."
+    /icc/bin/scripts/killhup.csh Sprat
+    echo "Trying to kill icsd_inet."
+    /icc/bin/scripts/killhup.csh icsd_inet
+else
+    echo "killhup not found:ENGINEERING mode FAILED."
+endif
