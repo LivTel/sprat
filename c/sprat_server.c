@@ -276,7 +276,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 		Sprat_Global_Log("server","sprat_server.c","Server_Connection_Callback",
 				       LOG_VERBOSITY_VERY_TERSE,"SERVER","dark detected.");
 #endif
-		/* diddly 
 		retval = Sprat_Command_Dark(client_message,&reply_string);
 		if(retval == TRUE)
 		{
@@ -303,7 +302,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 							 LOG_VERBOSITY_VERY_TERSE,"SERVER");
 			}
 		}
-		*/
 	}
 	else if(strncmp(client_message,"expose",6) == 0)
 	{
@@ -311,7 +309,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 		Sprat_Global_Log("server","sprat_server.c","Server_Connection_Callback",
 				       LOG_VERBOSITY_VERY_TERSE,"SERVER","expose detected.");
 #endif
-		/* diddly
 		retval = Sprat_Command_Expose(client_message,&reply_string);
 		if(retval == TRUE)
 		{
@@ -338,7 +335,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 							 LOG_VERBOSITY_VERY_TERSE,"SERVER");
 			}
 		}
-		*/
 	}
 	else if(strncmp(client_message,"fitsheader",10) == 0)
 	{
@@ -346,7 +342,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 		Sprat_Global_Log("server","sprat_server.c","Server_Connection_Callback",
 				    LOG_VERBOSITY_VERY_TERSE,"SERVER","fitsheader detected.");
 #endif
-		/* diddly
 		retval = Sprat_Command_Fits_Header(client_message,&reply_string);
 		if(retval == TRUE)
 		{
@@ -373,7 +368,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 						      LOG_VERBOSITY_VERY_TERSE,"SERVER");
 			}
 		}
-		*/
 	}
 	else if(strcmp(client_message, "help") == 0)
 	{
@@ -383,6 +377,7 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 #endif
 		Send_Reply(connection_handle, "help:\n"
 			   "\tabort\n"
+			   /* diddly "\tbias\n" */
 			   "\tconfig <xbin> <ybin> <emgain> [<startx> <endx> <starty> <endy>]\n"
 			   "\tfitsheader add <keyword> <boolean|float|integer|string> <value>\n"
 			   "\tfitsheader delete <keyword>\n"
@@ -392,11 +387,11 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 			   "\thelp\n"
 /*			   "\tlog_level <sprat|ccd|command_server|object|ngatcil> <n>\n"*/
 			   "\tmultbias <count>\n"
+			   /* diddly "\tmultdark <exposurelength> <count>\n"*/
 			   "\tmultrun <length> <count> <standard>\n"
-			   "\tstatus temperature [get|status]\n"
-			   "\tstatus exposure [status|accumulation|series|index|count|length]\n"
-			   "\tstatus exposure [start_time|multrun|run]\n"
+			   "\tstatus exposure [status|length|start_time|multrun|run]\n"
 			   "\tstatus multrun [index|count]\n"
+			   "\tstatus temperature [get|status]\n"
 			   "\tshutdown\n"
 			   "\ttemperature [set <C>|cooler [on|off]]\n"
 			   );
@@ -407,7 +402,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 		Sprat_Global_Log("server","sprat_server.c","Server_Connection_Callback",
 				       LOG_VERBOSITY_VERY_TERSE,"SERVER","multbias detected.");
 #endif
-		/* diddly
 		retval = Sprat_Command_MultBias(client_message,&reply_string);
 		if(retval == TRUE)
 		{
@@ -433,7 +427,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 						      LOG_VERBOSITY_VERY_TERSE,"SERVER");
 			}
 		}
-		*/
 	}
 	else if(strncmp(client_message,"multrun",7) == 0)
 	{
@@ -441,7 +434,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 		Sprat_Global_Log("server","sprat_server.c","Server_Connection_Callback",
 				       LOG_VERBOSITY_VERY_TERSE,"SERVER","multrun command detected.");
 #endif
-		/* diddly
 		retval = Sprat_Command_Multrun(client_message,&reply_string);
 		if(retval == TRUE)
 		{
@@ -465,7 +457,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 						      LOG_VERBOSITY_VERY_TERSE,"SERVER");
 			}
 		}
-		*/
 	}
 	else if(strncmp(client_message,"status",6) == 0)
 	{
@@ -473,7 +464,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 		Sprat_Global_Log("server","sprat_server.c","Sprat_Server_Connection_Callback",
 				       LOG_VERBOSITY_VERY_TERSE,"SERVER","status detected.");
 #endif
-		/* diddly
 		retval = Sprat_Command_Status(client_message,&reply_string);
 		if(retval == TRUE)
 		{
@@ -500,7 +490,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 							 LOG_VERBOSITY_VERY_TERSE,"SERVER");
 			}
 		}
-		*/
 	}
 	else if(strcmp(client_message, "shutdown") == 0)
 	{
@@ -527,7 +516,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 		Sprat_Global_Log("server","sprat_server.c","Sprat_Server_Connection_Callback",
 				       LOG_VERBOSITY_VERY_TERSE,"SERVER","temperature detected.");
 #endif
-		/* diddly
 		retval = Sprat_Command_Temperature(client_message,&reply_string);
 		if(retval == TRUE)
 		{
@@ -551,7 +539,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 						      LOG_VERBOSITY_VERY_TERSE,"SERVER");
 			}
 		}
-		*/
 	}
 	else
 	{

@@ -303,7 +303,7 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,char *filename,int
 #endif
 	if(Multrun_Data.Is_Active)
 	{
-		Sprat_Global_Error_Number = 1303;
+		Sprat_Global_Error_Number = 407;
 		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Dark:Already doing multrun.");
 		return FALSE;
 	}
@@ -317,7 +317,7 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,char *filename,int
 	{
 		/* reset active flag */
 		Multrun_Data.Is_Active = FALSE;
-		Sprat_Global_Error_Number = 1317;
+		Sprat_Global_Error_Number = 408;
 		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Dark:No exposure length set.");
 		return FALSE;
 	}
@@ -366,7 +366,7 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,char *filename,int
 		{
 			/* reset active flag */
 			Multrun_Data.Is_Active = FALSE;
-			Sprat_Global_Error_Number = 1318;
+			Sprat_Global_Error_Number = 409;
 			sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Dark:CCD_Exposure_Expose failed.");
 			return FALSE;
 		}
@@ -426,13 +426,13 @@ int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,int standard,in
 #endif
 	if(Multrun_Data.Is_Active)
 	{
-		Sprat_Global_Error_Number = 1314;
+		Sprat_Global_Error_Number = 410;
 		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:Already doing multrun.");
 		return FALSE;
 	}
 	if(multrun_number == NULL)
 	{
-		Sprat_Global_Error_Number = 1322;
+		Sprat_Global_Error_Number = 411;
 		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:multrun_number was NULL.");
 		return FALSE;
 	}
@@ -447,7 +447,7 @@ int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,int standard,in
 	{
 		/* reset active flag */
 		Multrun_Data.Is_Active = FALSE;
-		Sprat_Global_Error_Number = 1323;
+		Sprat_Global_Error_Number = 412;
 		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:No exposure length set.");
 		return FALSE;
 	}
@@ -460,7 +460,7 @@ int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,int standard,in
 	{
 		/* reset active flag */
 		Multrun_Data.Is_Active = FALSE;
-		Sprat_Global_Error_Number = 1326;
+		Sprat_Global_Error_Number = 413;
 		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:Standard flag has illegal value %d.",
 			standard);
 		return FALSE;
@@ -515,7 +515,7 @@ int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,int standard,in
 		{
 			/* reset active flag */
 			Multrun_Data.Is_Active = FALSE;
-			Sprat_Global_Error_Number = 1324;
+			Sprat_Global_Error_Number = 414;
 			sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:CCD_Exposure_Expose failed.");
 			return FALSE;
 		}
@@ -532,6 +532,43 @@ int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,int standard,in
 			 "finished.");
 #endif
 	return TRUE;
+}
+
+/**
+ * Get the address of the FITS header structure used for configuring and writing FITS headers to FITS images.
+ * @param fits_header The address of a pointer to a struct Fits_Header_Struct. On return the pointer variable
+ *        pointed to by this address will be filled with the address of Multrun_Data.Fits_Header.
+ */
+int Sprat_Multrun_Fits_Header_Get(struct Fits_Header_Struct **fits_header)
+{
+	if(fits_header == NULL)
+	{
+		Sprat_Global_Error_Number = 415;
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Fits_Header_Get:fits_header was NULL.");
+		return FALSE;
+	}
+	(*fits_header) = &(Multrun_Data.Fits_Header);
+	return TRUE;
+}
+
+/**
+ * Retrieve which exposure in the multrun (from 0 to Multrun_Data.Exposure_Count-1) is currently being done.
+ * @return The current value of Multrun_Data.Exposure_Index, an integer from 0 to Multrun_Data.Exposure_Count-1.
+ * @see #Multrun_Data
+ */
+int Sprat_Multrun_Exposure_Index_Get(void)
+{
+	return Multrun_Data.Exposure_Index;
+}
+
+/**
+ * Return the number of exposures in the current Multrun.
+ * @return The current value of Multrun_Data.Exposure_Count.
+ * @see #Multrun_Data
+ */
+int Sprat_Multrun_Exposure_Count_Get(void)
+{
+	return Multrun_Data.Exposure_Count;
 }
 
 /* ----------------------------------------------------------------------------
