@@ -42,7 +42,7 @@ CFLAGS 			= -g -I$(INCDIR) $(DEBUG_CFLAGS) $(LOG_UDP_CFLAGS) $(COMMAND_SERVER_CF
 DOCFLAGS 		= -static
 
 EXE_SRCS		= sprat_main.c
-OBJ_SRCS		= sprat_config.c sprat_global.c sprat_server.c
+OBJ_SRCS		= sprat_command.c sprat_config.c sprat_global.c sprat_multrun.c sprat_server.c
 
 SRCS			= $(EXE_SRCS) $(OBJ_SRCS)
 HEADERS			= $(OBJ_SRCS:%.c=$(INCDIR)/%.h)

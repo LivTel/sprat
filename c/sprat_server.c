@@ -26,10 +26,8 @@
 
 #include "command_server.h"
 
-#include "sprat_global.h"
-/* diddly
 #include "sprat_command.h"
-*/
+#include "sprat_global.h"
 #include "sprat_server.h"
 
 /* internal data */
@@ -212,7 +210,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 		Sprat_Global_Log("server","sprat_server.c","Server_Connection_Callback",
 				       LOG_VERBOSITY_VERY_TERSE,"SERVER","abort detected.");
 #endif
-		/* diddly
 		retval = Sprat_Command_Abort(client_message,&reply_string);
 		if(retval == TRUE)
 		{
@@ -239,7 +236,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 							 LOG_VERBOSITY_VERY_TERSE,"SERVER");
 			}
 		}
-		*/
 	}
 	else if(strncmp(client_message,"config",6) == 0)
 	{
@@ -247,7 +243,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 		Sprat_Global_Log("server","sprat_server.c","Server_Connection_Callback",
 				       LOG_VERBOSITY_VERY_TERSE,"SERVER","config detected.");
 #endif
-		/* diddly
 		retval = Sprat_Command_Config(client_message,&reply_string);
 		if(retval == TRUE)
 		{
@@ -274,7 +269,6 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 							 LOG_VERBOSITY_VERY_TERSE,"SERVER");
 			}
 		}
-		*/
 	}
 	else if(strncmp(client_message,"dark",4) == 0)
 	{
