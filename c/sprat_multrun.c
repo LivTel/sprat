@@ -5,7 +5,7 @@
 /**
  * Multrun routines for the sprat program.
  * @author Chris Mottram
- * @version $Revision: 1.7 $
+ * @version $Revision$
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes.

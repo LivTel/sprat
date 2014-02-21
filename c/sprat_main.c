@@ -3,8 +3,8 @@
 */
 /**
  * SPRAT C server main program.
- * @author $Author: cjm $
- * @version $Revision: 1.2 $
+ * @author $Author$
+ * @version $Revision$
  */
 #include <signal.h> /* signal handling */
 #include <stdio.h>
