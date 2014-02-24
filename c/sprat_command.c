@@ -76,8 +76,7 @@ int Sprat_Command_Abort(char *command_string,char **reply_string)
 	int retval;
 
 #if SPRAT_DEBUG > 1
-	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Abort",LOG_VERBOSITY_TERSE,
-			       "COMMAND","started.");
+	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Abort",LOG_VERBOSITY_TERSE,"COMMAND","started.");
 #endif
 	retval = CCD_Exposure_Abort();
 	if(retval == FALSE)
@@ -89,8 +88,54 @@ int Sprat_Command_Abort(char *command_string,char **reply_string)
 	if(!Sprat_Global_Add_String(reply_string,"0 Abort suceeded."))
 		return FALSE;
 #if SPRAT_DEBUG > 1
-	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Abort",LOG_VERBOSITY_TERSE,
-			 "COMMAND","finished.");
+	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Abort",LOG_VERBOSITY_TERSE,"COMMAND","finished.");
+#endif
+	return TRUE;
+}
+
+/**
+ * Handle a CCD exposure command of the form: bias.
+ * @param command_string The command. This is not changed during this routine.
+ * @param reply_string The address of a pointer to allocate and set the reply string.
+ * @return The routine returns TRUE on success and FALSE on failure.
+ * @see #COMMAND_ERROR_STRING_LENGTH
+ * @see #Command_Error_String
+ * @see sprat_multrun.html#Sprat_Multrun_Bias
+ * @see sprat_global.html#Sprat_Global_Add_String
+ * @see sprat_global.html#Sprat_Global_Error_And_String
+ * @see sprat_global.html#Sprat_Global_Error_Number
+ * @see sprat_global.html#Sprat_Global_Error_String
+ * @see sprat_global.html#Sprat_Global_Log
+ */
+int Sprat_Command_Bias(char *command_string,char **reply_string)
+{
+	char filename[256];
+	int retval;
+
+#if SPRAT_DEBUG > 1
+	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Bias",LOG_VERBOSITY_TERSE,
+			    "COMMAND","started.");
+#endif
+	/* do bias */
+	retval = Sprat_Multrun_Bias(1,filename,256);
+	if(retval == FALSE)
+	{
+		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Bias",
+						 LOG_VERBOSITY_TERSE,"COMMAND",Command_Error_String,
+						 COMMAND_ERROR_STRING_LENGTH);
+		if(!Sprat_Global_Add_String(reply_string,"1 Bias failed:"))
+			return FALSE;
+		if(!Sprat_Global_Add_String(reply_string,Command_Error_String))
+			return FALSE;
+		return TRUE;
+	}
+	if(!Sprat_Global_Add_String(reply_string,"0 "))
+		return FALSE;
+	if(!Sprat_Global_Add_String(reply_string,filename))
+		return FALSE;
+#if SPRAT_DEBUG > 1
+	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Bias",LOG_VERBOSITY_TERSE,
+			       "COMMAND","finished.");
 #endif
 	return TRUE;
 }
@@ -741,7 +786,7 @@ int Sprat_Command_MultBias(char *command_string,char **reply_string)
 		Sprat_Global_Error_Number = 114;
 		sprintf(Sprat_Global_Error_String,"Sprat_Command_MultBias:"
 			"Failed to parse command %s (%d).",command_string,retval);
-		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Move",
+		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_MultBias",
 						 LOG_VERBOSITY_TERSE,"COMMAND",Command_Error_String,
 						 COMMAND_ERROR_STRING_LENGTH);
 		if(!Sprat_Global_Add_String(reply_string,"1 MultBias failed:"))
@@ -754,7 +799,7 @@ int Sprat_Command_MultBias(char *command_string,char **reply_string)
 	retval = Sprat_Multrun_Bias(exposure_count,filename,256);
 	if(retval == FALSE)
 	{
-		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Move",
+		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_MultBias",
 						 LOG_VERBOSITY_TERSE,"COMMAND",Command_Error_String,
 						 COMMAND_ERROR_STRING_LENGTH);
 		if(!Sprat_Global_Add_String(reply_string,"1 MultBias failed:"))
@@ -770,6 +815,77 @@ int Sprat_Command_MultBias(char *command_string,char **reply_string)
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_MultBias",LOG_VERBOSITY_TERSE,
 			       "COMMAND","finished.");
+#endif
+	return TRUE;
+}
+
+/**
+ * Handle a CCD exposure command of the form: multdark &lt;length ms&gt; &lt;count&gt;.
+ * @param command_string The command. This is not changed during this routine.
+ * @param reply_string The address of a pointer to allocate and set the reply string.
+ * @return The routine returns TRUE on success and FALSE on failure.
+ * @see #COMMAND_ERROR_STRING_LENGTH
+ * @see #Command_Error_String
+ * @see sprat_multrun.html#Sprat_Multrun_Dark
+ * @see sprat_global.html#Sprat_Global_Add_String
+ * @see sprat_global.html#Sprat_Global_Error_And_String
+ * @see sprat_global.html#Sprat_Global_Error_Number
+ * @see sprat_global.html#Sprat_Global_Error_String
+ * @see sprat_global.html#Sprat_Global_Log
+ */
+int Sprat_Command_MultDark(char *command_string,char **reply_string)
+{
+	char filename[256];
+	char multrun_number_string[16];
+	int retval,exposure_length,exposure_count,multrun_number,standard;
+
+#if SPRAT_DEBUG > 1
+	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_MultDark",LOG_VERBOSITY_TERSE,
+			    "COMMAND","started.");
+#endif
+	/* parse command */
+	retval = sscanf(command_string,"multdark %d %d",&exposure_length,&exposure_count);
+	if(retval != 2)
+	{
+#if SPRAT_DEBUG > 1
+		Sprat_Global_Log("command","sprat_command.c","Sprat_Command_MultDark",
+				    LOG_VERBOSITY_TERSE,"COMMAND","finished (command parse failed).");
+#endif
+		Sprat_Global_Error_Number = 606;
+		sprintf(Sprat_Global_Error_String,"Sprat_Command_MultDark:"
+			"Failed to parse command %s (%d).",command_string,retval);
+		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_MultDark",
+						 LOG_VERBOSITY_TERSE,"COMMAND",Command_Error_String,
+						 COMMAND_ERROR_STRING_LENGTH);
+		if(!Sprat_Global_Add_String(reply_string,"1 MultDark failed:"))
+			return FALSE;
+		if(!Sprat_Global_Add_String(reply_string,Command_Error_String))
+			return FALSE;
+		return FALSE;
+	}
+	/* do exposure */
+	retval = Sprat_Multrun_Dark(exposure_length,exposure_count,&multrun_number,filename,256);
+	if(retval == FALSE)
+	{
+		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_MultDark",
+						 LOG_VERBOSITY_TERSE,"COMMAND",Command_Error_String,
+						 COMMAND_ERROR_STRING_LENGTH);
+		if(!Sprat_Global_Add_String(reply_string,"1 MultDark failed:"))
+			return FALSE;
+		if(!Sprat_Global_Add_String(reply_string,Command_Error_String))
+			return FALSE;
+		return TRUE;
+	}
+	if(!Sprat_Global_Add_String(reply_string,"0 "))
+		return FALSE;
+	sprintf(multrun_number_string,"%d ",multrun_number);
+	if(!Sprat_Global_Add_String(reply_string,multrun_number_string))
+		return FALSE;
+	if(!Sprat_Global_Add_String(reply_string,filename))
+		return FALSE;
+#if SPRAT_DEBUG > 1
+	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_MultDark",LOG_VERBOSITY_TERSE,
+			 "COMMAND","finished.");
 #endif
 	return TRUE;
 }
@@ -796,8 +912,7 @@ int Sprat_Command_Multrun(char *command_string,char **reply_string)
 	int retval,exposure_length,exposure_count,multrun_number,standard;
 
 #if SPRAT_DEBUG > 1
-	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Multrun",LOG_VERBOSITY_TERSE,
-			    "COMMAND","started.");
+	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Multrun",LOG_VERBOSITY_TERSE,"COMMAND","started.");
 #endif
 	/* parse command */
 	retval = sscanf(command_string,"multrun %d %d %8s",&exposure_length,&exposure_count,standard_string);
@@ -805,14 +920,14 @@ int Sprat_Command_Multrun(char *command_string,char **reply_string)
 	{
 #if SPRAT_DEBUG > 1
 		Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Multrun",
-				    LOG_VERBOSITY_TERSE,"COMMAND","finished (command parse failed).");
+				 LOG_VERBOSITY_TERSE,"COMMAND","finished (command parse failed).");
 #endif
 		Sprat_Global_Error_Number = 641;
 		sprintf(Sprat_Global_Error_String,"Sprat_Command_Multrun:"
 			"Failed to parse command %s (%d).",command_string,retval);
 		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Multrun",
-						 LOG_VERBOSITY_TERSE,"COMMAND",Command_Error_String,
-						 COMMAND_ERROR_STRING_LENGTH);
+					      LOG_VERBOSITY_TERSE,"COMMAND",Command_Error_String,
+					      COMMAND_ERROR_STRING_LENGTH);
 		if(!Sprat_Global_Add_String(reply_string,"1 Multrun failed:"))
 			return FALSE;
 		if(!Sprat_Global_Add_String(reply_string,Command_Error_String))
@@ -913,13 +1028,13 @@ int Sprat_Command_Status(char *command_string,char **reply_string)
 #endif
 	if(command_string == NULL)
 	{
-		Sprat_Global_Error_Number = 603;
+		Sprat_Global_Error_Number = 607;
 		sprintf(Sprat_Global_Error_String,"Sprat_Command_Status:command_string was NULL.");
 		return FALSE;
 	}
 	if(reply_string == NULL)
 	{
-		Sprat_Global_Error_Number = 604;
+		Sprat_Global_Error_Number = 608;
 		sprintf(Sprat_Global_Error_String,"Sprat_Command_Status:reply_string was NULL.");
 		return FALSE;
 	}
@@ -934,7 +1049,7 @@ int Sprat_Command_Status(char *command_string,char **reply_string)
 		Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Status",
 				 LOG_VERBOSITY_TERSE,"COMMAND","finished (command parse failed).");
 #endif
-		Sprat_Global_Error_Number = 605;
+		Sprat_Global_Error_Number = 613;
 		sprintf(Sprat_Global_Error_String,"Sprat_Command_Status:"
 			"Failed to parse status command %s (%d).",command_string,retval);
 		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Status",LOG_VERBOSITY_TERSE,
@@ -951,11 +1066,10 @@ int Sprat_Command_Status(char *command_string,char **reply_string)
 		if(retval == FALSE)
 		{
 			Sprat_Global_Error_Number = 647;
-			sprintf(Sprat_Global_Error_String,"Sprat_Command_Status:"
-				"Command_Status_Exposure failed.");
+			sprintf(Sprat_Global_Error_String,"Sprat_Command_Status:Command_Status_Exposure failed.");
 			Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Status",
-							 LOG_VERBOSITY_TERSE,"COMMAND",Command_Error_String,
-							 COMMAND_ERROR_STRING_LENGTH);
+						      LOG_VERBOSITY_TERSE,"COMMAND",Command_Error_String,
+						      COMMAND_ERROR_STRING_LENGTH);
 			if(!Sprat_Global_Add_String(reply_string,"1 Failed to get exposure status:"))
 				return FALSE;
 			if(!Sprat_Global_Add_String(reply_string,Command_Error_String))

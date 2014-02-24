@@ -122,7 +122,7 @@ int Sprat_Server_Start(void)
 	}
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("server","sprat_server.c","Sprat_Server_Start",
-			    LOG_VERBOSITY_VERY_TERSE,"SERVER","finished.");
+			 LOG_VERBOSITY_VERY_TERSE,"SERVER","finished.");
 #endif
 	return TRUE;
 }
@@ -140,7 +140,7 @@ int Sprat_Server_Stop(void)
 	int retval;
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log_Format("server","sprat_server.c","Sprat_Server_Stop",
-				   LOG_VERBOSITY_VERY_TERSE,"SERVER","started.");
+				LOG_VERBOSITY_VERY_TERSE,"SERVER","started.");
 #endif
 	retval = Command_Server_Close_Server(&Command_Server_Context);
 	if(retval == FALSE)
@@ -152,7 +152,7 @@ int Sprat_Server_Stop(void)
 	}
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log_Format("server","sprat_server.c","Sprat_Server_Stop",
-				   LOG_VERBOSITY_VERY_TERSE,"SERVER","finished.");
+				LOG_VERBOSITY_VERY_TERSE,"SERVER","finished.");
 #endif
 	return TRUE;
 }
@@ -168,6 +168,7 @@ int Sprat_Server_Stop(void)
  * @see #Send_Binary_Reply_Error
  * @see #Sprat_Server_Stop
  * @see sprat_command.html#Sprat_Command_Abort
+ * @see sprat_command.html#Sprat_Command_Bias
  * @see sprat_command.html#Sprat_Command_Config
  * @see sprat_command.html#Sprat_Command_Dark
  * @see sprat_command.html#Sprat_Command_Expose
@@ -234,6 +235,36 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 				Sprat_Global_Error("server","sprat_server.c",
 							 "Server_Connection_Callback",
 							 LOG_VERBOSITY_VERY_TERSE,"SERVER");
+			}
+		}
+	}
+	else if(strncmp(client_message,"bias",4) == 0)
+	{
+#if SPRAT_DEBUG > 1
+		Sprat_Global_Log("server","sprat_server.c","Server_Connection_Callback",
+				 LOG_VERBOSITY_VERY_TERSE,"SERVER","bias detected.");
+#endif
+		retval = Sprat_Command_Bias(client_message,&reply_string);
+		if(retval == TRUE)
+		{
+			retval = Send_Reply(connection_handle,reply_string);
+			if(reply_string != NULL)
+				free(reply_string);
+			if(retval == FALSE)
+			{
+				Sprat_Global_Error("server","sprat_server.c","Server_Connection_Callback",
+						   LOG_VERBOSITY_VERY_TERSE,"SERVER");
+			}
+		}
+		else
+		{
+			Sprat_Global_Error("server","sprat_server.c","Server_Connection_Callback",
+					   LOG_VERBOSITY_VERY_TERSE,"SERVER");
+			retval = Send_Reply(connection_handle, "1 Sprat_Command_Bias failed.");
+			if(retval == FALSE)
+			{
+				Sprat_Global_Error("server","sprat_server.c","Server_Connection_Callback",
+						   LOG_VERBOSITY_VERY_TERSE,"SERVER");
 			}
 		}
 	}
@@ -377,17 +408,16 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 #endif
 		Send_Reply(connection_handle, "help:\n"
 			   "\tabort\n"
-			   /* diddly "\tbias\n" */
+			   "\tbias\n"
 			   "\tconfig <xbin> <ybin> <emgain> [<startx> <endx> <starty> <endy>]\n"
+			   "\tdark <ms>\n"
+			   "\texpose <ms>\n"
 			   "\tfitsheader add <keyword> <boolean|float|integer|string> <value>\n"
 			   "\tfitsheader delete <keyword>\n"
 			   "\tfitsheader clear\n"
-			   "\tdark <ms>\n"
-			   "\texpose <ms>\n"
 			   "\thelp\n"
-/*			   "\tlog_level <sprat|ccd|command_server|object|ngatcil> <n>\n"*/
 			   "\tmultbias <count>\n"
-			   /* diddly "\tmultdark <exposurelength> <count>\n"*/
+			   "\tmultdark <exposurelength> <count>\n"
 			   "\tmultrun <length> <count> <standard>\n"
 			   "\tstatus exposure [status|length|start_time|multrun|run]\n"
 			   "\tstatus multrun [index|count]\n"
@@ -425,6 +455,36 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 				Sprat_Global_Error("server","sprat_server.c",
 						      "Server_Connection_Callback",
 						      LOG_VERBOSITY_VERY_TERSE,"SERVER");
+			}
+		}
+	}
+	else if(strncmp(client_message,"multdark",8) == 0)
+	{
+#if SPRAT_DEBUG > 1
+		Sprat_Global_Log("server","sprat_server.c","Server_Connection_Callback",
+				       LOG_VERBOSITY_VERY_TERSE,"SERVER","multdark detected.");
+#endif
+		retval = Sprat_Command_MultDark(client_message,&reply_string);
+		if(retval == TRUE)
+		{
+			retval = Send_Reply(connection_handle,reply_string);
+			if(reply_string != NULL)
+				free(reply_string);
+			if(retval == FALSE)
+			{
+				Sprat_Global_Error("server","sprat_server.c","Server_Connection_Callback",
+						   LOG_VERBOSITY_VERY_TERSE,"SERVER");
+			}
+		}
+		else
+		{
+			Sprat_Global_Error("server","sprat_server.c","Server_Connection_Callback",
+					      LOG_VERBOSITY_VERY_TERSE,"SERVER");
+			retval = Send_Reply(connection_handle, "1 Sprat_Command_MultDark failed.");
+			if(retval == FALSE)
+			{
+				Sprat_Global_Error("server","sprat_server.c","Server_Connection_Callback",
+						   LOG_VERBOSITY_VERY_TERSE,"SERVER");
 			}
 		}
 	}

@@ -158,6 +158,7 @@ int Sprat_Multrun_Dimensions_Set(int ncols,int nrows,int xbin,int ybin,
 /**
  * Perform multiple bias exposure operation. Uses the multrun configuration.
  * @param exposure_count The number of biases.
+ * @param multrun_number The address of an integer to store the multrun number for this multrun.
  * @param filename The address of a string to hold the last created filename.
  * @param filename_length The allocated length of filename.
  * @return The routine returns TRUE on success, and FALSE on failure.
@@ -175,12 +176,13 @@ int Sprat_Multrun_Dimensions_Set(int ncols,int nrows,int xbin,int ybin,
  * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_FITS_FILENAME_PIPELINE_FLAG
  * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_Fits_Filename_Next_Multrun
  * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_Fits_Filename_Next_Run
+ * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_Fits_Filename_Multrun_Get
  * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_Fits_Filename_Get_Filename
  * @see ../ccd/cdocs/ccd_fits_header.html#Fits_Header_Struct
  * @see ../ccd/cdocs/ccd_temperature.html#CCD_Temperature_Get
  * @see ../ccd/cdocs/ccd_temperature.html#CCD_TEMPERATURE_STATUS
  */
-int Sprat_Multrun_Bias(int exposure_count,char *filename,int filename_length)
+int Sprat_Multrun_Bias(int exposure_count,int *multrun_number,char *filename,int filename_length)
 {
 	struct CCD_Setup_Window_Struct window;
 	struct timespec start_time;
@@ -201,6 +203,18 @@ int Sprat_Multrun_Bias(int exposure_count,char *filename,int filename_length)
 		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Bias:Exposure Count too small(%d).",exposure_count);
 		return FALSE;
 	}
+	if(multrun_number == NULL)
+	{
+		Sprat_Global_Error_Number = 411;
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Bias:multrun_number was NULL.");
+		return FALSE;
+	}
+	if(filename == NULL)
+	{
+		Sprat_Global_Error_Number = 416;
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Bias:filename was NULL.");
+		return FALSE;
+	}
 	Sprat_Global_Error_Number = 0;
 	Multrun_Data.Is_Active = TRUE;
 	Multrun_Data.Exposure_Index = 0;
@@ -217,6 +231,9 @@ int Sprat_Multrun_Bias(int exposure_count,char *filename,int filename_length)
 		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Bias:CCD_Fits_Filename_Next_Multrun failed.");
 		return FALSE;
 	}
+	/* set multrun number */
+	(*multrun_number) = CCD_Fits_Filename_Multrun_Get();
+	/* loop over biases to take */
 	for(i=0;i<Multrun_Data.Exposure_Count;i++)
 	{
 		if(!CCD_Fits_Filename_Next_Run())
@@ -272,6 +289,7 @@ int Sprat_Multrun_Bias(int exposure_count,char *filename,int filename_length)
  * Take some dark exposures. Uses the multrun configuration.
  * @param exposure_length The length of the dark, in milliseconds.
  * @param exposure_count The number of darks to do.
+ * @param multrun_number The address of an integer to store the multrun number for this multrun.
  * @param filename The address of a string to hold the created filename.
  * @param filename_length The allocated length of filename.
  * @return The routine returns TRUE on success, and FALSE on failure.
@@ -286,12 +304,13 @@ int Sprat_Multrun_Bias(int exposure_count,char *filename,int filename_length)
  * @see ../ccd/cdocs/ccd_exposure.html#CCD_Exposure_Expose
  * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_Fits_Filename_Next_Multrun
  * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_Fits_Filename_Next_Run
+ * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_Fits_Filename_Multrun_Get
  * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_Fits_Filename_Get_Filename
  * @see ../ccd/cdocs/ccd_setup.html#CCD_Setup_Dimensions
  * @see ../ccd/cdocs/ccd_temperature.html#CCD_TEMPERATURE_STATUS
  * @see ../ccd/cdocs/ccd_temperature.html#CCD_Temperature_Get
  */
-int Sprat_Multrun_Dark(int exposure_length,int exposure_count,char *filename,int filename_length)
+int Sprat_Multrun_Dark(int exposure_length,int exposure_count,int *multrun_number,char *filename,int filename_length)
 {
 	struct CCD_Setup_Window_Struct window;
 	struct timespec start_time;
@@ -305,6 +324,24 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,char *filename,int
 	{
 		Sprat_Global_Error_Number = 407;
 		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Dark:Already doing multrun.");
+		return FALSE;
+	}
+	if(multrun_number == NULL)
+	{
+		Sprat_Global_Error_Number = 417;
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Dark:multrun_number was NULL.");
+		return FALSE;
+	}
+	if(exposure_count < 1)
+	{
+		Sprat_Global_Error_Number = 418;
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Dark:Exposure Count too small(%d).",exposure_count);
+		return FALSE;
+	}
+	if(filename == NULL)
+	{
+		Sprat_Global_Error_Number = 419;
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Dark:filename was NULL.");
 		return FALSE;
 	}
 	Sprat_Global_Error_Number = 0;
@@ -334,6 +371,8 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,char *filename,int
 		Multrun_Data.Is_Active = FALSE;
 		return FALSE;
 	}
+	/* set multrun number */
+	(*multrun_number) = CCD_Fits_Filename_Multrun_Get();
 	/* loop over number of darks to do */
 	for(i = 0; i < exposure_count; i++)
 	{
@@ -413,7 +452,7 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,char *filename,int
  * @see ../ccd/cdocs/ccd_temperature.html#CCD_TEMPERATURE_STATUS
  */
 int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,int standard,int *multrun_number,
-			    char *filename,int filename_length)
+			  char *filename,int filename_length)
 {
 	struct CCD_Setup_Window_Struct window;
 	struct timespec start_time;
@@ -432,8 +471,21 @@ int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,int standard,in
 	}
 	if(multrun_number == NULL)
 	{
-		Sprat_Global_Error_Number = 411;
+		Sprat_Global_Error_Number = 420;
 		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:multrun_number was NULL.");
+		return FALSE;
+	}
+	if(exposure_count < 1)
+	{
+		Sprat_Global_Error_Number = 421;
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:Exposure Count too small(%d).",
+			exposure_count);
+		return FALSE;
+	}
+	if(filename == NULL)
+	{
+		Sprat_Global_Error_Number = 422;
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:filename was NULL.");
 		return FALSE;
 	}
 	Sprat_Global_Error_Number = 0;
