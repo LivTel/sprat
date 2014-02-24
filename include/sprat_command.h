@@ -5,6 +5,7 @@
 #define SPRAT_COMMAND_H
 
 extern int Sprat_Command_Abort(char *command_string,char **reply_string);
+extern int Sprat_Command_Bias(char *command_string,char **reply_string);
 extern int Sprat_Command_Config(char *command_string,char **reply_string);
 extern int Sprat_Command_Dark(char *command_string,char **reply_string);
 extern int Sprat_Command_Expose(char *command_string,char **reply_string);
