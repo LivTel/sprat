@@ -409,7 +409,7 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 		Send_Reply(connection_handle, "help:\n"
 			   "\tabort\n"
 			   "\tbias\n"
-			   "\tconfig <xbin> <ybin> <emgain> [<startx> <endx> <starty> <endy>]\n"
+			   "\tconfig <xbin> <ybin> [<startx> <endx> <starty> <endy>]\n"
 			   "\tdark <ms>\n"
 			   "\texpose <ms>\n"
 			   "\tfitsheader add <keyword> <boolean|float|integer|string> <value>\n"
@@ -559,15 +559,13 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 #endif
 		retval = Send_Reply(connection_handle, "0 ok");
 		if(retval == FALSE)
-			Sprat_Global_Error("server","sprat_server.c",
-						 "Sprat_Server_Connection_Callback",
-						 LOG_VERBOSITY_VERY_TERSE,"SERVER");
+			Sprat_Global_Error("server","sprat_server.c","Sprat_Server_Connection_Callback",
+					   LOG_VERBOSITY_VERY_TERSE,"SERVER");
 		retval = Sprat_Server_Stop();
 		if(retval == FALSE)
 		{
-			Sprat_Global_Error("server","sprat_server.c",
-						 "Sprat_Server_Connection_Callback",
-						 LOG_VERBOSITY_VERY_TERSE,"SERVER");
+			Sprat_Global_Error("server","sprat_server.c","Sprat_Server_Connection_Callback",
+					   LOG_VERBOSITY_VERY_TERSE,"SERVER");
 		}
 	}
 	else if(strncmp(client_message,"temperature",11) == 0)
@@ -585,13 +583,13 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 			if(retval == FALSE)
 			{
 				Sprat_Global_Error("server","sprat_server.c","Sprat_Server_Connection_Callback",
-						      LOG_VERBOSITY_VERY_TERSE,"SERVER");
+						   LOG_VERBOSITY_VERY_TERSE,"SERVER");
 			}
 		}
 		else
 		{
 			Sprat_Global_Error("server","sprat_server.c","Sprat_Server_Connection_Callback",
-						 LOG_VERBOSITY_VERY_TERSE,"SERVER");
+					   LOG_VERBOSITY_VERY_TERSE,"SERVER");
 			retval = Send_Reply(connection_handle, "1 Sprat_Command_Temperature failed.");
 			if(retval == FALSE)
 			{
@@ -604,15 +602,13 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 	{
 #if SPRAT_DEBUG > 1
 		Sprat_Global_Log_Format("server","sprat_server.c","Sprat_Server_Connection_Callback",
-					      LOG_VERBOSITY_VERY_TERSE,"SERVER","message unknown: '%s'\n",
-					      client_message);
+					LOG_VERBOSITY_VERY_TERSE,"SERVER","message unknown: '%s'\n",client_message);
 #endif
 		retval = Send_Reply(connection_handle, "1 failed message unknown");
 		if(retval == FALSE)
 		{
-			Sprat_Global_Error("server","sprat_server.c",
-						 "Sprat_Server_Connection_Callback",
-						 LOG_VERBOSITY_VERY_TERSE,"SERVER");
+			Sprat_Global_Error("server","sprat_server.c","Sprat_Server_Connection_Callback",
+					   LOG_VERBOSITY_VERY_TERSE,"SERVER");
 		}
 	}
 	/* free message */
@@ -636,19 +632,18 @@ static int Send_Reply(Command_Server_Handle_T connection_handle,char *reply_mess
 	/* send something back to the client */
 #if SPRAT_DEBUG > 5
 	Sprat_Global_Log_Format("server","sprat_server.c","Send_Reply",LOG_VERBOSITY_TERSE,"SERVER",
-				      "about to send '%.80s'...",reply_message);
+				"about to send '%.80s'...",reply_message);
 #endif
 	retval = Command_Server_Write_Message(connection_handle, reply_message);
 	if(retval == FALSE)
 	{
 		Sprat_Global_Error_Number = 204;
-		sprintf(Sprat_Global_Error_String,"Send_Reply:"
-			"Writing message to connection failed.");
+		sprintf(Sprat_Global_Error_String,"Send_Reply:Writing message to connection failed.");
 		return FALSE;
 	}
 #if SPRAT_DEBUG > 5
 	Sprat_Global_Log_Format("server","sprat_server.c","Send_Reply",LOG_VERBOSITY_TERSE,"SERVER",
-				      "sent '%.80s'...",reply_message);
+				"sent '%.80s'...",reply_message);
 #endif
 	return TRUE;
 }
@@ -669,9 +664,8 @@ static int Send_Binary_Reply(Command_Server_Handle_T connection_handle,void *buf
 	int retval;
 
 #if SPRAT_DEBUG > 5
-	Sprat_Global_Log_Format("server","sprat_server.c","Send_Binary_Reply",
-				      LOG_VERBOSITY_INTERMEDIATE,"SERVER",
-				      "about to send %ld bytes.",buffer_length);
+	Sprat_Global_Log_Format("server","sprat_server.c","Send_Binary_Reply",LOG_VERBOSITY_INTERMEDIATE,"SERVER",
+				"about to send %ld bytes.",buffer_length);
 #endif
 	retval = Command_Server_Write_Binary_Message(connection_handle,buffer_ptr,buffer_length);
 	if(retval == FALSE)
@@ -683,7 +677,7 @@ static int Send_Binary_Reply(Command_Server_Handle_T connection_handle,void *buf
 	}
 #if SPRAT_DEBUG > 5
 	Sprat_Global_Log_Format("server","sprat_server.c","Send_Binary_Reply",
-				      LOG_VERBOSITY_INTERMEDIATE,"SERVER","sent %ld bytes.",buffer_length);
+				LOG_VERBOSITY_INTERMEDIATE,"SERVER","sent %ld bytes.",buffer_length);
 #endif
 	return TRUE;
 }
@@ -706,10 +700,8 @@ static int Send_Binary_Reply_Error(Command_Server_Handle_T connection_handle)
 	Sprat_Global_Error_To_String("server","sprat_server.c","Send_Binary_Reply_Error",
 				      LOG_VERBOSITY_INTERMEDIATE,"SERVER",error_buff);
 #if SPRAT_DEBUG > 5
-	Sprat_Global_Log_Format("server","sprat_server.c","Send_Binary_Reply_Error",
-				      LOG_VERBOSITY_INTERMEDIATE,"SERVER",
-				      "about to send error '%s' : Length %ld bytes.",
-				      error_buff,strlen(error_buff));
+	Sprat_Global_Log_Format("server","sprat_server.c","Send_Binary_Reply_Error",LOG_VERBOSITY_INTERMEDIATE,
+				"SERVER","about to send error '%s' : Length %ld bytes.",error_buff,strlen(error_buff));
 #endif
 	retval = Command_Server_Write_Binary_Message(connection_handle,error_buff,strlen(error_buff));
 	if(retval == FALSE)
@@ -722,7 +714,7 @@ static int Send_Binary_Reply_Error(Command_Server_Handle_T connection_handle)
 	}
 #if SPRAT_DEBUG > 5
 	Sprat_Global_Log_Format("server","sprat_server.c","Send_Binary_Reply_Error",
-				      LOG_VERBOSITY_INTERMEDIATE,"SERVER","sent %ld bytes.",strlen(error_buff));
+				LOG_VERBOSITY_INTERMEDIATE,"SERVER","sent %ld bytes.",strlen(error_buff));
 #endif
 	return TRUE;
 }

@@ -247,6 +247,8 @@ void Sprat_Global_Error(char *sub_system,char *source_filename,char *function,in
  * @see #Sprat_Global_Error_String
  * @see ../ccd/cdocs/ccd_global.html#CCD_Global_Is_Error
  * @see ../ccd/cdocs/ccd_global.html#CCD_Global_Error_To_String
+ * @see ../../commandserver/cdocs/command_server.html#Command_Server_Is_Error
+ * @see ../../commandserver/cdocs/command_server.html#Command_Server_Error_To_String
  */
 void Sprat_Global_Error_To_String(char *sub_system,char *source_filename,char *function,int level,
 				  char *category,char *error_string)
@@ -258,6 +260,11 @@ void Sprat_Global_Error_To_String(char *sub_system,char *source_filename,char *f
 	if(CCD_Global_Is_Error() != FALSE)
 	{
 		CCD_Global_Error_To_String(error_string+strlen(error_string));
+	}
+	/* command server */
+	if(Command_Server_Is_Error())
+	{
+		Command_Server_Error_To_String(error_string+strlen(error_string));
 	}
 	/* main sprat */
 	if(Sprat_Global_Error_Number != 0)
@@ -274,10 +281,9 @@ void Sprat_Global_Error_To_String(char *sub_system,char *source_filename,char *f
 
 /**
  * A general error routine. Print the error to the error file AND create a string suitable for sending
- * back to the client
- * <b>Note</b> you cannot call more than one of Sprat_Global_Error, Sprat_Global_Error_To_String and 
- * Sprat_Global_Error_And_String to print the error string and 
- * get a string copy of it, only one of the error routines can be called after libccd has generated an error.
+ * back to the client. <b>Note</b> you cannot call more than one of Sprat_Global_Error, 
+ * Sprat_Global_Error_To_String and Sprat_Global_Error_And_String to print the error string and 
+ * get a string copy of it, only one of the error routines can be called after libsprat_ccd has generated an error.
  * A second call to one of these routines will generate a 'Error not found' error!.
  * @param sub_system The sub system. Can be NULL.
  * @param source_file The source filename. Can be NULL.
@@ -293,6 +299,8 @@ void Sprat_Global_Error_To_String(char *sub_system,char *source_filename,char *f
  * @see #Sprat_Global_Error_String
  * @see ../ccd/cdocs/ccd_global.html#CCD_Global_Is_Error
  * @see ../ccd/cdocs/ccd_global.html#CCD_Global_Error_To_String
+ * @see ../../commandserver/cdocs/command_server.html#Command_Server_Is_Error
+ * @see ../../commandserver/cdocs/command_server.html#Command_Server_Error_To_String
  */
 void Sprat_Global_Error_And_String(char *sub_system,char *source_filename,char *function,int level,
 				   char *category,char *error_string,int string_length)
@@ -306,6 +314,12 @@ void Sprat_Global_Error_And_String(char *sub_system,char *source_filename,char *
 		Sprat_Global_Get_Current_Time_String(time_string,32);
 		sprintf(error_string+strlen(error_string),"%s Sprat_Global:Error(%d) : %s:%s\n",time_string,
 			Sprat_Global_Error_Number,function,Sprat_Global_Error_String);
+	}
+	/* command server */
+	if(Command_Server_Is_Error())
+	{
+		if(strlen(error_string) < string_length)
+			Command_Server_Error_To_String(error_string+strlen(error_string));
 	}
 	/* ccd library */
 	if(CCD_Global_Is_Error() != FALSE)

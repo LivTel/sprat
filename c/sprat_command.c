@@ -35,6 +35,7 @@
 
 #include "sprat_command.h"
 #include "sprat_global.h"
+#include "sprat_multrun.h"
 
 /**
  * Length of internal error string.
@@ -110,14 +111,15 @@ int Sprat_Command_Abort(char *command_string,char **reply_string)
 int Sprat_Command_Bias(char *command_string,char **reply_string)
 {
 	char filename[256];
-	int retval;
+	char multrun_number_string[16];
+	int retval,multrun_number;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Bias",LOG_VERBOSITY_TERSE,
 			    "COMMAND","started.");
 #endif
 	/* do bias */
-	retval = Sprat_Multrun_Bias(1,filename,256);
+	retval = Sprat_Multrun_Bias(1,&multrun_number,filename,256);
 	if(retval == FALSE)
 	{
 		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Bias",
@@ -130,6 +132,9 @@ int Sprat_Command_Bias(char *command_string,char **reply_string)
 		return TRUE;
 	}
 	if(!Sprat_Global_Add_String(reply_string,"0 "))
+		return FALSE;
+	sprintf(multrun_number_string,"%d ",multrun_number);
+	if(!Sprat_Global_Add_String(reply_string,multrun_number_string))
 		return FALSE;
 	if(!Sprat_Global_Add_String(reply_string,filename))
 		return FALSE;
@@ -226,7 +231,7 @@ int Sprat_Command_Config(char *command_string,char **reply_string)
 		sprintf(Sprat_Global_Error_String,"Sprat_Command_Config:Failed to get nrows config.");
 		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Config",LOG_VERBOSITY_TERSE,
 					       "COMMAND",Command_Error_String,COMMAND_ERROR_STRING_LENGTH);
-		if(!Sprat_Global_Add_String(reply_string,"1 Failed to get nrows config."))
+		if(!Sprat_Global_Add_String(reply_string,"1 Failed to get nrows config:"))
 			return FALSE;
 		if(!Sprat_Global_Add_String(reply_string,Command_Error_String))
 			return FALSE;
@@ -272,7 +277,8 @@ int Sprat_Command_Config(char *command_string,char **reply_string)
 int Sprat_Command_Dark(char *command_string,char **reply_string)
 {
 	char filename[256];
-	int retval,exposure_length;
+	char multrun_number_string[16];
+	int retval,exposure_length,multrun_number;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Dark",LOG_VERBOSITY_TERSE,"COMMAND","started.");
@@ -297,7 +303,7 @@ int Sprat_Command_Dark(char *command_string,char **reply_string)
 		return FALSE;
 	}
 	/* do exposure */
-	retval = Sprat_Multrun_Dark(exposure_length,1,filename,256);
+	retval = Sprat_Multrun_Dark(exposure_length,1,&multrun_number,filename,256);
 	if(retval == FALSE)
 	{
 		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Dark",LOG_VERBOSITY_TERSE,
@@ -309,6 +315,9 @@ int Sprat_Command_Dark(char *command_string,char **reply_string)
 		return TRUE;
 	}
 	if(!Sprat_Global_Add_String(reply_string,"0 "))
+		return FALSE;
+	sprintf(multrun_number_string,"%d ",multrun_number);
+	if(!Sprat_Global_Add_String(reply_string,multrun_number_string))
 		return FALSE;
 	if(!Sprat_Global_Add_String(reply_string,filename))
 		return FALSE;
@@ -335,6 +344,7 @@ int Sprat_Command_Dark(char *command_string,char **reply_string)
 int Sprat_Command_Expose(char *command_string,char **reply_string)
 {
 	char filename[256];
+	char multrun_number_string[16];
 	int retval,exposure_length,multrun_number;
 
 #if SPRAT_DEBUG > 1
@@ -374,6 +384,9 @@ int Sprat_Command_Expose(char *command_string,char **reply_string)
 		return TRUE;
 	}
 	if(!Sprat_Global_Add_String(reply_string,"0 "))
+		return FALSE;
+	sprintf(multrun_number_string,"%d ",multrun_number);
+	if(!Sprat_Global_Add_String(reply_string,multrun_number_string))
 		return FALSE;
 	if(!Sprat_Global_Add_String(reply_string,filename))
 		return FALSE;
@@ -769,7 +782,8 @@ int Sprat_Command_Fits_Header(char *command_string,char **reply_string)
 int Sprat_Command_MultBias(char *command_string,char **reply_string)
 {
 	char filename[256];
-	int retval,exposure_count;
+	char multrun_number_string[16];
+	int retval,exposure_count,multrun_number;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_MultBias",LOG_VERBOSITY_TERSE,
@@ -796,7 +810,7 @@ int Sprat_Command_MultBias(char *command_string,char **reply_string)
 		return FALSE;
 	}
 	/* do bias */
-	retval = Sprat_Multrun_Bias(exposure_count,filename,256);
+	retval = Sprat_Multrun_Bias(exposure_count,&multrun_number,filename,256);
 	if(retval == FALSE)
 	{
 		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_MultBias",
@@ -809,6 +823,9 @@ int Sprat_Command_MultBias(char *command_string,char **reply_string)
 		return TRUE;
 	}
 	if(!Sprat_Global_Add_String(reply_string,"0 "))
+		return FALSE;
+	sprintf(multrun_number_string,"%d ",multrun_number);
+	if(!Sprat_Global_Add_String(reply_string,multrun_number_string))
 		return FALSE;
 	if(!Sprat_Global_Add_String(reply_string,filename))
 		return FALSE;
@@ -1375,7 +1392,7 @@ int Sprat_Command_Temperature(char *command_string,char **reply_string)
 		}
 		else
 		{
-			if(!Sprat_Global_Add_String(reply_string,"1 Unknown Parameter."))
+			if(!Sprat_Global_Add_String(reply_string,"1 Unknown Parameter:"))
 				return FALSE;
 			if(!Sprat_Global_Add_String(reply_string,parameter_string))
 				return FALSE;
