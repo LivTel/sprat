@@ -11,7 +11,7 @@ import java.util.*;
  * The "fitsheader clear" command is an extension of the Command, and 
  * clears the servers list of FITS header keywords to add to the FITS header of saved images.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class FitsHeaderClearCommand extends Command implements Runnable
 {

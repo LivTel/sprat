@@ -11,7 +11,7 @@ import java.util.*;
  * The "status exposure start_time" command is an extension of the Command, and returns the 
  * start_time of the current/last exposure as a timestamp.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class StatusExposureStartTimeCommand extends Command implements Runnable
 {

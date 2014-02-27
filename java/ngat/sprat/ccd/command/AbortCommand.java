@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * The "abort" command is an extension of the Command, and aborts any Multrun underway.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class AbortCommand extends Command implements Runnable
 {

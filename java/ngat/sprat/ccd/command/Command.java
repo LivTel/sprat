@@ -13,7 +13,7 @@ import ngat.net.TelnetConnectionListener;
  * The Command class is the base class for sending a command and getting a reply from the
  * Sprat control system C layer. This is a telnet - type socket interaction.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class Command implements Runnable, TelnetConnectionListener
 {

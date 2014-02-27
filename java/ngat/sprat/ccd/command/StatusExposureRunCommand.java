@@ -10,7 +10,7 @@ import java.net.*;
  * The "status exposure run" command is an extension of the IntegerReplyCommand, and returns the 
  * run number within the multrun used in the FITS filenames for the current (or last) image of the multrun.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class StatusExposureRunCommand extends IntegerReplyCommand implements Runnable
 {

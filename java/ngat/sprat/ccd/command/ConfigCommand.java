@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * The "config" command is an extension of the Command, and configures the instrument for exposures.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class ConfigCommand extends Command implements Runnable
 {

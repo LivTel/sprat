@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * The "dark" command is an extension of the MultrunFilenameReplyCommand, and takes a dark exposure.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  * @see ngat.sprat.ccd.command.MultrunFilenameReplyCommand
  */
 public class DarkCommand extends MultrunFilenameReplyCommand implements Runnable

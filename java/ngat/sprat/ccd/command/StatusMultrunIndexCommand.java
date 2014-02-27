@@ -10,7 +10,7 @@ import java.net.*;
  * The "status multrun index" command is an extension of the IntegerReplyCommand, and returns the 
  * exposure index in the current multrun.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class StatusMultrunIndexCommand extends IntegerReplyCommand implements Runnable
 {

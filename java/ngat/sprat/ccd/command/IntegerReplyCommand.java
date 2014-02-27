@@ -14,7 +14,7 @@ import ngat.net.TelnetConnectionListener;
  * reply from the Sprat C layer. This is a telnet - type socket interaction. IntegerReplyCommand expects the reply
  * to be '&lt;n&gt; &lt;m&gt;' where &lt;n&gt; is the reply status and &lt;m&gt; is an integer value. 
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class IntegerReplyCommand extends Command implements Runnable, TelnetConnectionListener
 {

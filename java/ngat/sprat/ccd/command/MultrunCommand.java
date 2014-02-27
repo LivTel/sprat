@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * The "multrun" command is an extension of the MultrunFilenameReplyCommand, and takes a series of exposures.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  * @see ngat.sprat.ccd.command.MultrunFilenameReplyCommand
  */
 public class MultrunCommand extends MultrunFilenameReplyCommand implements Runnable

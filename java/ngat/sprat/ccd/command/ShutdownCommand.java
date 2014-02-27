@@ -11,7 +11,7 @@ import java.util.*;
  * The "shutdown" command is an extension of the Command, and shuts down the Andor library, and exits the C layer
  * process.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class ShutdownCommand extends Command implements Runnable
 {

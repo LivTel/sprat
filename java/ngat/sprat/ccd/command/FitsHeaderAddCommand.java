@@ -11,7 +11,7 @@ import java.util.*;
  * The "fitsheader add <keyword> <boolean|float|integer|string> <value>" command is an extension of the Command, and 
  * adds a keyword value combination to a list of keywords to be included in the header of saved images.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class FitsHeaderAddCommand extends Command implements Runnable
 {

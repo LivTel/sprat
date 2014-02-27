@@ -10,7 +10,7 @@ import java.net.*;
  * The "status multrun count" command is an extension of the IntegerReplyCommand, and returns the 
  * exposure count in the current multrun. 
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class StatusMultrunCountCommand extends IntegerReplyCommand implements Runnable
 {

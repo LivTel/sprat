@@ -17,7 +17,7 @@ import ngat.util.logging.*;
  * to be '&lt;n&gt; &lt;multrun number&gt; &lt;filename&gt;' where &lt;n&gt; is the reply status, 
  * &lt;multrun number&gt; is an integer value and &lt;filename&gt; a string. 
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class MultrunFilenameReplyCommand extends Command implements Runnable, TelnetConnectionListener
 {

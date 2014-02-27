@@ -10,7 +10,7 @@ import java.net.*;
  * The "status exposure length" command is an extension of the IntegerReplyCommand, and returns the 
  * exposure length in the current multrun. 
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class StatusExposureLengthCommand extends IntegerReplyCommand implements Runnable
 {

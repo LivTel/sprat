@@ -11,7 +11,7 @@ import java.util.*;
  * The "status temperature get" command is an extension of the Command, and returns the 
  * current temperature, and a timestamp stating when the temperature was measured.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class StatusTemperatureGetCommand extends Command implements Runnable
 {

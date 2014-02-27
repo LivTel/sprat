@@ -10,7 +10,7 @@ import java.net.*;
  * The "status exposure status" command is an extension of the Command, and returns the 
  * exposure status of the CCD.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class StatusExposureStatusCommand extends Command implements Runnable
 {

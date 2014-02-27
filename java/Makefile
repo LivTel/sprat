@@ -1,6 +1,6 @@
 # Makefile
 # $HeadURL$
-# $Revision: 1.1 $
+# $Revision$
 include ../Makefile.common
 include ../../Makefile.common
 
