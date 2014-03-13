@@ -448,14 +448,21 @@ void Sprat_Global_Log(char *sub_system,char *source_filename,char *function,int 
 {
 	int i;
 
+	/*fprintf(stdout,"Sprat_Global_Log:Started with message '%s'.\n",message);*/
 /* If the string is NULL, don't log. */
 	if(message == NULL)
+	{
+		/*fprintf(stdout,"Sprat_Global_Log:message is NULL.\n");*/
 		return;
+	}
 /* If there's a log filter, check it returns TRUE for this message */
 	if(Global_Data.Log_Filter != NULL)
 	{
 		if(Global_Data.Log_Filter(sub_system,source_filename,function,level,category,message) == FALSE)
+		{
+			/*fprintf(stdout,"Sprat_Global_Log:Log_Filter returned NULL.\n");*/
 			return;
+		}
 	}
 /* We can log the message */
 	Sprat_Global_Call_Log_Handlers(sub_system,source_filename,function,level,category,message);
@@ -476,10 +483,12 @@ void Sprat_Global_Call_Log_Handlers(char *sub_system,char *source_filename,char 
 {
 	int i;
 
+	/*fprintf(stdout,"Sprat_Global_Call_Log_Handlers:started.\n");*/
 	for(i=0;i<LOG_HANDLER_LIST_COUNT;i++)
 	{
 		if(Global_Data.Log_Handler_List[i] != NULL)
 		{
+			/*fprintf(stdout,"Sprat_Global_Call_Log_Handlers:Calling handler %d.\n",i);*/
 			(*(Global_Data.Log_Handler_List[i]))(sub_system,source_filename,function,level,category,
 							      message);
 		}

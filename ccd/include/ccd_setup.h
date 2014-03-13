@@ -24,7 +24,7 @@ struct CCD_Setup_Window_Struct
 
 extern void CCD_Setup_Initialise(void);
 extern int CCD_Setup_Config_Directory_Set(char *directory);
-extern int CCD_Setup_Startup(int vs_amplitude,int use_recommended_vs,int vs_speed_index);
+extern int CCD_Setup_Startup(int use_recommended_vs,int vs_speed_index);
 extern int CCD_Setup_Shutdown(void);
 extern int CCD_Setup_Dimensions(int ncols,int nrows,int hbin,int vbin,
 				int use_window,struct CCD_Setup_Window_Struct window);

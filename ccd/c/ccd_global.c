@@ -522,6 +522,10 @@ char* CCD_Global_Andor_ErrorCode_To_String(unsigned int error_code)
 			return "DRV_P3INVALID";
 		case DRV_P4INVALID:
 			return "DRV_P4INVALID";
+		case DRV_P5INVALID:
+			return "DRV_P5INVALID";
+		case DRV_P6INVALID:
+			return "DRV_P6INVALID";
 		case DRV_ERROR_NOCAMERA:
 			return "DRV_ERROR_NOCAMERA";
 		case DRV_NOT_AVAILABLE:

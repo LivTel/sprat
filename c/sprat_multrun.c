@@ -279,6 +279,8 @@ int Sprat_Multrun_Bias(int exposure_count,int *multrun_number,char *filename,int
 #endif
 		Multrun_Data.Exposure_Index++;
 	}/* end for on count */
+	/* reset active flag */
+	Multrun_Data.Is_Active = FALSE;
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("multrun","sprat_multrun.c","Sprat_Multrun_Bias",LOG_VERBOSITY_TERSE,"MULTRUN","finished.");
 #endif
@@ -346,6 +348,7 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,int *multrun_numbe
 	}
 	Sprat_Global_Error_Number = 0;
 	Multrun_Data.Is_Active = TRUE;
+	Multrun_Data.Exposure_Count = exposure_count;
 	Multrun_Data.Exposure_Index = 0;
 	/* CCD is setup in Sprat_Multrun_Dimensions_Set. */
 	/* exposure length */

@@ -280,8 +280,10 @@ static int Sprat_Initialise_Logging(void)
 	if(hostname != NULL)
 		free(hostname);
 	/* Sprat */
-	Sprat_Global_Add_Log_Handler_Function(Sprat_Global_Log_Handler_Log_Hourly_File);
-	Sprat_Global_Add_Log_Handler_Function(Sprat_Global_Log_Handler_Log_UDP);
+	if(!Sprat_Global_Add_Log_Handler_Function(Sprat_Global_Log_Handler_Log_Hourly_File))
+		return FALSE;
+	if(!Sprat_Global_Add_Log_Handler_Function(Sprat_Global_Log_Handler_Log_UDP))
+		return FALSE;
 	Sprat_Global_Set_Log_Filter_Function(Sprat_Global_Log_Filter_Level_Absolute);
 	/* CCD */
 	CCD_Global_Set_Log_Handler_Function(Sprat_Global_Call_Log_Handlers);
@@ -351,7 +353,7 @@ static int Sprat_Startup_CCD(void)
 			andor_dir);
 		return FALSE;
 	}
-	if(!CCD_Setup_Startup(0,TRUE,0))
+	if(!CCD_Setup_Startup(TRUE,0))
 	{
 		Sprat_Global_Error_Number = 9;
 		sprintf(Sprat_Global_Error_String,"Sprat_Startup_CCD:Failed to Initialise camera.");

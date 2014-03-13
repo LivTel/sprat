@@ -29,7 +29,11 @@
 /**
  * Default number of rows in the CCD.
  */
-#define DEFAULT_SIZE_Y		(1024)
+#define DEFAULT_SIZE_Y		(255)
+/**
+ * Default Andor config directory used by Andor installer.
+ */
+#define DEFAULT_CONFIG_DIR      "/usr/local/etc/andor"
 
 /* enums */
 /**
@@ -98,12 +102,6 @@ static enum COMMAND_ID Command = COMMAND_ID_NONE;
  */
 static int Exposure_Length = 0;
 /**
- * Vertical clock amplitude, 0 - normal, 1..4 increasing vertical clock voltage.
- * Increaseing the clock voltage enable us to use a faster vertical clock speed (faster readout),
- * at the expense of more read noise.
- */
-static int VS_Amplitude = 0;
-/**
  * Boolean, whether to use the recomended fastest vertical shift speed index (TRUE), or try and override
  * using VS_Speed_Index.
  * @see #VS_Speed_Index
@@ -122,6 +120,16 @@ static char *Fits_Filename = NULL;
  * Filename for configuration directory. 
  */
 static char *Config_Dir = NULL;
+/**
+ * Boolean whether to call CCD_Setup_Shutdown at the end of the test.
+ * This may switch off the cooler. Default value is TRUE.
+ */
+static int Call_Setup_Shutdown = TRUE;
+/**
+ * Boolean whether to call CCD_Setup_Startup at the start of the test.
+ * This may switch on the cooler. Default value is TRUE.
+ */
+static int Call_Setup_Startup = TRUE;
 
 /* internal routines */
 static int Parse_Arguments(int argc, char *argv[]);
@@ -136,6 +144,8 @@ static void Test_Fits_Header_Error(int status);
  * @return This function returns 0 if the program succeeds, and a positive integer if it fails.
  * @see #Temperature
  * @see #Set_Temperature
+ * @see #Call_Setup_Shutdown
+ * @see #Call_Setup_Startup
  * @see #Size_X
  * @see #Size_Y
  * @see #Bin_X
@@ -146,9 +156,10 @@ static void Test_Fits_Header_Error(int status);
  * @see #Exposure_Length
  * @see #Fits_Filename
  * @see #Config_Dir
- * @see #VS_Amplitude
  * @see #Use_Recommended_VS
  * @see #VS_Speed_Index
+ * @see #DEFAULT_CONFIG_DIR
+ * @see ../cdocs/ccd_setup.html#CCD_Setup_Config_Directory_Set
  */
 int main(int argc, char *argv[])
 {
@@ -161,18 +172,24 @@ int main(int argc, char *argv[])
 	int i,retval,value;
 
 /* parse arguments */
+	fprintf(stdout,"Setting up default config dir.\n");
+	if(!CCD_Setup_Config_Directory_Set(DEFAULT_CONFIG_DIR))
+		return 1;
 	fprintf(stdout,"Parsing Arguments.\n");
 	if(!Parse_Arguments(argc,argv))
 		return 1;
 /* set text/interface options */
 	CCD_Global_Set_Log_Handler_Function(CCD_Global_Log_Handler_Stdout);
-	fprintf(stdout,"Calling CCD_Setup_Startup:VS_Amplitude = %d,Use_Recommended_VS = %d, VS_Speed_Index = %d\n",
-		VS_Amplitude,Use_Recommended_VS,VS_Speed_Index);
-	retval = CCD_Setup_Startup(VS_Amplitude,Use_Recommended_VS,VS_Speed_Index);
-	if(retval == FALSE)
+	if(Call_Setup_Startup)
 	{
-		CCD_Global_Error();
-		return 2;
+		fprintf(stdout,"Calling CCD_Setup_Startup:Use_Recommended_VS = %d, VS_Speed_Index = %d\n",
+			Use_Recommended_VS,VS_Speed_Index);
+		retval = CCD_Setup_Startup(Use_Recommended_VS,VS_Speed_Index);
+		if(retval == FALSE)
+		{
+			CCD_Global_Error();
+			return 2;
+		}
 	}
 	/* temperature control */
 	if(Set_Temperature)
@@ -247,12 +264,15 @@ int main(int argc, char *argv[])
 	}
 	fprintf(stdout,"Command Completed.\n");
 /* close  */
-	fprintf(stdout,"CCD_Setup_Shutdown\n");
-	retval = CCD_Setup_Shutdown();
-	if(retval == FALSE)
+	if(Call_Setup_Shutdown)
 	{
-		CCD_Global_Error();
-		return 2;
+		fprintf(stdout,"CCD_Setup_Shutdown\n");
+		retval = CCD_Setup_Shutdown();
+		if(retval == FALSE)
+		{
+			CCD_Global_Error();
+			return 2;
+		}
 	}
 	return 0;
 }
@@ -272,14 +292,13 @@ static void Help(void)
 	fprintf(stdout,"\t[-co[nfig_dir] <directory>]\n");
 	fprintf(stdout,"\t[-l[og_level] <verbosity>][-h[elp]]\n");
 	fprintf(stdout,"\t[-temperature <temperature>]\n");
-	fprintf(stdout,"\t[-g[ain] <0..100>]\n");
 	fprintf(stdout,"\t[-xs[ize] <no. of pixels>][-ys[ize] <no. of pixels>]\n");
 	fprintf(stdout,"\t[-xb[in] <binning factor>][-yb[in] <binning factor>]\n");
 	fprintf(stdout,"\t[-w[indow] <xstart> <ystart> <xend> <yend>]\n");
 	fprintf(stdout,"\t[-f[its_filename] <filename>]\n");
 	fprintf(stdout,"\t[-b[ias]][-d[ark] <exposure length>][-e[xpose] <exposure length>]\n");
-	fprintf(stdout,"\t[-vs_amplitude|-vsa <vs_amplitude>]\n");
 	fprintf(stdout,"\t[-vs_speed_index|-vsi <vs speed index>]\n");
+	fprintf(stdout,"\t[-nostartup][-noshutdown]\n");
 	fprintf(stdout,"\n");
 	fprintf(stdout,"\t-help prints out this message and stops the program.\n");
 	fprintf(stdout,"\n");
@@ -287,8 +306,9 @@ static void Help(void)
 	fprintf(stdout,"\t<temperature> should be a valid double, a temperature in degrees Celcius.\n");
 	fprintf(stdout,"\t<exposure length> is a positive integer in milliseconds.\n");
 	fprintf(stdout,"\t<no. of pixels> and <binning factor> is a positive integer.\n");
-	fprintf(stdout,"\t<vs_amplitude> is a number 0-4, 0 is 'normal', 1-4 increases vertical clock voltage.\n");
 	fprintf(stdout,"\t<vs speed index> is a index into the list of vertical shift speeds.\n");
+	fprintf(stdout,"\t-noshutdown stops this invocation calling Andor_Setup_Shutdown,\n"
+		"\t\twhich may close down the temperature control sub-system..\n");
 }
 
 /**
@@ -296,6 +316,8 @@ static void Help(void)
  * @param argc The number of arguments sent to the program.
  * @param argv An array of argument strings.
  * @see #Help
+ * @see #Call_Setup_Shutdown
+ * @see #Call_Setup_Startup
  * @see #Set_Temperature
  * @see #Temperature
  * @see #Size_X
@@ -308,11 +330,11 @@ static void Help(void)
  * @see #Exposure_Length
  * @see #Fits_Filename
  * @see #Config_Dir
- * @see #VS_Amplitude
  * @see #Use_Recommended_VS
  * @see #VS_Speed_Index
  * @see ../cdocs/ccd_global.html#CCD_Global_Set_Log_Filter_Function
  * @see ../cdocs/ccd_global.html#CCD_Global_Set_Log_Filter_Level
+ * @see ../cdocs/ccd_setup.html#CCD_Setup_Config_Directory_Set
  */
 static int Parse_Arguments(int argc, char *argv[])
 {
@@ -325,6 +347,8 @@ static int Parse_Arguments(int argc, char *argv[])
 			if((i+1)<argc)
 			{
 				Config_Dir = argv[i+1];
+				if(!CCD_Setup_Config_Directory_Set(Config_Dir))
+					return FALSE;
 				i++;
 			}
 			else
@@ -398,6 +422,14 @@ static int Parse_Arguments(int argc, char *argv[])
 			Help();
 			exit(0);
 		}
+		else if((strcmp(argv[i],"-noshutdown")==0))
+		{
+			Call_Setup_Shutdown = FALSE;
+		}
+		else if((strcmp(argv[i],"-nostartup")==0))
+		{
+			Call_Setup_Startup = FALSE;
+		}
 		else if(strcmp(argv[i],"-temperature")==0)
 		{
 			if((i+1)<argc)
@@ -435,25 +467,6 @@ static int Parse_Arguments(int argc, char *argv[])
 			else
 			{
 				fprintf(stderr,"Parse_Arguments:Log Level requires a level.\n");
-				return FALSE;
-			}
-		}
-		else if((strcmp(argv[i],"-vs_amplitude")==0)||(strcmp(argv[i],"-vsa")==0))
-		{
-			if((i+1)<argc)
-			{
-				retval = sscanf(argv[i+1],"%d",&VS_Amplitude);
-				if(retval != 1)
-				{
-					fprintf(stderr,"Parse_Arguments:Parsing vertical speed amplitude %s failed.\n",
-						argv[i+1]);
-					return FALSE;
-				}
-				i++;
-			}
-			else
-			{
-				fprintf(stderr,"Parse_Arguments:vertical speed amplitude requires a number 0-4.\n");
 				return FALSE;
 			}
 		}

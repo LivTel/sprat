@@ -242,7 +242,7 @@ int CCD_Temperature_Cooler_On(void)
 
 	Temperature_Error_Number = 0;
 #if LOGGING > 3
-	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Cooler_On",LOG_VERBOSITY_VERBOSE,NULL,"started.");
+	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Cooler_On",LOG_VERBOSITY_VERBOSE,"CCD","started.");
 #endif
 	andor_retval = CoolerON();
 	if(andor_retval != DRV_SUCCESS)
@@ -253,7 +253,7 @@ int CCD_Temperature_Cooler_On(void)
 		return FALSE;
 	}
 #if LOGGING > 3
-	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Cooler_On",LOG_VERBOSITY_VERBOSE,NULL,"finished.");
+	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Cooler_On",LOG_VERBOSITY_VERBOSE,"CCD","finished.");
 #endif
 	return TRUE;
 }
@@ -273,7 +273,7 @@ int CCD_Temperature_Cooler_Off(void)
 
 	Temperature_Error_Number = 0;
 #if LOGGING > 3
-	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Cooler_Off",LOG_VERBOSITY_VERBOSE,NULL,"started.");
+	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Cooler_Off",LOG_VERBOSITY_VERBOSE,"CCD","started.");
 #endif
 	andor_retval = CoolerOFF();
 	if(andor_retval != DRV_SUCCESS)
@@ -284,7 +284,7 @@ int CCD_Temperature_Cooler_Off(void)
 		return FALSE;
 	}
 #if LOGGING > 3
-	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Cooler_Off",LOG_VERBOSITY_VERBOSE,NULL,"finished.");
+	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Cooler_Off",LOG_VERBOSITY_VERBOSE,"CCD","finished.");
 #endif
 	return TRUE;
 }
@@ -305,7 +305,7 @@ int CCD_Temperature_Get_Cached_Temperature(double *temperature,enum CCD_TEMPERAT
 	char time_buff[32];
 
 #if LOGGING > 0
-	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Get_Cached_Temperature",LOG_VERBOSITY_VERBOSE,NULL,
+	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Get_Cached_Temperature",LOG_VERBOSITY_VERBOSE,"CCD",
 		       "CCD_Temperature_Get_Cached_Temperature() started.");
 #endif
 	if(temperature != NULL)
@@ -313,7 +313,7 @@ int CCD_Temperature_Get_Cached_Temperature(double *temperature,enum CCD_TEMPERAT
 		(*temperature) = Temperature_Data.Cached_Temperature;
 #if LOGGING > 5
 		CCD_Global_Log_Format("ccd","ccd_temperature.c","CCD_Temperature_Get_Cached_Temperature",
-				      LOG_VERBOSITY_VERBOSE,NULL,
+				      LOG_VERBOSITY_VERBOSE,"CCD",
 				      "CCD_Temperature_Get_Cached_Temperature() found cached temperature %.2f.",
 				      Temperature_Data.Cached_Temperature);
 #endif
@@ -323,7 +323,7 @@ int CCD_Temperature_Get_Cached_Temperature(double *temperature,enum CCD_TEMPERAT
 		(*temperature_status) = Temperature_Data.Cached_Temperature_Status;
 #if LOGGING > 5
 		CCD_Global_Log_Format("ccd","ccd_temperature.c","CCD_Temperature_Get_Cached_Temperature",
-				      LOG_VERBOSITY_VERBOSE,NULL,
+				      LOG_VERBOSITY_VERBOSE,"CCD",
 				   "CCD_Temperature_Get_Cached_Temperature() found cached temperature status %d(%s).",
 				      Temperature_Data.Cached_Temperature_Status,
 				      CCD_Temperature_Status_To_String(Temperature_Data.Cached_Temperature_Status));
@@ -335,13 +335,13 @@ int CCD_Temperature_Get_Cached_Temperature(double *temperature,enum CCD_TEMPERAT
 #if LOGGING > 5
 		CCD_Global_Get_Time_String(Temperature_Data.Cache_Date_Stamp,time_buff,31);
 		CCD_Global_Log_Format("ccd","ccd_temperature.c","CCD_Temperature_Get_Cached_Temperature",
-				      LOG_VERBOSITY_VERBOSE,NULL,
+				      LOG_VERBOSITY_VERBOSE,"CCD",
 				      "CCD_Temperature_Get_Cached_Temperature() found cache date stamp %d(%s).",
 				      Temperature_Data.Cache_Date_Stamp.tv_sec,time_buff);
 #endif
 	}
 #if LOGGING > 0
-	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Get_Cached_Temperature",LOG_VERBOSITY_VERBOSE,NULL,
+	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Get_Cached_Temperature",LOG_VERBOSITY_VERBOSE,"CCD",
 		       "CCD_Temperature_Get_Cached_Temperature() returned TRUE.");
 #endif
 	return TRUE;
@@ -356,13 +356,13 @@ int CCD_Temperature_Get_Cached_Temperature(double *temperature,enum CCD_TEMPERAT
 int CCD_Temperature_Target_Temperature_Get(double *target_temperature)
 {
 #if LOGGING > 0
-	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Target_Temperature_Get",LOG_VERBOSITY_VERBOSE,NULL,
+	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Target_Temperature_Get",LOG_VERBOSITY_VERBOSE,"CCD",
 		       "CCD_Temperature_Target_Temperature_Get() started.");
 #endif
 	if(target_temperature != NULL)
 		(*target_temperature) = Temperature_Data.Target_Temperature;
 #if LOGGING > 0
-	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Target_Temperature_Get",LOG_VERBOSITY_VERBOSE,NULL,
+	CCD_Global_Log("ccd","ccd_temperature.c","CCD_Temperature_Target_Temperature_Get",LOG_VERBOSITY_VERBOSE,"CCD",
 		       "CCD_Temperature_Target_Temperature_Get() returned TRUE.");
 #endif
 	return TRUE;

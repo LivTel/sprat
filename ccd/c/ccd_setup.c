@@ -40,10 +40,6 @@
 #include "ccd_setup.h"
 
 /**
- * Default Vertical Shift clock voltage amplitude, 0 is normal.
- */
-#define DEFAULT_VS_AMPLITUDE (0)
-/**
  * Default horizontal shift speed (0).
  */
 #define DEFAULT_HS_SPEED     (0)
@@ -182,17 +178,14 @@ int CCD_Setup_Config_Directory_Set(char *directory)
  * <li>Call <b>Initialize</b> to initialise the andor library using the selected config directory.
  * <li>Calls <b>SetReadMode</b> to set the Andor library read mode to image.
  * <li>Calls <b>SetAcquisitionMode</b> to set the Andor library to acquire a single image at a time.
- * <li>We call <b>GetNumberVSSpeeds, GetVSSpeed, SetVSAmplitude, GetFastestRecommendedVSSpeed, SetVSSpeed</b>
- *     to examine vertical shift speed, increase vertical clock voltage, and use the fastest possible speed.
+ * <li>We call <b>GetNumberVSSpeeds, GetVSSpeed, GetFastestRecommendedVSSpeed, SetVSSpeed</b>
+ *     to examine vertical shift speed, and use the fastest possible speed.
  * <li>Calls <b>GetNumberHSSpeeds,GetHSSpeed, SetHSSpeed(0,0)</b> 
  *         to set the horzontal readout speed to the fastest (10 MHz).
  * <li>We call <b>GetNumberADChannels</b> to log the A/D channels available.
- * <li>Calls <b>SetBaselineClamp(1)</b> to set the baseline clamp on.
  * <li>Calls <b>GetDetector</b> to get the detector dimensions and save then to <b>Setup_Data</b>.
  * <li>Calls <b>SetShutter</b> to set the Andor library shutter settings to auto with no shutter delay.
  * <li>Calls <b>SetFrameTransferMode(1)</b> to use the frame transfer.
- * @param vs_amplitude Amplitude of vertical clock voltage. Used for increasing vertical clock speed :- therefore
- *        readout speed, at the expense of a higher read noise. Values 0 (normal), 1-4.
  * @param use_recommended_vs Whether to use the fastest recommended VS, or vs_speed_index.
  * @param vs_speed_index Vertical clock shift speed index to use, if use_recommended_vs is FALSE.
  * @return The routine returns TRUE on success, and FALSE if an error occurs.
@@ -202,7 +195,7 @@ int CCD_Setup_Config_Directory_Set(char *directory)
  * @see ccd_global.html#CCD_Global_Andor_ErrorCode_To_String
  * @see ccd_global.html#CCD_Global_Log
  */
-int CCD_Setup_Startup(int vs_amplitude,int use_recommended_vs,int vs_speed_index)
+int CCD_Setup_Startup(int use_recommended_vs,int vs_speed_index)
 {
 	long camera_count;
 	unsigned int andor_retval;
@@ -232,7 +225,7 @@ int CCD_Setup_Startup(int vs_amplitude,int use_recommended_vs,int vs_speed_index
 		return FALSE;
 	}
 #if LOGGING > 5
-	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,NULL,
+	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
 			      "Andor library reports %d cameras.",camera_count);
 #endif /* LOGGING */
 	if((Setup_Data.Selected_Camera >= camera_count) || (Setup_Data.Selected_Camera < 0))
@@ -253,7 +246,7 @@ int CCD_Setup_Startup(int vs_amplitude,int use_recommended_vs,int vs_speed_index
 	}
 	/* set current camera */
 #if LOGGING > 5
-	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,NULL,
+	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
 			      "SetCurrentCamera(%d).",Setup_Data.Camera_Handle);
 #endif /* LOGGING */
 	andor_retval = SetCurrentCamera(Setup_Data.Camera_Handle);
@@ -291,7 +284,7 @@ int CCD_Setup_Startup(int vs_amplitude,int use_recommended_vs,int vs_speed_index
 		return FALSE;
 	}
 #if LOGGING > 0
-	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"ANDOR",
+	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
 			      "CCD_Setup_Startup:Selected Camera %d has serial number %d.",
 			      Setup_Data.Selected_Camera,serial_number);
 #endif
@@ -305,13 +298,13 @@ int CCD_Setup_Startup(int vs_amplitude,int use_recommended_vs,int vs_speed_index
 		return FALSE;
 	}
 #if LOGGING > 0
-	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"ANDOR",
+	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
 			      "CCD_Setup_Startup:Selected Camera %d has head model '%s'.",
 			      Setup_Data.Selected_Camera,head_model_name);
 #endif
 	strcpy(Setup_Data.Head_Model_Name,head_model_name);
 #if LOGGING > 0
-	CCD_Global_Log("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"ANDOR",
+	CCD_Global_Log("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
 		       "CCD_Setup_Startup:GetDetector:Getting full detector dimensions.");
 #endif
 	retval = GetDetector(&(Setup_Data.Detector_X_Pixel_Count),&(Setup_Data.Detector_Y_Pixel_Count));
@@ -323,7 +316,7 @@ int CCD_Setup_Startup(int vs_amplitude,int use_recommended_vs,int vs_speed_index
 		return FALSE;
 	}
 #if LOGGING > 0
-	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"ANDOR",
+	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
 			      "CCD_Setup_Startup:Full detector dimensions: %d x %d.",
 			      Setup_Data.Detector_X_Pixel_Count,Setup_Data.Detector_Y_Pixel_Count);
 #endif
@@ -387,22 +380,6 @@ int CCD_Setup_Startup(int vs_amplitude,int use_recommended_vs,int vs_speed_index
 			if(i == vs_speed_index)
 				Setup_Data.VSSpeed = speed;
 		}
-	}
-	/* get fastest safe vertical speed */
-	/* Call SetVSAmplitude(amplitude) to increase vertical clock voltages and therefore
-	** allows GetFastestRecommendedVSSpeed to return a faster speed. More read noise though. 
-	** vs_amplitude = 0 is normal. 1..4 may increase the max speed returned by GetFastestRecommendedVSSpeed */
-#if LOGGING > 3
-	CCD_Global_Log_Format("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
-			       "Calling SetVSAmplitude(%d).",vs_amplitude);
-#endif /* LOGGING */
-	andor_retval = SetVSAmplitude(vs_amplitude);
-	if(andor_retval != DRV_SUCCESS)
-	{
-		Setup_Error_Number = 16;
-		sprintf(Setup_Error_String,"CCD_Setup_Startup: SetVSAmplitude(%d) failed %s(%u).",
-			vs_amplitude,CCD_Global_Andor_ErrorCode_To_String(andor_retval),andor_retval);
-		return FALSE;
 	}
 #if LOGGING > 3
 	CCD_Global_Log("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
@@ -488,19 +465,7 @@ int CCD_Setup_Startup(int vs_amplitude,int use_recommended_vs,int vs_speed_index
 		return FALSE;
 	}
 #if LOGGING > 0
-	CCD_Global_Log("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"ANDOR",
-		       "CCD_Setup_Startup:SetBaselineClamp(1):Turn baseline clamp on.");
-#endif
-	retval = SetBaselineClamp(1); 
-	if(retval != DRV_SUCCESS)
-	{
-		Setup_Error_Number = 22;
-		sprintf(Setup_Error_String,"CCD_Setup_Startup:SetBaselineClamp(1) failed %d(%s).",retval,
-			CCD_Global_Andor_ErrorCode_To_String(retval));
-		return FALSE;
-	}
-#if LOGGING > 0
-	CCD_Global_Log("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"ANDOR",
+	CCD_Global_Log("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
 		       "CCD_Setup_Startup:SetCoolerMode(1):Setting cooler to maintain temperature on shutdown.");
 #endif
 	retval = SetCoolerMode(1);
@@ -536,7 +501,7 @@ int CCD_Setup_Shutdown(void)
 		       "CCD_Setup_Stutdown() started.");
 #endif
 #if LOGGING > 0
-	CCD_Global_Log("ccd","ccd_setup.c","CCD_Setup_Shutdown",LOG_VERBOSITY_VERBOSE,"ANDOR",
+	CCD_Global_Log("ccd","ccd_setup.c","CCD_Setup_Shutdown",LOG_VERBOSITY_VERBOSE,"CCD",
 		       "CCD_Temperature_Set:CoolerOFF():Turning off cooler:This should ramp to ambient.");
 #endif
 	retval = CoolerOFF();
@@ -550,7 +515,7 @@ int CCD_Setup_Shutdown(void)
 	/* I don't think we should do this, CoolerOFF will slowly ramp to ambient,
 	** SetCoolerMode(0) + Shutdown() does NOT slowly ramp to ambient according to API docs
 	#if LOGGING > 0
-	CCD_Global_Log("ccd","ccd_setup.c","CCD_Setup_Shutdown",LOG_VERBOSITY_VERBOSE,"ANDOR",
+	CCD_Global_Log("ccd","ccd_setup.c","CCD_Setup_Shutdown",LOG_VERBOSITY_VERBOSE,"CCD",
 	"CCD_Setup_Shutdown:Call Andor ShutDown routine.");
 	#endif
 	retval = ShutDown(); 
@@ -625,7 +590,7 @@ extern int CCD_Setup_Dimensions(int ncols,int nrows,int hbin,int vbin,
 	/* check unbinned window can be binned into a whole number of pixels.
 	** Otherwise Andor GetImage code fails with P2_INVALID. */
 #if LOGGING > 9
-	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Dimensions",LOG_VERBOSITY_VERY_VERBOSE,NULL,
+	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Dimensions",LOG_VERBOSITY_VERY_VERBOSE,"CCD",
 			       "Check window can be binned into a whole number of pixels:"
 			       "(((hend %d - hstart %d)+1)%%hbin %d) = %d.",
 			       Setup_Data.Horizontal_End,Setup_Data.Horizontal_Start,Setup_Data.Horizontal_Bin,
@@ -640,7 +605,7 @@ extern int CCD_Setup_Dimensions(int ncols,int nrows,int hbin,int vbin,
 		return FALSE;
 	}
 #if LOGGING > 9
-	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Dimensions",LOG_VERBOSITY_VERY_VERBOSE,NULL,
+	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Dimensions",LOG_VERBOSITY_VERY_VERBOSE,"CCD",
 			       "Check window can be binned into a whole number of pixels:"
 			       "(((vend %d - vstart %d)+1)%%vbin %d) = %d.",
 			       Setup_Data.Vertical_End,Setup_Data.Vertical_Start,Setup_Data.Vertical_Bin,
@@ -655,7 +620,7 @@ extern int CCD_Setup_Dimensions(int ncols,int nrows,int hbin,int vbin,
 		return FALSE;
 	}
 #if LOGGING > 1
-	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Dimensions",LOG_VERBOSITY_VERBOSE,NULL,
+	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Dimensions",LOG_VERBOSITY_VERBOSE,"CCD",
 			       "Calling SetImage(hbin=%d,vbin=%d,hstart=%d,hend=%d,vstart=%d,vend=%d).",
 			       Setup_Data.Horizontal_Bin,Setup_Data.Vertical_Bin,
 			       Setup_Data.Horizontal_Start,Setup_Data.Horizontal_End,
@@ -895,7 +860,7 @@ int CCD_Setup_Get_Camera_Identification(char *head_model_name,int *serial_number
 		return FALSE;
 	}
 #if LOGGING > 0
-	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Get_Camera_Identification",LOG_VERBOSITY_VERBOSE,"ANDOR",
+	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Get_Camera_Identification",LOG_VERBOSITY_VERBOSE,"CCD",
 			      "CCD_Setup_Get_Camera_Identification:Camera has serial number %d.",
 			      (*serial_number));
 #endif
@@ -908,7 +873,7 @@ int CCD_Setup_Get_Camera_Identification(char *head_model_name,int *serial_number
 		return FALSE;
 	}
 #if LOGGING > 0
-	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Get_Camera_Identification",LOG_VERBOSITY_VERBOSE,"ANDOR",
+	CCD_Global_Log_Format("ccd","ccd_setup.c","CCD_Setup_Get_Camera_Identification",LOG_VERBOSITY_VERBOSE,"CCD",
 			      "CCD_Setup_Get_Camera_Identification:Camera has head model '%s'.",head_model_name);
 #endif
 	return TRUE;
@@ -951,7 +916,7 @@ int CCD_Setup_Allocate_Image_Buffer(void **buffer,size_t *buffer_length)
 	size_t binned_pixel_count;
 
 #if LOGGING > 0
-	CCD_Global_Log("ccd","ccd_setup.c","CCD_Setup_Allocate_Image_Buffer",LOG_VERBOSITY_VERBOSE,"ANDOR",
+	CCD_Global_Log("ccd","ccd_setup.c","CCD_Setup_Allocate_Image_Buffer",LOG_VERBOSITY_VERBOSE,"CCD",
 			"started.");
 #endif
 	if(buffer == NULL)
@@ -978,7 +943,7 @@ int CCD_Setup_Allocate_Image_Buffer(void **buffer,size_t *buffer_length)
 		return FALSE;
 	}
 #if LOGGING > 0
-	CCD_Global_Log("ccd","ccd_setup.c","CCD_Setup_Allocate_Image_Buffer",LOG_VERBOSITY_VERBOSE,"ANDOR",
+	CCD_Global_Log("ccd","ccd_setup.c","CCD_Setup_Allocate_Image_Buffer",LOG_VERBOSITY_VERBOSE,"CCD",
 			"finished.");
 #endif
 	return TRUE;

@@ -156,7 +156,7 @@ int Sprat_Config_Get_Character(char *key, char *value)
 	char *string_value = NULL;
 	int retval;
 
-#ifdef SPRAT_DEBUG
+#if SPRAT_DEBUG > 0
 	Sprat_Global_Log_Format("sprat","sprat_config.c","Sprat_Config_Get_Character",LOG_VERBOSITY_VERBOSE,NULL,
 			       "started(%s,%p).",key,value);
 #endif
@@ -186,7 +186,7 @@ int Sprat_Config_Get_Character(char *key, char *value)
 	}
 	(*value) = string_value[0];
 	free(string_value);
-#ifdef SPRAT_DEBUG
+#if SPRAT_DEBUG > 0
 	Sprat_Global_Log_Format("sprat","sprat_config.c","Sprat_Config_Get_Character",LOG_VERBOSITY_VERBOSE,NULL,
 			       "(%s) returned %c (%d).",key,(*value),retval);
 #endif

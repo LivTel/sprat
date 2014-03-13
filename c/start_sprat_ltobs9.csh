@@ -9,5 +9,5 @@ foreach dir ( "/home/dev/bin/lib/i386-linux" "/home/dev/bin/estar/lib/i386-linux
     setenv LD_LIBRARY_PATH "${dir}:${LD_LIBRARY_PATH}"
 end
 cd ~dev/bin/sprat/c/i386-linux
-./sprat -config_filename /home/dev/bin/sprat/c/i386-linux/ltobs9.sprat.c.properties
+./sprat -config_filename /home/dev/bin/sprat/c/i386-linux/ltobs9.sprat.c.properties -sprat_log_level 5 -ccd_log_level 5 -command_server_log_level 5
 #-help 

@@ -1,8 +1,41 @@
 SPRAT User Instructions
 -----------------------
-$Header: /home/dev/src/sprat/docs/RCS/sprat_user_instructions.txt,v 1.2 2012/08/14 13:33:14 cjm Exp cjm $
+$HeadURL: /home/dev/src/sprat/docs/RCS/sprat_user_instructions.txt,v 1.2 2012/08/14 13:33:14 cjm Exp cjm $
 
+Robotic C layer
+===============
+
+Start the robotic software (if it is not already started/running using the autobooter):
+cd /icc/bin/sprat/c/i386-linux
+./start_sprat_csh
+
+Help:
+~dev/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "help"
+
+Shutdown:
+~dev/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "shutdown"
+
+Temperature:
+~dev/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "status temperature get"
+~dev/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "status temperature status"
+~dev/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "temperature set 20"
+
+Config:
+~dev/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "config 1 1"
+
+Exposuse:
+~dev/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "bias"
+~dev/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "expose 1000"
+~dev/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "dark 1000"
+~dev/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "multbias 10"
+
+
+Command line 
+============
 The sprat test programs are located in the following directory:
+/icc/bin/sprat/ccd/test/i386-linux
+
+Note the low level command line programs cannot be run whilst the robotic C layer 'sprat' executable is running.
 
 Temperature
 -----------
@@ -40,10 +73,13 @@ Keep running the program, which will also display the current temperature of the
 the current temperature of the system is warm enough.
 
 
-$Log: sprat_user_instructions.txt,v $
-Revision 1.2  2012/08/14 13:33:14  cjm
-Added warming up section.
+Using higher level test programs (using the CCD library used by the robotic software)
+================================
+cd /icc/bin/sprat/ccd/test/i386-linux/
+Cooldown:
+./test_temperature -set_temperature -60 -noshutdown
+Warmup:
+./test_temperature -set_temperature 20 -noshutdown
 
-Revision 1.1  2012/08/14 11:27:04  cjm
-Initial revision
-
+Exposure:
+./test_exposure -l 5 -expose 1000 -f /home/eng/tmp/20140312/test2.fits -noshutdown

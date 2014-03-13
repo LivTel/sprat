@@ -54,7 +54,7 @@ static enum COMMAND_ID Command = COMMAND_ID_NONE;
 /**
  * Filename for configuration dir. 
  */
-static char *Config_Dir = "/usr/local/andor/etc";
+static char *Config_Dir = "/usr/local/etc/andor";
 /**
  * Boolean whether to call CCD_Setup_Shutdown at the end of the test.
  * This may switch off the cooler. Default value is TRUE.
@@ -223,7 +223,7 @@ static int Parse_Arguments(int argc, char *argv[])
 				return FALSE;
 			}
 		}
-		else if((strcmp(argv[i],"-get")==0)||(strcmp(argv[i],"-g")==0))
+		else if((strcmp(argv[i],"-get_temperature")==0)||(strcmp(argv[i],"-g")==0))
 		{
 			Command = COMMAND_ID_GET;
 		}
