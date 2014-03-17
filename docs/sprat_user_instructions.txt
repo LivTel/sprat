@@ -9,6 +9,9 @@ Start the robotic software (if it is not already started/running using the autob
 cd /icc/bin/sprat/c/i386-linux
 ./start_sprat_csh
 
+Using send_command to send commands:
+------------------------------------
+
 Help:
 ~dev/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "help"
 
@@ -29,6 +32,47 @@ Exposuse:
 ~dev/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "dark 1000"
 ~dev/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "multbias 10"
 
+Using the Java command layer to send commands:
+----------------------------------------------
+
+Config:
+java ngat.sprat.ccd.command.ConfigCommand sprat1 8367 1 1
+
+Bias/Dark/Exposure:
+java ngat.sprat.ccd.command.BiasCommand sprat1 8367
+java ngat.sprat.ccd.command.DarkCommand sprat1 8367 10000
+java ngat.sprat.ccd.command.MultBiasCommand sprat1 8367 10
+java ngat.sprat.ccd.command.MultDarkCommand sprat1 8367 10000 5
+java ngat.sprat.ccd.command.MultrunCommand sprat1 8367 10000 3 true
+
+Abort:
+java ngat.sprat.ccd.command.AbortCommand sprat1 8367
+
+Temperature control:
+java ngat.sprat.ccd.command.StatusTemperatureGetCommand sprat1 8367
+java ngat.sprat.ccd.command.StatusTemperatureStatusCommand sprat1 8367
+
+FITS Header manipulation:
+java ngat.sprat.ccd.command.FitsHeaderAddCommand sprat1 8367 ISITTRUE boolean true
+java ngat.sprat.ccd.command.FitsHeaderAddCommand sprat1 8367 MYFLOAT float 1.2345678
+java ngat.sprat.ccd.command.FitsHeaderAddCommand sprat1 8367 MYINT integer 2
+java ngat.sprat.ccd.command.FitsHeaderAddCommand sprat1 8367 MYNAME string "Chris Mottram"
+java ngat.sprat.ccd.command.FitsHeaderDeleteCommand sprat1 8367 ISITTRUE
+java ngat.sprat.ccd.command.FitsHeaderClearCommand sprat1 8367 
+
+Status:
+java ngat.sprat.ccd.command.StatusTemperatureGetCommand sprat1 8367
+java ngat.sprat.ccd.command.StatusTemperatureStatusCommand sprat1 8367
+java ngat.sprat.ccd.command.StatusMultrunIndexCommand sprat1 8367
+java ngat.sprat.ccd.command.StatusMultrunCountCommand sprat1 8367
+java ngat.sprat.ccd.command.StatusExposureStatusCommand sprat1 8367
+java ngat.sprat.ccd.command.StatusExposureStartTimeCommand sprat1 8367
+java ngat.sprat.ccd.command.StatusExposureMultrunCommand sprat1 8367
+java ngat.sprat.ccd.command.StatusExposureRunCommand sprat1 8367
+java ngat.sprat.ccd.command.StatusExposureLengthCommand sprat1 8367
+
+Shutdown:
+java ngat.sprat.ccd.command.ShutdownCommand sprat1 8367
 
 Command line 
 ============

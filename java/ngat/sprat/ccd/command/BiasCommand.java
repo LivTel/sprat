@@ -45,10 +45,13 @@ public class BiasCommand extends MultrunFilenameReplyCommand implements Runnable
 	 * @see Command#setAddress
 	 * @see Command#setPortNumber
 	 * @exception UnknownHostException Thrown if the address in unknown.
+	 * @see #commandString
+	 * @see #COMMAND_STRING
 	 */
 	public BiasCommand(String address,int portNumber) throws UnknownHostException
 	{
 		super();
+		commandString = COMMAND_STRING;
 		super.setAddress(address);
 		super.setPortNumber(portNumber);
 	}
