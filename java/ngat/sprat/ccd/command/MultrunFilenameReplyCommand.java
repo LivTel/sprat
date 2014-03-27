@@ -82,6 +82,8 @@ public class MultrunFilenameReplyCommand extends Command implements Runnable, Te
 		StringTokenizer st = null;
 		int tokenIndex;
 
+		logger.log(Logging.VERBOSITY_VERBOSE,
+			   "ngat.sprat.ccd.MultrunFilenameReplyCommand:parseReplyString:Started.");
 		super.parseReplyString();
 		st = new StringTokenizer(parsedReplyString," ");
 		if(parsedReplyOk == false)
@@ -97,10 +99,14 @@ public class MultrunFilenameReplyCommand extends Command implements Runnable, Te
 			{
 				// get next token 
 				token = st.nextToken();
-				logger.log(Logging.VERBOSITY_VERY_VERBOSE,this.getClass().getName()+
-					   ":parseReplyString:token "+tokenIndex+" = "+token+".");
+				logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+					   "ngat.sprat.ccd.MultrunFilenameReplyCommand:parseReplyString:token "+
+					   tokenIndex+" = "+token+".");
 				if(tokenIndex == 0)
 				{
+					logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+						   "ngat.sprat.ccd.MultrunFilenameReplyCommand:parseReplyString:"+
+						   "Parsing token "+token+" as multrun number.");
 					multrunNumber = Integer.parseInt(token);
 				}
 				else if(tokenIndex == 1)
@@ -109,21 +115,22 @@ public class MultrunFilenameReplyCommand extends Command implements Runnable, Te
 				}
 				else
 				{
-					logger.log(Logging.VERBOSITY_VERBOSE,this.getClass().getName()+
-						   ":parseReplyString:unknown token index "+
-						   tokenIndex+" = "+token+".");
+					logger.log(Logging.VERBOSITY_VERBOSE,
+						   "ngat.sprat.ccd.MultrunFilenameReplyCommand:parseReplyString:"+
+						   "unknown token index "+tokenIndex+" = "+token+".");
 				}
 				// increment index
 				tokenIndex++;
 			}// end while we have more tokens
-			logger.log(Logging.VERBOSITY_VERBOSE,"parseReplyString:finished.");
+			logger.log(Logging.VERBOSITY_VERBOSE,
+				   "ngat.sprat.ccd.MultrunFilenameReplyCommand:parseReplyString:finished.");
 		}// end try
 		catch(Exception e)
 		{
 			parsedReplyOk = false;
 			multrunNumber = 0;
 			filename = null;
-			logger.log(Logging.VERBOSITY_TERSE,
+			logger.log(Logging.VERBOSITY_TERSE,"ngat.sprat.ccd.MultrunFilenameReplyCommand:"+
 				   "parseReplyString:Failed to parse multrun filename data with exception:",e);
 			throw new Exception(this.getClass().getName()+
 					    ":parseReplyString:Failed to parse multrun filename data:"+

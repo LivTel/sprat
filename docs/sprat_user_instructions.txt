@@ -127,3 +127,11 @@ Warmup:
 
 Exposure:
 ./test_exposure -l 5 -expose 1000 -f /home/eng/tmp/20140312/test2.fits -noshutdown
+
+Mechanism Control
+=================
+
+
+java ngat.sprat.mechanism.command.TemperatureCommand spratmechanism 23 0
+
+~dev/bin/commandserver/test/i386-linux/send_command -h spratmechanism -p 23 -c "temperature 0"

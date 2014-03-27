@@ -7,6 +7,8 @@ import java.lang.*;
 import java.net.*;
 import java.util.*;
 
+import ngat.util.logging.*;
+
 /**
  * The "status exposure start_time" command is an extension of the Command, and returns the 
  * start_time of the current/last exposure as a timestamp.
@@ -24,12 +26,17 @@ public class StatusExposureStartTimeCommand extends Command implements Runnable
 	 */
 	public final static String COMMAND_STRING = new String("status exposure start_time");
 	/**
+	 * The logger to log messages to.
+	 */
+	protected Logger logger = null;
+	/**
 	 * The parsed reply timestamp.
 	 */
 	protected Date parsedReplyTimestamp = null;
 
 	/**
 	 * Default constructor.
+	 * @see #logger
 	 * @see Command
 	 * @see #commandString
 	 * @see #COMMAND_STRING
@@ -37,6 +44,7 @@ public class StatusExposureStartTimeCommand extends Command implements Runnable
 	public StatusExposureStartTimeCommand()
 	{
 		super();
+		logger = LogManager.getLogger(this);
 		commandString = COMMAND_STRING;
 	}
 
@@ -46,12 +54,14 @@ public class StatusExposureStartTimeCommand extends Command implements Runnable
 	 *     "localhost", "192.168.1.62"
 	 * @param portNumber An integer representing the port number the server is receiving command on.
 	 * @see Command
+	 * @see #logger
 	 * @see #COMMAND_STRING
 	 * @exception UnknownHostException Thrown if the address in unknown.
 	 */
 	public StatusExposureStartTimeCommand(String address,int portNumber) throws UnknownHostException
 	{
 		super(address,portNumber,COMMAND_STRING);
+		logger = LogManager.getLogger(this);
 	}
 
 	/**
@@ -73,12 +83,19 @@ public class StatusExposureStartTimeCommand extends Command implements Runnable
 		double second=0.0;
 		int sindex,tokenIndex,day=0,month=0,year=0,hour=0,minute=0;
 		
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.StatusExposureStartTimeCommand:Started.");
 		super.parseReplyString();
 		if(parsedReplyOk == false)
 		{
+			logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+				   "ngat.sprat.ccd.command.StatusExposureStartTimeCommand:"+
+				   "Superclass failed to parse, returning null.");
 			parsedReplyTimestamp = null;
 			return;
 		}
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.StatusExposureStartTimeCommand:Parsing:'"+parsedReplyString+"'.");
 		st = new StringTokenizer(parsedReplyString," ");
 		tokenIndex = 0;
 		while(st.hasMoreTokens())
@@ -89,6 +106,8 @@ public class StatusExposureStartTimeCommand extends Command implements Runnable
 				st.nextToken();
 			tokenIndex++;
 		}// end while
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,"ngat.sprat.ccd.command.StatusExposureStartTimeCommand:"+
+			   "Time stamp string:'"+timeStampString+"'.");
 		// timeStampString should be of the form: %Y-%m-%dT%H:%M:%S.sss
 		st = new StringTokenizer(timeStampString,"-T:");
 		tokenIndex = 0;
@@ -116,6 +135,8 @@ public class StatusExposureStartTimeCommand extends Command implements Runnable
 		calendar.set(year,month-1,day,hour,minute,(int)second);// month is zero-based.
 		// get timestamp from calendar 
 		parsedReplyTimestamp = calendar.getTime();
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,"ngat.sprat.ccd.command.StatusExposureStartTimeCommand:"+
+			   "Finished:Parsed time stamp:'"+parsedReplyTimestamp+"'.");
 	}
 
 	/**
@@ -159,6 +180,9 @@ public class StatusExposureStartTimeCommand extends Command implements Runnable
 		}
 		try
 		{
+			// setup some console logging
+			initialiseLogging();
+			// parse arguments
 			portNumber = Integer.parseInt(args[1]);
 			command = new StatusExposureStartTimeCommand(args[0],portNumber);
 			command.run();

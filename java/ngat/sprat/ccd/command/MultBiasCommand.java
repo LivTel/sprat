@@ -77,6 +77,9 @@ public class MultBiasCommand extends MultrunFilenameReplyCommand implements Runn
 		}
 		try
 		{
+			// setup some console logging
+			initialiseLogging();
+			// parse arguments
 			hostname = args[0];
 			portNumber = Integer.parseInt(args[1]);
 			exposureCount = Integer.parseInt(args[2]);

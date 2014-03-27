@@ -7,6 +7,8 @@ import java.lang.*;
 import java.net.*;
 import java.util.*;
 
+import ngat.util.logging.*;
+
 /**
  * The "status temperature status" command is an extension of the Command, and returns the 
  * current temperature status, and a timestamp stating when the temperature was measured.
@@ -44,6 +46,10 @@ public class StatusTemperatureStatusCommand extends Command implements Runnable
 	 */
 	public final static int CCD_TEMPERATURE_STATUS_UNKNOWN = 4;
 	/**
+	 * The logger to log messages to.
+	 */
+	protected Logger logger = null;
+	/**
 	 * The parsed reply timestamp.
 	 */
 	protected Date parsedReplyTimestamp = null;
@@ -59,6 +65,7 @@ public class StatusTemperatureStatusCommand extends Command implements Runnable
 
 	/**
 	 * Default constructor.
+	 * @see #logger
 	 * @see Command
 	 * @see #commandString
 	 * @see #COMMAND_STRING
@@ -67,6 +74,7 @@ public class StatusTemperatureStatusCommand extends Command implements Runnable
 	{
 		super();
 		commandString = COMMAND_STRING;
+		logger = LogManager.getLogger(this);
 	}
 
 	/**
@@ -74,6 +82,7 @@ public class StatusTemperatureStatusCommand extends Command implements Runnable
 	 * @param address A string representing the address of the server, i.e. "sprat1",
 	 *     "localhost", "192.168.1.62"
 	 * @param portNumber An integer representing the port number the server is receiving command on.
+	 * @see #logger
 	 * @see Command
 	 * @see #COMMAND_STRING
 	 * @exception UnknownHostException Thrown if the address in unknown.
@@ -81,6 +90,7 @@ public class StatusTemperatureStatusCommand extends Command implements Runnable
 	public StatusTemperatureStatusCommand(String address,int portNumber) throws UnknownHostException
 	{
 		super(address,portNumber,COMMAND_STRING);
+		logger = LogManager.getLogger(this);
 	}
 
 	/**
@@ -88,6 +98,7 @@ public class StatusTemperatureStatusCommand extends Command implements Runnable
 	 * In this case it is of the form: '<n> %Y-%m-%dT%H:%M:%S.sss <status>'
 	 * The first number is a success failure code, if it is zero a timestamp and temperature status follows.
 	 * @exception Exception Thrown if a parse error occurs.
+	 * @see #logger
 	 * @see #replyString
 	 * @see #parsedReplyString
 	 * @see #parsedReplyOk
@@ -108,14 +119,22 @@ public class StatusTemperatureStatusCommand extends Command implements Runnable
 		double second=0.0;
 		int sindex,tokenIndex,day=0,month=0,year=0,hour=0,minute=0;
 		
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.StatusTemperatureStatusCommand:parseReplyString:Started.");
 		super.parseReplyString();
 		if(parsedReplyOk == false)
 		{
+			logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+				   "ngat.sprat.ccd.command.StatusTemperatureStatusCommand:parseReplyString:"+
+				   "Superclass failed to parse reply successfully.");
 			parsedReplyTimestamp = null;
 			parsedReplyTemperatureStatus = 0;
 			parsedReplyTemperatureStatusString = null;
 			return;
 		}
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.StatusTemperatureStatusCommand:parseReplyString:Parsing '"+
+			   parsedReplyString+"'.");
 		st = new StringTokenizer(parsedReplyString," ");
 		tokenIndex = 0;
 		while(st.hasMoreTokens())
@@ -127,6 +146,8 @@ public class StatusTemperatureStatusCommand extends Command implements Runnable
 			tokenIndex++;
 		}// end while
 		// timeStampString should be of the form: %Y-%m-%dT%H:%M:%S.sss
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,"ngat.sprat.ccd.command.StatusTemperatureStatusCommand:"+
+			   "parseReplyString:Parsing timestamp string '"+timeStampString+"'.");
 		st = new StringTokenizer(timeStampString,"-T:");
 		tokenIndex = 0;
 		while(st.hasMoreTokens())
@@ -151,7 +172,12 @@ public class StatusTemperatureStatusCommand extends Command implements Runnable
 		calendar.set(year,month-1,day,hour,minute,(int)second);// month is zero-based.
 		// get timestamp from calendar 
 		parsedReplyTimestamp = calendar.getTime();
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,"ngat.sprat.ccd.command.StatusTemperatureStatusCommand:"+
+			   "parseReplyString:Parsed timestamp: '"+parsedReplyTimestamp+"'.");
 		// parse temperature status string into temperature status
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,"ngat.sprat.ccd.command.StatusTemperatureGetCommand:"+
+			   "parseReplyString:Parsing temperature status string: '"+
+			   parsedReplyTemperatureStatusString+"'.");
 		if(parsedReplyTemperatureStatusString.equals("OFF"))
 			parsedReplyTemperatureStatus = CCD_TEMPERATURE_STATUS_OFF;
 		else if(parsedReplyTemperatureStatusString.equals("AMBIENT"))
@@ -164,6 +190,11 @@ public class StatusTemperatureStatusCommand extends Command implements Runnable
 			parsedReplyTemperatureStatus = CCD_TEMPERATURE_STATUS_UNKNOWN;
 		else
 			parsedReplyTemperatureStatus = CCD_TEMPERATURE_STATUS_UNKNOWN;
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,"ngat.sprat.ccd.command.StatusTemperatureGetCommand:"+
+			   "parseReplyString:Parsed temperature status string: '"+
+			   parsedReplyTemperatureStatusString+"' with status value "+parsedReplyTemperatureStatus+".");
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.StatusTemperatureStatusCommand:parseReplyString:Finished.");
 	}
 
 	/**
@@ -260,6 +291,9 @@ public class StatusTemperatureStatusCommand extends Command implements Runnable
 		}
 		try
 		{
+			// setup some console logging
+			initialiseLogging();
+			// parse arguments
 			portNumber = Integer.parseInt(args[1]);
 			command = new StatusTemperatureStatusCommand(args[0],portNumber);
 			command.run();

@@ -5,9 +5,12 @@ package ngat.sprat.ccd.command;
 import java.io.*;
 import java.lang.*;
 import java.net.*;
+import java.text.*;
 
 import ngat.net.TelnetConnection;
 import ngat.net.TelnetConnectionListener;
+import ngat.util.logging.*;
+
 
 /**
  * The Command class is the base class for sending a command and getting a reply from the
@@ -58,9 +61,14 @@ public class Command implements Runnable, TelnetConnectionListener
 	 * The return code of the reply string, parsed as an integer.
 	 */
 	protected int returnCode = 0;
+	/**
+	 * The logger to log messages to.
+	 */
+	protected Logger logger = null;
 
 	/**
 	 * Default constructor. Construct the TelnetConnection and set this object to be the listener.
+	 * @see #logger
 	 * @see #telnetConnection
 	 */
 	public Command()
@@ -68,6 +76,7 @@ public class Command implements Runnable, TelnetConnectionListener
 		super();
 		telnetConnection = new TelnetConnection();
 		telnetConnection.setListener(this);
+		logger = LogManager.getLogger(this);
 	}
 
 	/**
@@ -77,6 +86,7 @@ public class Command implements Runnable, TelnetConnectionListener
 	 *     "localhost", "192.168.1.41"
 	 * @param portNumber An integer representing the port number the C layer is receiving command on.
 	 * @param commandString The string to send to the C layer as a command.
+	 * @see #logger
 	 * @see #telnetConnection
 	 * @see #commandString
 	 * @exception UnknownHostException Thrown if the address in unknown.
@@ -84,6 +94,10 @@ public class Command implements Runnable, TelnetConnectionListener
 	public Command(String address,int portNumber,String commandString) throws UnknownHostException
 	{
 		super();
+		logger = LogManager.getLogger(this);
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.Command:Constructor:Setting telnet connection to "+
+			   address+":"+portNumber+".");
 		telnetConnection = new TelnetConnection(address,portNumber);
 		telnetConnection.setListener(this);
 		this.commandString = commandString;
@@ -100,6 +114,9 @@ public class Command implements Runnable, TelnetConnectionListener
 	public void setAddress(String address) throws UnknownHostException
 	{
 		telnetConnection.setAddress(address);
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.Command:setAddress:Setting telnet connection address to "+
+			   address+".");
 	}
 
 	/**
@@ -111,6 +128,9 @@ public class Command implements Runnable, TelnetConnectionListener
 	public void setAddress(InetAddress address)
 	{
 		telnetConnection.setAddress(address);
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.Command:setAddress:Setting telnet connection address to "+
+			   address+".");
 	}
 
 	/**
@@ -122,6 +142,9 @@ public class Command implements Runnable, TelnetConnectionListener
 	public void setPortNumber(int portNumber)
 	{
 		telnetConnection.setPortNumber(portNumber);
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.Command:setAddress:Setting telnet connection port to "+
+			   portNumber+".");
 	}
 
 	/**
@@ -173,15 +196,26 @@ public class Command implements Runnable, TelnetConnectionListener
 	{
 		Thread thread = null;
 
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,"ngat.sprat.ccd.command.Command:sendCommand:Started.");
 		commandFinished = false;
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.Command:sendCommand:Opening the Telnet Connection.");
 		telnetConnection.open();
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,"ngat.sprat.ccd.command.Command:sendCommand:"+
+			   "Starting a reader thread to deal with the reply.");
 		thread = new Thread(telnetConnection,"Reader thread");
 		thread.start();
+		logger.log(Logging.VERBOSITY_INTERMEDIATE,
+			   "ngat.sprat.ccd.command.Command:sendCommand:Sending Command:"+commandString);
 		telnetConnection.sendLine(commandString);
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,"ngat.sprat.ccd.command.Command:sendCommand:"+
+			   "Waiting for reader thread to finish (join).");
 		thread.join();
 		telnetConnection.close();
 		parseReplyString();
 		commandFinished = true;
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.Command:sendCommand:Finished with reply string '"+replyString+"'.");
 	}
 
 	/**
@@ -212,14 +246,21 @@ public class Command implements Runnable, TelnetConnectionListener
 		int sindex;
 		String okString = null;
 
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.Command:parseReplyString:Started.");
 		if(replyString == null)
 		{
 			throw new Exception(this.getClass().getName()+
 					    ":parseReplyString:Reply string to command '"+commandString+"'was null.");
 		}
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.Command:parseReplyString:Looking for space.");
 		sindex = replyString.indexOf(' ');
 		if(sindex < 0)
 		{
+			logger.log(Logging.VERBOSITY_VERY_VERBOSE,"ngat.sprat.ccd.command.Command:parseReplyString:"+
+				   "Failed to find space between return code and rest of reply. "+
+				   "About to throw an exception.");
 			parsedReplyString = null;
 			parsedReplyOk = false;
 			throw new Exception(this.getClass().getName()+
@@ -229,6 +270,9 @@ public class Command implements Runnable, TelnetConnectionListener
 		okString = replyString.substring(0,sindex);
 		returnCode = Integer.parseInt(okString);
 		parsedReplyString = replyString.substring(sindex+1);
+		logger.log(Logging.VERBOSITY_INTERMEDIATE,"ngat.sprat.ccd.command.Command:parseReplyString:"+
+			   "Command '"+commandString+"' returned return code '"+returnCode+
+			   "' and string '"+parsedReplyString+"'.");
 		if(okString.equals("0"))
 			parsedReplyOk = true;
 		else
@@ -316,6 +360,9 @@ public class Command implements Runnable, TelnetConnectionListener
 		}
 		try
 		{
+			// setup some console logging
+			initialiseLogging();
+			// parse arguments
 			portNumber = Integer.parseInt(args[1]);
 			command = new Command(args[0],portNumber,args[2]);
 			command.run();
@@ -337,5 +384,49 @@ public class Command implements Runnable, TelnetConnectionListener
 			System.exit(1);
 		}
 		System.exit(0);
+	}
+
+	/**
+	 * A simple class method to setup console logging for testing the ngat.sprat.mechanism package from the 
+	 * command line.
+	 */
+	public static void initialiseLogging()
+	{
+		Logger l = null;
+		LogHandler handler = null;
+		BogstanLogFormatter blf = null;
+		String loggerNameStringArray[] = {"ngat.sprat.ccd.command.AbortCommand",
+						  "ngat.sprat.ccd.command.BiasCommand",
+						  "ngat.sprat.ccd.command.Command",
+						  "ngat.sprat.ccd.command.ConfigCommand",
+						  "ngat.sprat.ccd.command.DarkCommand",
+						  "ngat.sprat.ccd.command.FitsHeaderAddCommand",
+						  "ngat.sprat.ccd.command.FitsHeaderClearCommand",
+						  "ngat.sprat.ccd.command.FitsHeaderDeleteCommand",
+						  "ngat.sprat.ccd.command.IntegerReplyCommand",
+						  "ngat.sprat.ccd.command.MultBiasCommand",
+						  "ngat.sprat.ccd.command.MultDarkCommand",
+						  "ngat.sprat.ccd.command.MultrunCommand",
+						  "ngat.sprat.ccd.command.MultrunFilenameReplyCommand",
+						  "ngat.sprat.ccd.command.ShutdownCommand",
+						  "ngat.sprat.ccd.command.StatusExposureLengthCommand",
+						  "ngat.sprat.ccd.command.StatusExposureMultrunCommand",
+						  "ngat.sprat.ccd.command.StatusExposureRunCommand",
+						  "ngat.sprat.ccd.command.StatusExposureStartTimeCommand",
+						  "ngat.sprat.ccd.command.StatusExposureStatusCommand",
+						  "ngat.sprat.ccd.command.StatusMultrunCountCommand",
+						  "ngat.sprat.ccd.command.StatusMultrunIndexCommand",
+						  "ngat.sprat.ccd.command.StatusTemperatureGetCommand",
+						  "ngat.sprat.ccd.command.StatusTemperatureStatusCommand"};
+		blf = new BogstanLogFormatter();
+		blf.setDateFormat(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS z"));
+		handler = new ConsoleLogHandler(blf);
+		handler.setLogLevel(Logging.ALL);
+		for(int index = 0; index < loggerNameStringArray.length; index ++)
+		{
+			l = LogManager.getLogger(loggerNameStringArray[index]);
+			l.setLogLevel(Logging.ALL);
+			l.addHandler(handler);
+		}
 	}
 }

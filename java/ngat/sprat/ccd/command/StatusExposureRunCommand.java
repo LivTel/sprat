@@ -84,6 +84,9 @@ public class StatusExposureRunCommand extends IntegerReplyCommand implements Run
 		}
 		try
 		{
+			// setup some console logging
+			initialiseLogging();
+			// parse arguments
 			portNumber = Integer.parseInt(args[1]);
 			command = new StatusExposureRunCommand(args[0],portNumber);
 			command.run();

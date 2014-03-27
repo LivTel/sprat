@@ -114,6 +114,9 @@ public class FitsHeaderAddCommand extends Command implements Runnable
 		}
 		try
 		{
+			// setup some console logging
+			initialiseLogging();
+			// parse arguments
 			hostname = args[0];
 			portNumber = Integer.parseInt(args[1]);
 			keyword = args[2];

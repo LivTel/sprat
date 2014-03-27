@@ -23,7 +23,7 @@ CONFIG_SRCS	=
 CONFIG_OBJS	= 
 SCRIPT_SRCS	= 
 SCRIPT_OBJS	= 
-DIRS 		= ccd
+DIRS 		= ccd mechanism
 #test
 
 top: dirs $(OBJS) config scripts dirs

@@ -65,6 +65,9 @@ public class AbortCommand extends Command implements Runnable
 		}
 		try
 		{
+			// setup some console logging
+			initialiseLogging();
+			// parse arguments
 			portNumber = Integer.parseInt(args[1]);
 			command = new AbortCommand(args[0],portNumber);
 			command.run();

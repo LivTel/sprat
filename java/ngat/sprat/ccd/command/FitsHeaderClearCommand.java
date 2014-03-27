@@ -66,6 +66,9 @@ public class FitsHeaderClearCommand extends Command implements Runnable
 		}
 		try
 		{
+			// setup some console logging
+			initialiseLogging();
+			// parse arguments
 			portNumber = Integer.parseInt(args[1]);
 			command = new FitsHeaderClearCommand(args[0],portNumber);
 			command.run();

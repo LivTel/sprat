@@ -62,7 +62,6 @@ double gyroAngleX = 0.0;
 double gyroAngleY = 0.0;
 double gyroAngleZ = 0.0;
 
-
 // setup
 void setup()
 {
@@ -386,7 +385,7 @@ void messageReady()
     else
     {
       message.copyString(string,STRING_LENGTH);
-      client.print("26 Unknown command:");
+      client.print("error Unknown command:");
       client.println(string);
     }
   }

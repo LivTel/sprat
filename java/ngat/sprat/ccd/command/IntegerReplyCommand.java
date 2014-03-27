@@ -8,6 +8,7 @@ import java.net.*;
 
 import ngat.net.TelnetConnection;
 import ngat.net.TelnetConnectionListener;
+import ngat.util.logging.*;
 
 /**
  * The IntegerReplyCommand class is an extension of the base Command class for sending a command and getting a 
@@ -23,17 +24,23 @@ public class IntegerReplyCommand extends Command implements Runnable, TelnetConn
 	 */
 	public final static String RCSID = new String("$Id$");
 	/**
+	 * The logger to log messages to.
+	 */
+	protected Logger logger = null;
+	/**
 	 * The parsed reply string, parsed into an integer.
 	 */
 	protected int parsedReplyInteger = 0;
 
 	/**
 	 * Default constructor.
+	 * @see #logger
 	 * @see Command
 	 */
 	public IntegerReplyCommand()
 	{
 		super();
+		logger = LogManager.getLogger(this);
 	}
 
 	/**
@@ -42,12 +49,14 @@ public class IntegerReplyCommand extends Command implements Runnable, TelnetConn
 	 *     "localhost", "192.168.1.4"
 	 * @param portNumber An integer representing the port number the server is receiving command on.
 	 * @param commandString The string to send to the server as a command.
+	 * @see #logger
 	 * @see Command
 	 * @exception UnknownHostException Thrown if the address in unknown.
 	 */
 	public IntegerReplyCommand(String address,int portNumber,String commandString) throws UnknownHostException
 	{
 		super(address,portNumber,commandString);
+		logger = LogManager.getLogger(this);
 	}
 
 	/**
@@ -59,6 +68,8 @@ public class IntegerReplyCommand extends Command implements Runnable, TelnetConn
 	 */
 	public void parseReplyString() throws Exception
 	{
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.IntegerReplyCommand:parseReplyString:Started.");
 		super.parseReplyString();
 		if(parsedReplyOk == false)
 		{
@@ -67,15 +78,25 @@ public class IntegerReplyCommand extends Command implements Runnable, TelnetConn
 		}
 		try
 		{
+			logger.log(Logging.VERBOSITY_VERY_VERBOSE,"ngat.sprat.ccd.command.IntegerReplyCommand:"+
+				   "parseReplyString:Parsing '"+parsedReplyString+"' as an integer.");
 			parsedReplyInteger = Integer.parseInt(parsedReplyString);
+			logger.log(Logging.VERBOSITY_VERY_VERBOSE,"ngat.sprat.ccd.command.IntegerReplyCommand:"+
+				   "parseReplyString:Parsed '"+parsedReplyString+"' as integer '"+
+				   parsedReplyInteger+"'.");
 		}
 		catch(Exception e)
 		{
+			logger.log(Logging.VERBOSITY_VERY_VERBOSE,"ngat.sprat.ccd.command.IntegerReplyCommand:"+
+				   "parseReplyString:Failed to parse '"+parsedReplyString+
+				   "' as an integer: About to throw an exception.");
 			parsedReplyOk = false;
 			parsedReplyInteger = 0;
 			throw new Exception(this.getClass().getName()+
 					    ":parseReplyString:Failed to parse integer data:"+parsedReplyString);
 		}
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.ccd.command.IntegerReplyCommand:parseReplyString:Finished.");
 	}
 
 	/**
