@@ -13,7 +13,7 @@ import ngat.util.logging.*;
  * The HumidityCommand  is an extension of the DoubleReplyCommand for sending a humidity command
  * to the Sprat mechanism Arduino and receiving a humidity reply. This is a telnet - type socket interaction. 
  * @author Chris Mottram
- * @version $Revision: 13 $
+ * @version $Revision$
  */
 public class HumidityCommand extends DoubleReplyCommand implements Runnable, TelnetConnectionListener
 {
@@ -22,11 +22,6 @@ public class HumidityCommand extends DoubleReplyCommand implements Runnable, Tel
 	 */
 	public final static String RCSID = new String("$Id$");
 	/**
-	 * The base command string to be sent to the Arduino, the sensor number needs to be appended to this,
-	 * separated by a space.
-	 */
-	public final static String COMMAND_STRING = new String("humidity");
-	/**
 	 * The logger to log messages to.
 	 */
 	protected Logger logger = null;
@@ -34,11 +29,13 @@ public class HumidityCommand extends DoubleReplyCommand implements Runnable, Tel
 	/**
 	 * Default constructor.
 	 * @see #logger
+	 * @see #BASE_COMMAND_STRING
 	 * @see DoubleReplyCommand
 	 */
 	public HumidityCommand()
 	{
 		super();
+		BASE_COMMAND_STRING = new String("humidity");
 		logger = LogManager.getLogger(this);
 	}
 
@@ -48,12 +45,16 @@ public class HumidityCommand extends DoubleReplyCommand implements Runnable, Tel
 	 * @param portNumber An integer representing the port number the Arduino is receiving command on.
 	 * @param sensorNumber Which humidity sensor to query, a number from 0 to the number of sensors.
 	 * @see #logger
+	 * @see #setCommand
+	 * @see #BASE_COMMAND_STRING
 	 * @see Command
 	 * @exception UnknownHostException Thrown if the address in unknown.
 	 */
 	public HumidityCommand(String address,int portNumber,int sensorNumber) throws UnknownHostException
 	{
-		super(address,portNumber,COMMAND_STRING+" "+sensorNumber);
+		super(address,portNumber);
+		BASE_COMMAND_STRING = new String("humidity");
+		setCommand(BASE_COMMAND_STRING+" "+sensorNumber);
 		logger = LogManager.getLogger(this);
 	}
 

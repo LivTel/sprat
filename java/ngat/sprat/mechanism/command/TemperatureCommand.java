@@ -13,7 +13,7 @@ import ngat.util.logging.*;
  * The TemperatureCommand  is an extension of the DoubleReplyCommand for sending a temperature command
  * to the Sprat mechanism Arduino and receiving a temperature reply. This is a telnet - type socket interaction. 
  * @author Chris Mottram
- * @version $Revision: 13 $
+ * @version $Revision$
  */
 public class TemperatureCommand extends DoubleReplyCommand implements Runnable, TelnetConnectionListener
 {
@@ -22,11 +22,6 @@ public class TemperatureCommand extends DoubleReplyCommand implements Runnable, 
 	 */
 	public final static String RCSID = new String("$Id$");
 	/**
-	 * The base command string to be sent to the Arduino, the sensor number needs to be appended to this,
-	 * separated by a space.
-	 */
-	public final static String COMMAND_STRING = new String("temperature");
-	/**
 	 * The logger to log messages to.
 	 */
 	protected Logger logger = null;
@@ -34,11 +29,13 @@ public class TemperatureCommand extends DoubleReplyCommand implements Runnable, 
 	/**
 	 * Default constructor.
 	 * @see #logger
+	 * @see #BASE_COMMAND_STRING
 	 * @see DoubleReplyCommand
 	 */
 	public TemperatureCommand()
 	{
 		super();
+		BASE_COMMAND_STRING = new String("temperature");
 		logger = LogManager.getLogger(this);
 	}
 
@@ -48,12 +45,16 @@ public class TemperatureCommand extends DoubleReplyCommand implements Runnable, 
 	 * @param portNumber An integer representing the port number the Arduino is receiving command on.
 	 * @param sensorNumber Which temperature sensor to query, a number from 0 to the number of sensors.
 	 * @see #logger
+	 * @see #setCommand
+	 * @see #BASE_COMMAND_STRING
 	 * @see Command
 	 * @exception UnknownHostException Thrown if the address in unknown.
 	 */
 	public TemperatureCommand(String address,int portNumber,int sensorNumber) throws UnknownHostException
 	{
-		super(address,portNumber,COMMAND_STRING+" "+sensorNumber);
+		super(address,portNumber);
+		BASE_COMMAND_STRING = new String("temperature");
+		setCommand(BASE_COMMAND_STRING+" "+sensorNumber);
 		logger = LogManager.getLogger(this);
 	}
 

@@ -132,6 +132,22 @@ Mechanism Control
 =================
 
 
+java ngat.sprat.mechanism.command.SlitCommand spratmechanism 23 out
+java ngat.sprat.mechanism.command.GrismCommand spratmechanism 23 out
+java ngat.sprat.mechanism.command.MirrorCommand spratmechanism 23 out
+java ngat.sprat.mechanism.command.ArcLampCommand spratmechanism 23 off
+java ngat.sprat.mechanism.command.WLampCommand spratmechanism 23 off
+java ngat.sprat.mechanism.command.RotationCommand spratmechanism 23 1
 java ngat.sprat.mechanism.command.TemperatureCommand spratmechanism 23 0
+java ngat.sprat.mechanism.command.HumidityCommand spratmechanism 23 0
+java ngat.sprat.mechanism.command.GyroCommand spratmechanism 23
 
+~dev/bin/commandserver/test/i386-linux/send_command -h spratmechanism -p 23 -c "slit in"
+~dev/bin/commandserver/test/i386-linux/send_command -h spratmechanism -p 23 -c "grism in"
+~dev/bin/commandserver/test/i386-linux/send_command -h spratmechanism -p 23 -c "mirror in"
+~dev/bin/commandserver/test/i386-linux/send_command -h spratmechanism -p 23 -c "arclamp on"
+~dev/bin/commandserver/test/i386-linux/send_command -h spratmechanism -p 23 -c "wlamp on"
+~dev/bin/commandserver/test/i386-linux/send_command -h spratmechanism -p 23 -c "rotation 0"
 ~dev/bin/commandserver/test/i386-linux/send_command -h spratmechanism -p 23 -c "temperature 0"
+~dev/bin/commandserver/test/i386-linux/send_command -h spratmechanism -p 23 -c "humidity 0"
+~dev/bin/commandserver/test/i386-linux/send_command -h spratmechanism -p 23 -c "gyro"

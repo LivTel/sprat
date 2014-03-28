@@ -15,7 +15,7 @@ import ngat.util.logging.*;
  * reply from the Sprat mechanism Arduino. This is a telnet - type socket interaction. 
  * InOutReplyCommand expects the reply to be one of 'in|out|unknown|error [error description]'.
  * @author Chris Mottram
- * @version $Revision: 13 $
+ * @version $Revision$
  */
 public class InOutReplyCommand extends Command implements Runnable, TelnetConnectionListener
 {
@@ -56,6 +56,20 @@ public class InOutReplyCommand extends Command implements Runnable, TelnetConnec
 	public InOutReplyCommand()
 	{
 		super();
+		logger = LogManager.getLogger(this);
+	}
+
+	/**
+	 * Constructor.
+	 * @param address A string representing the IP address of the Arduino, i.e. "spratmechanism", "192.168.1.77".
+	 * @param portNumber An integer representing the port number the Arduino is receiving command on.
+	 * @see #logger
+	 * @see Command
+	 * @exception UnknownHostException Thrown if the address in unknown.
+	 */
+	public InOutReplyCommand(String address,int portNumber) throws UnknownHostException
+	{
+		super(address,portNumber);
 		logger = LogManager.getLogger(this);
 	}
 
@@ -188,6 +202,34 @@ public class InOutReplyCommand extends Command implements Runnable, TelnetConnec
 				return "out";
 			default:
 				return "error";
+		}
+	}
+
+	/**
+	 * Parse a string into a position.
+	 * @param ps A string representing a legal position, one of "in"|"out"|"unknwon"|"error".
+	 * @return An integer representing the position parsed: one of: 
+	 *         POSITION_IN|POSITION_OUT|POSITION_UNKNOWN|POSITION_ERROR
+	 * @exception IllegalArgumentException Throwen if the position string is not legal.
+	 * @see #POSITION_ERROR
+	 * @see #POSITION_UNKNOWN
+	 * @see #POSITION_IN
+	 * @see #POSITION_OUT	 
+	 */
+	public static int parsePositionString(String ps) throws IllegalArgumentException
+	{
+		if(ps.equals("in"))
+			return POSITION_IN;
+		else if(ps.equals("out"))
+			return POSITION_OUT;
+		else if(ps.equals("unknown"))
+			return POSITION_UNKNOWN;
+		else if(ps.equals("error"))
+			return POSITION_ERROR;
+		else
+		{
+			throw new IllegalArgumentException("ngat.sprat.mechanism.command.InOutReplyCommand:"+
+							   "parsePositionString:Illegal position string:"+ps);
 		}
 	}
 }

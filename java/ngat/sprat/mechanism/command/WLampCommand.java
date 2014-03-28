@@ -14,7 +14,7 @@ import ngat.util.logging.*;
  * to the Sprat mechanism Arduino and receiving a reply containing the current wlamp status.
  * This is a telnet - type socket interaction. 
  * @author Chris Mottram
- * @version $Revision: 13 $
+ * @version $Revision$
  */
 public class WLampCommand extends OnOffReplyCommand  implements Runnable, TelnetConnectionListener
 {
@@ -23,10 +23,6 @@ public class WLampCommand extends OnOffReplyCommand  implements Runnable, Telnet
 	 */
 	public final static String RCSID = new String("$Id$");
 	/**
-	 * The base command string to be sent to the Arduino. A new on/off state can optionally be appended to this.
-	 */
-	public final static String COMMAND_STRING = new String("wlamp");
-	/**
 	 * The logger to log messages to.
 	 */
 	protected Logger logger = null;
@@ -34,11 +30,13 @@ public class WLampCommand extends OnOffReplyCommand  implements Runnable, Telnet
 	/**
 	 * Default constructor.
 	 * @see #logger
+	 * @see #BASE_COMMAND_STRING
 	 * @see OnOffReplyCommand
 	 */
 	public WLampCommand()
 	{
 		super();
+		BASE_COMMAND_STRING = new String("wlamp");
 		logger = LogManager.getLogger(this);
 	}
 
@@ -48,12 +46,15 @@ public class WLampCommand extends OnOffReplyCommand  implements Runnable, Telnet
 	 * @param portNumber An integer representing the port number the Arduino is receiving command on.
 	 * @exception UnknownHostException Thrown if the address is unknown.
 	 * @see #logger
-	 * @see #COMMAND_STRING
+	 * @see #setCommand
+	 * @see #BASE_COMMAND_STRING
 	 * @see Command
 	 */
 	public WLampCommand(String address,int portNumber) throws UnknownHostException
 	{
-		super(address,portNumber,COMMAND_STRING);
+		super(address,portNumber);
+		BASE_COMMAND_STRING = new String("wlamp");
+		setCommand(BASE_COMMAND_STRING);
 		logger = LogManager.getLogger(this);
 	}
 
@@ -64,7 +65,8 @@ public class WLampCommand extends OnOffReplyCommand  implements Runnable, Telnet
 	 * @param state Whether to turn the wlamp on or off, one off: STATE_ON | STATE_OFF.
 	 * @exception UnknownHostException Thrown if the address is unknown.
 	 * @see #logger
-	 * @see #COMMAND_STRING
+	 * @see #setCommand
+	 * @see #BASE_COMMAND_STRING
 	 * @see Command
 	 * @see ngat.sprat.mechanism.command.OnOffReplyCommand#stateToLowerCaseString
 	 * @see ngat.sprat.mechanism.command.OnOffReplyCommand#STATE_ON
@@ -72,7 +74,9 @@ public class WLampCommand extends OnOffReplyCommand  implements Runnable, Telnet
 	 */
 	public WLampCommand(String address,int portNumber,int state) throws UnknownHostException
 	{
-		super(address,portNumber,COMMAND_STRING+" "+stateToLowerCaseString(state));
+		super(address,portNumber);
+		BASE_COMMAND_STRING = new String("wlamp");
+		setCommand(BASE_COMMAND_STRING+" "+stateToLowerCaseString(state));
 		logger = LogManager.getLogger(this);
 	}
 
@@ -84,12 +88,15 @@ public class WLampCommand extends OnOffReplyCommand  implements Runnable, Telnet
 	 *        The string should be one off: "on" | "off".
 	 * @exception UnknownHostException Thrown if the address is unknown.
 	 * @see #logger
-	 * @see #COMMAND_STRING
+	 * @see #BASE_COMMAND_STRING
+	 * @see #setCommand
 	 * @see Command
 	 */
 	public WLampCommand(String address,int portNumber,String state) throws UnknownHostException
 	{
-		super(address,portNumber,COMMAND_STRING+" "+state);
+		super(address,portNumber);
+		BASE_COMMAND_STRING = new String("wlamp");
+		setCommand(BASE_COMMAND_STRING+" "+state);
 		logger = LogManager.getLogger(this);
 	}
 

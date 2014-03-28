@@ -17,7 +17,7 @@ import ngat.util.logging.*;
  * to be 'ok &lt;[-]n.nnn&gt;' or 'error &lt;description&gt;' where &lt;[-]n.nnn&gt; is a double and 
  * &lt;description&gt; describes the error that occured. 
  * @author Chris Mottram
- * @version $Revision: 13 $
+ * @version $Revision$
  */
 public class DoubleReplyCommand extends Command implements Runnable, TelnetConnectionListener
 {
@@ -42,6 +42,20 @@ public class DoubleReplyCommand extends Command implements Runnable, TelnetConne
 	public DoubleReplyCommand()
 	{
 		super();
+		logger = LogManager.getLogger(this);
+	}
+
+	/**
+	 * Constructor.
+	 * @param address A string representing the IP address of the Arduino, i.e. "spratmechanism", "192.168.1.77".
+	 * @param portNumber An integer representing the port number the Arduino is receiving command on.
+	 * @see #logger
+	 * @see Command
+	 * @exception UnknownHostException Thrown if the address in unknown.
+	 */
+	public DoubleReplyCommand(String address,int portNumber) throws UnknownHostException
+	{
+		super(address,portNumber);
 		logger = LogManager.getLogger(this);
 	}
 

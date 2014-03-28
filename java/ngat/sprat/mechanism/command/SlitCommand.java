@@ -14,7 +14,7 @@ import ngat.util.logging.*;
  * to the Sprat mechanism Arduino and receiving a reply containing the current slit position status.
  * This is a telnet - type socket interaction. 
  * @author Chris Mottram
- * @version $Revision: 13 $
+ * @version $Revision$
  */
 public class SlitCommand extends InOutReplyCommand  implements Runnable, TelnetConnectionListener
 {
@@ -23,10 +23,6 @@ public class SlitCommand extends InOutReplyCommand  implements Runnable, TelnetC
 	 */
 	public final static String RCSID = new String("$Id$");
 	/**
-	 * The base command string to be sent to the Arduino. A new position can optionally be appended to this.
-	 */
-	public final static String COMMAND_STRING = new String("slit");
-	/**
 	 * The logger to log messages to.
 	 */
 	protected Logger logger = null;
@@ -34,11 +30,13 @@ public class SlitCommand extends InOutReplyCommand  implements Runnable, TelnetC
 	/**
 	 * Default constructor.
 	 * @see #logger
+	 * @see #BASE_COMMAND_STRING
 	 * @see InOutReplyCommand
 	 */
 	public SlitCommand()
 	{
 		super();
+		BASE_COMMAND_STRING = new String("slit");
 		logger = LogManager.getLogger(this);
 	}
 
@@ -48,12 +46,15 @@ public class SlitCommand extends InOutReplyCommand  implements Runnable, TelnetC
 	 * @param portNumber An integer representing the port number the Arduino is receiving command on.
 	 * @exception UnknownHostException Thrown if the address is unknown.
 	 * @see #logger
-	 * @see #COMMAND_STRING
+	 * @see #setCommand
+	 * @see #BASE_COMMAND_STRING
 	 * @see Command
 	 */
 	public SlitCommand(String address,int portNumber) throws UnknownHostException
 	{
-		super(address,portNumber,COMMAND_STRING);
+		super(address,portNumber);
+		BASE_COMMAND_STRING = new String("slit");
+		setCommand(BASE_COMMAND_STRING);
 		logger = LogManager.getLogger(this);
 	}
 
@@ -64,7 +65,8 @@ public class SlitCommand extends InOutReplyCommand  implements Runnable, TelnetC
 	 * @param position Which position to drive the slit to, one off: POSITION_IN | POSITION_OUT.
 	 * @exception UnknownHostException Thrown if the address is unknown.
 	 * @see #logger
-	 * @see #COMMAND_STRING
+	 * @see #BASE_COMMAND_STRING
+	 * @see #setCommand
 	 * @see Command
 	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#positionToLowerCaseString
 	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_IN
@@ -72,7 +74,9 @@ public class SlitCommand extends InOutReplyCommand  implements Runnable, TelnetC
 	 */
 	public SlitCommand(String address,int portNumber,int position) throws UnknownHostException
 	{
-		super(address,portNumber,COMMAND_STRING+" "+positionToLowerCaseString(position));
+		super(address,portNumber);
+		BASE_COMMAND_STRING = new String("slit");
+		setCommand(BASE_COMMAND_STRING+" "+positionToLowerCaseString(position));
 		logger = LogManager.getLogger(this);
 	}
 
@@ -84,12 +88,15 @@ public class SlitCommand extends InOutReplyCommand  implements Runnable, TelnetC
 	 *        The string should be one off: "in" | "out".
 	 * @exception UnknownHostException Thrown if the address is unknown.
 	 * @see #logger
-	 * @see #COMMAND_STRING
+	 * @see #BASE_COMMAND_STRING
+	 * @see #setCommand
 	 * @see Command
 	 */
 	public SlitCommand(String address,int portNumber,String position) throws UnknownHostException
 	{
-		super(address,portNumber,COMMAND_STRING+" "+position);
+		super(address,portNumber);
+		BASE_COMMAND_STRING = new String("slit");
+		setCommand(BASE_COMMAND_STRING+" "+position);
 		logger = LogManager.getLogger(this);
 	}
 

@@ -15,7 +15,7 @@ import ngat.util.logging.*;
  * to the Sprat mechanism Arduino and receiving a reply containing the current position.
  * This is a telnet - type socket interaction. 
  * @author Chris Mottram
- * @version $Revision: 13 $
+ * @version $Revision$
  */
 public class GyroCommand extends Command  implements Runnable, TelnetConnectionListener
 {
@@ -23,10 +23,6 @@ public class GyroCommand extends Command  implements Runnable, TelnetConnectionL
 	 * Revision Control System id string, showing the version of the Class.
 	 */
 	public final static String RCSID = new String("$Id$");
-	/**
-	 * The base command string to be sent to the Arduino. 
-	 */
-	public final static String COMMAND_STRING = new String("gyro");
 	/**
 	 * The logger to log messages to.
 	 */
@@ -47,11 +43,13 @@ public class GyroCommand extends Command  implements Runnable, TelnetConnectionL
 	/**
 	 * Default constructor.
 	 * @see #logger
+	 * @see #BASE_COMMAND_STRING
 	 * @see Command
 	 */
 	public GyroCommand()
 	{
 		super();
+		BASE_COMMAND_STRING = new String("gyro");
 		logger = LogManager.getLogger(this);
 	}
 
@@ -60,13 +58,16 @@ public class GyroCommand extends Command  implements Runnable, TelnetConnectionL
 	 * @param address A string representing the IP address of the Arduino, i.e. "spratmechanism", "192.168.1.77".
 	 * @param portNumber An integer representing the port number the Arduino is receiving command on.
 	 * @see #logger
-	 * @see #COMMAND_STRING
+	 * @see #setCommand
+	 * @see #BASE_COMMAND_STRING
 	 * @see Command
 	 * @exception UnknownHostException Thrown if the address in unknown.
 	 */
 	public GyroCommand(String address,int portNumber) throws UnknownHostException
 	{
-		super(address,portNumber,COMMAND_STRING);
+		super(address,portNumber);
+		BASE_COMMAND_STRING = new String("gyro");
+		setCommand(BASE_COMMAND_STRING);
 		logger = LogManager.getLogger(this);
 	}
 

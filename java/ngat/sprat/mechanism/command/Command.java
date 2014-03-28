@@ -15,7 +15,7 @@ import ngat.util.logging.*;
  * The Command class is the base class for sending a command and getting a reply from the
  * Sprat mechanism and telemetry Arduino. This is a telnet - type socket interaction.
  * @author Chris Mottram
- * @version $Revision: 13 $
+ * @version $Revision$
  */
 public class Command implements Runnable, TelnetConnectionListener
 {
@@ -23,6 +23,11 @@ public class Command implements Runnable, TelnetConnectionListener
 	 * Revision Control System id string, showing the version of the Class.
 	 */
 	public final static String RCSID = new String("$Id$");
+	/**
+	 * The base command string to be sent to the Arduino. The value of this string is set in the constructor
+	 * of the subclasses implementing a concrete command.
+	 */
+	public static String BASE_COMMAND_STRING = null;
 	/**
 	 * ngat.net.TelnetConnection instance.
 	 */
@@ -75,6 +80,25 @@ public class Command implements Runnable, TelnetConnectionListener
 		telnetConnection = new TelnetConnection();
 		telnetConnection.setListener(this);
 		logger = LogManager.getLogger(this);
+	}
+
+	/**
+	 * Constructor. Construct the TelnetConnection and set this object to be the listener.
+	 * @param address A string representing the address of the Arduino, i.e. "spratmechanism", "192.168.1.77".
+	 * @param portNumber An integer representing the port number the Arduino is receiving command on.
+	 * @see #logger
+	 * @see #telnetConnection
+	 * @exception UnknownHostException Thrown if the address in unknown.
+	 */
+	public Command(String address,int portNumber) throws UnknownHostException
+	{
+		super();
+		logger = LogManager.getLogger(this);
+		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
+			   "ngat.sprat.mechanism.command.Command:Constructor:Setting telnet connection to "+
+			   address+":"+portNumber+".");
+		telnetConnection = new TelnetConnection(address,portNumber);
+		telnetConnection.setListener(this);
 	}
 
 	/**
@@ -154,6 +178,32 @@ public class Command implements Runnable, TelnetConnectionListener
 	}
 
 	/**
+	 * Set the command's arguments. The BASE_COMMAND_STRING is prepended to this to create the command string.
+	 * @param argString The command arguments. This can be null, or a blank string, in which case the 
+	 *        commandString just consists of the BASE_COMMAND_STRING 
+	 *        (to retrieve the mechanism's current position/state).
+	 * @see #BASE_COMMAND_STRING
+	 * @see #commandString
+	 */
+	public void setCommandArguments(String argString)
+	{
+		if((argString == null)||(argString.equals("")))
+			commandString = BASE_COMMAND_STRING;
+		else
+			commandString = new String(BASE_COMMAND_STRING+" "+argString);
+	}
+
+	/**
+	 * Retrieve the current command.
+	 * @return The string to send to the Arduino as a command.
+	 * @see #commandString
+	 */
+	public String getCommand()
+	{
+		return commandString;
+	}
+
+	/**
 	 * Run thread. Uses sendCommand to send the specified command over a telnet connection to the specified
 	 * address and port number, and receive a reply string. parseReplyString is then called to parse the reply. 
 	 * If sendCommand or parseReplyString throws an exception, this is stored in runException and 
@@ -194,6 +244,7 @@ public class Command implements Runnable, TelnetConnectionListener
 
 		logger.log(Logging.VERBOSITY_VERY_VERBOSE,"ngat.sprat.mechanism.command.Command:sendCommand:Started.");
 		commandFinished = false;
+		replyString = null;
 		logger.log(Logging.VERBOSITY_VERY_VERBOSE,
 			   "ngat.sprat.mechanism.command.Command:sendCommand:Opening the Telnet Connection.");
 		telnetConnection.open();
@@ -293,7 +344,7 @@ public class Command implements Runnable, TelnetConnectionListener
 	}
 
 	/**
-	 * Get any exception resulating from running the command.
+	 * Get any exception resulting from running the command.
 	 * This is only filled in if the command was sent using the run method, rather than the sendCommand method.
 	 * @return An exception if the command failed in some way, or null if no error occured.
 	 * @see #run
@@ -381,8 +432,8 @@ public class Command implements Runnable, TelnetConnectionListener
 	}
 
 	/**
-	 * A simple class method to setup console logging for testing the ngat.sprat.mechanism package from the 
-	 * command line.
+	 * A simple class method to setup console logging for testing the ngat.sprat.mechanism.command package 
+	 * from the command line.
 	 */
 	public static void initialiseLogging()
 	{
