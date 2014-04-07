@@ -9,18 +9,21 @@ BINDIR 		= $(SPRAT_BIN_HOME)/java/$(PACKAGEDIR)
 CONFIG_BINDIR 	= $(SPRAT_BIN_HOME)/java
 SCRIPT_BINDIR 	= $(SPRAT_BIN_HOME)/java
 SRCS 		= $(MAIN_SRCS) $(IMPL_SRCS)
-MAIN_SRCS 	= 
+MAIN_SRCS 	= SpratConstants.java SpratStatus.java Sprat.java \
+		  SpratTCPClientConnectionThread.java SpratTCPServerConnectionThread.java SpratTCPServer.java
+
 
 IMPL_SRCS = $(BASE_IMPL_SRCS) $(CALIBRATE_IMPL_SRCS) $(EXPOSE_IMPL_SRCS) $(INTERRUPT_IMPL_SRCS) $(SETUP_IMPL_SRCS)
-BASE_IMPL_SRCS		= 
+BASE_IMPL_SRCS		= JMSCommandImplementation.java CommandImplementation.java UnknownCommandImplementation.java 
 CALIBRATE_IMPL_SRCS 	= 
 EXPOSE_IMPL_SRCS	= 
 INTERRUPT_IMPL_SRCS 	= 
 SETUP_IMPL_SRCS		= 
-OBJS 		= 
+OBJS 		= $(SRCS:%.java=$(BINDIR)/%.class)
 
-CONFIG_SRCS	= 
-CONFIG_OBJS	= 
+CONFIG_SRCS	= sprat1.sprat.properties sprat1.sprat.net.properties sprat1.fits.properties \
+		  ltobs9.sprat.properties ltobs9.sprat.net.properties ltobs9.fits.properties
+CONFIG_OBJS	= $(CONFIG_SRCS:%.properties=$(CONFIG_BINDIR)/%.properties)
 SCRIPT_SRCS	= 
 SCRIPT_OBJS	= 
 DIRS 		= ccd mechanism
