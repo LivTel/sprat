@@ -9,7 +9,7 @@ import ngat.message.base.*;
  * This interface provides the generic implementation interface of a command sent to a server using the
  * Java Message System.
  * @author Chris Mottram
- * @version $Revision: 28 $
+ * @version $Revision$
  */
 public interface JMSCommandImplementation
 {

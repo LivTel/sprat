@@ -9,7 +9,7 @@ import ngat.message.ISS_INST.INTERRUPT;
  * This class provides the generic implementation of a command sent to a server using the
  * Java Message System.
  * @author Chris Mottram
- * @version $Revision: 28 $
+ * @version $Revision$
  */
 public class CommandImplementation implements JMSCommandImplementation
 {

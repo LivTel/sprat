@@ -16,7 +16,7 @@ import ngat.message.base.*;
  * The instrument starts one of these threads each time
  * it wishes to send a message to the ISS/DP(RT).
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class SpratTCPClientConnectionThread extends TCPClientConnectionThreadMA
 {

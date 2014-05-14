@@ -8,7 +8,7 @@ import ngat.message.base.*;
  * This class provides the implementation of a command sent to a server using the
  * Java Message System. The command sent is unknown to the server in this case.
  * @author Chris Mottram
- * @version $Revision: 28 $
+ * @version $Revision$
  */
 public class UnknownCommandImplementation extends CommandImplementation implements JMSCommandImplementation
 {

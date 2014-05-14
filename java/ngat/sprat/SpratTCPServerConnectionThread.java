@@ -16,7 +16,7 @@ import ngat.util.logging.*;
 /**
  * This class extends the TCPServerConnectionThread class for the Sprat robotic control software.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class SpratTCPServerConnectionThread extends TCPServerConnectionThread
 {

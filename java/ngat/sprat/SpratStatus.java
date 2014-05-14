@@ -15,7 +15,7 @@ import ngat.util.logging.FileLogHandler;
 /**
  * This class holds status information for the Sprat program.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class SpratStatus
 {

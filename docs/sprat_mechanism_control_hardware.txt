@@ -1,0 +1,346 @@
+Mechanisms
+----------
+
+- mirror in/out
+- slit in/out
+- grism in/out
+- grism rotate
+
+Therefore 4 relays to control 12v pneumatic actuators (solenoids).
+Output from Arduino is 5v, therefore 5v->12v relays x 4
+SDB says: 0.4W per solenoid (0.03A?)
+
+
+Plus tungsten on/off relay - 12v output
+therefore 5v->12v relays x 5
+
+Mains power switching relay also required to turn on and off arc lamp:
+1 x 5v->mains relay (spare?)
+
+6 relays total (4xsolenoid, 1xtungsten, 1xarc lamp)
+
+
+Reed/micro switches not needed, we have some for test in-house. There will be 8 inputs eventually.
+These are SMC D-C80 reed switches. See SMC_D-Auto_Switches.pdf P10 (16-6-9).
+
+Power supplies needed:
+5v for Arduino
+12v for pneumatic solenoids and tungsten lamp
+Arc lamp mains power supply - we already have one of these on the telescope
+Andor camera PSU
+Uniblitz PSU 36v/1.83A
+USB Extender (for Andor USB camera control) PSU. Mains power supply block with 5v output, use our own 5v supply?
+
+Arduino:
+http://www.freetronics.com/products/ethermega-arduino-mega-2560-compatible-with-onboard-ethernet#.UwILFNeA-cM
+UK:
+http://www.coolcomponents.co.uk/ethermega.html
+
+Sensors
+-------
+
+1-wire temperature x2 (internal/external)
+1-wire humidity x2 (internal/external)
+MPU-6050 gyroscope
+
+Power supplies
+--------------
+These as ordered for IO:I:
+
+http://uk.rs-online.com/web/p/din-rail-panel-mount-power-supplies/0428427/
+MDR-20-12 MINI DIN RAIL,12V 1.67A
+
+http://uk.rs-online.com/web/p/din-rail-panel-mount-power-supplies/0428449/
+MDR-20-5 MINI DIN RAIL,5V 3A
+
+Is the 12v one too weedy for the tungsten lamp? How about:
+http://uk.rs-online.com/web/p/din-rail-panel-mount-power-supplies/0428467/
+MDR-60-12 MINI DIN RAIL,12V 5A
+
+or
+
+http://uk.rs-online.com/web/p/din-rail-panel-mount-power-supplies/0428423/
+MDR-40-12 MINI DIN RAIL,12V 3.33A
+
+http://uk.rs-online.com/web/p/din-rail-panel-mount-power-supplies/0428483/
+MDR-100-12 MINI DIN RAIL,12V 7.5A
+
+10-15v PSU
+http://uk.rs-online.com/web/p/din-rail-panel-mount-power-supplies/7923168/
+DIN Rail Power Supply 230/12-4
+RS Stock No. 792-3168 
+This is the current best guess. However it is only 4amp.
+The latest power spreadsheet says we need:
+Tungsten lamp (unknown , but Zej says assume 1A)
+Tung Lamp relay 12vx0.03A
+Arc Lamp relay 12vx0.03A
+Mirror pneumatic valve 12vx0.04A
+Grism pneumatic valve 12vx0.04A
+Rotate grism pneumatic valve 12vx0.04A
+We are missing relay board/relay power requirements (for the pneumatic side at least)
+Also slit in/out pneumatic valve (presumably 12vx0.04A)
+
+Therefore now 4A is plenty? Estimated 1.85A @ 13v
+
+Relays
+------
+http://www.ebay.co.uk/itm/310795345333?var=610219385162&ssPageName=STRK:MEWAX:IT&_trksid=p3984.m1423.l2649
+
+8-Channel 12V Relay Module with Opto Isolated inputs
+http://www.hobbytronics.co.uk/8-channel-relay-board
+Note 12v input relays, requires external 12v supply for input
+Data pins still 1-5v though
+Board Size: 14cm x 5.5cm Height ~18mm - 20mm for clearance.
+
+
+Temperature Sensors
+-------------------
+One Wire Digital Temperature Sensor - DS18B20
+http://playground.arduino.cc/Learning/OneWire#.UxRelFT3Ly0
+DS18S20 - 9bit
+DS18B20 - 9/10/11/12 bit (this is the one to go for)
+
+Also available from proto-pic:
+http://proto-pic.co.uk/one-wire-digital-temperature-sensor-ds18b20/
+SparkFun brand for some reason?
+
+Waterproof DS18B20 (Zej wants this one):
+http://proto-pic.co.uk/temperature-sensor-waterproof-ds18b20/
+£8.82 (inc VAT)
+
+Humidity Sensors
+----------------
+DHT22
+http://proto-pic.co.uk/humidity-and-temperature-sensor-dht22/
+8.64 inv VAT
+
+Here is one with an enclosure (we want this one):
+Adafruit - AM2302 (wired DHT22) temperature-humidity sensor from # 393
+http://www.phenoptix.com/products/am2302-wired-dht22-temperature-humidity-sensor-from-adafruit-393?utm_source=googlepla&utm_medium=cpc
+£14.89 GBP inc VAT
+
+Gyro/Accelerometer
+------------------
+MPU-6050 gyroscope
+
+http://proto-pic.co.uk/triple-axis-accelerometer-and-gyro-breakout-mpu-6050/
+£31.50 (inc VAT)
+SparkFun breakout board
+
+Mains relay
+-----------
+
+CARLO GAVAZZI - RGS1A23D25KKE - SSR, 230VAC, 25A, DC CONTROL MODULE 
+http://uk.farnell.com/jsp/displayProduct.jsp?sku=1947821&CMP=KNC-GUK-FUK-GEN-LISTINGS&gross_price=true&CMP=KNC-GUK-FUK-GEN-LISTINGS-OTH-CARLO_GAVAZZI&mckv=Ne80AYOJ|pcrid|30890078589|plid|&gclid=CPTc-puk9rwCFWvjwgodXRUA9A
+Carlo_Gavazzi_mains_relay_1598750.pdf
+
+You need a RGS..DIN mount for that:
+http://www.gavazzi-automation.com/UK/pressdescr.asp?ID=151
+Carlo_Gavazzi_PR_RGS_DIN_0512.pdf
+
+Arduino DIN rail mount
+----------------------
+
+Arduino PCB 98.5/101mm x 53mm excluding ethernet/power/USB connectors. 105mm x 53mm with ethernet connector.
+Height ~18mm, 20mm for clearance.
+Allow 50mm for Ethernet cable + bend radius :- USB connector is smaller. Power connector is roughly same size.
+Therefore box required is ~101mm x 53mm if we drill holes in the end for the connectors.
+Otherwise ~150mm x 53mm if the cables end up still in the box.
+http://www.rapidonline.com/mechanical-fastenings-fixings/cases-boxes-enclosures/din-mount/
+
+CNMB/9V/Kit
+http://www.rapidonline.com/Mechanical-Fastenings-Fixings/CamdenBoss-DIN-Rail-Vented-Module-Box-Kit-M9-30-1142
+CNMB/9V/KIT	9	L160	W90	Order code:30-1142
+£14.60
+This has B PCB size 57x155.5mm, vented sides, comes with:
+- grey top cover CNMB/9/PG
+- 6 CNMB/3/TG508P 5.08mm pitch perforated (we might want CNMB/3/TG508 5.08mm pitch pre drilled but that doesn't come in the kit).
+- 3 CNMB/3/TGS terminal guards (why not 6?)
+
+Individual bits:
+CamdenBoss DIN Rail Module Vented M9 CNMB/9V/2
+http://www.rapidonline.com/Mechanical-Fastenings-Fixings/CamdenBoss-DIN-Rail-Module-Vented-M9-CNMB-9V-2-30-1162
+£10.21
+M9	L160	W90
+CamdenBoss CNMB/9/PR DIN Rail Standard Cover Red Transparent
+http://www.rapidonline.com/Mechanical-Fastenings-Fixings/CamdenBoss-CNMB-9-PR-DIN-Rail-Standard-Cover-Red-Transparent-30-1082
+Order code: 30-1082	
+£2.52
+CamdenBoss 9-Pole Terminal Guard (Solid) M3 CNMB/3/TGS
+http://www.rapidonline.com/Mechanical-Fastenings-Fixings/CamdenBoss-9-Pole-Terminal-Guard-Solid-M3-CNMB-3-TGS-30-1172
+Order code:30-1172
+£0.3396
+CamdenBoss 9-Pole Terminal Guard 5.08mm M3 CNMB/3/TG508
+http://www.rapidonline.com/Mechanical-Fastenings-Fixings/CamdenBoss-9-Pole-Terminal-Guard-5-08mm-M3-CNMB-3-TG508-30-1177Order Code: 30-1177
+100+ £0.3396 (min order 100)
+
+We house the relay board in the same enclosure:- Board Size: 14cm x 5.5cm Height ~18mm - 20mm for clearance.
+Both Arduino and relay board will fit in the 'B' space envelope, and 
+The combination will NOT fit in the A+B envelope vertically. 
+A+B vertically = 26.5+21.5 -10.8 =  37.2 or 30.1+7.6 = 37.7, but we need 40mm
+
+
+Arduino Power Jack plug
+-----------------------
+2.1mm Straight DC Power Plug Rated At 5A, 12V, Cable Mount, Length 23.6mm, Nickel Silver Alloy Plate
+http://uk.rs-online.com/web/p/dc-power-plugs/0487826/
+RS Stock No. 487-826 
+Length seems too small
+
+2.1mm Straight DC Power Plug Rated At 5A, 12V, Cable Mount, Length 40.4mm, Nickel Plate
+http://uk.rs-online.com/web/p/dc-power-plugs/0487820/
+ RS Stock No. 487-820 
+Length seems too long
+
+2.1mm DC Power Plug Rated At 1A, 12V, Cable Mount
+http://uk.rs-online.com/web/p/dc-power-plugs/7719186/
+ RS Stock No. 771-9186 
+Different sort to what we have
+
+Buy this one:
+2.1mm Straight DC Power Plug Rated At 5A, 12V, Cable Mount, Length 23.6mm, Nickel Plate
+http://uk.rs-online.com/web/p/dc-power-plugs/0487858/
+ RS Stock No. 487-858 
+Length seems too small
+
+Pneumatic solenoid connector
+----------------------------
+
+Need connector conforming to EN-175301-803C / DIN 43650C
+Square, with 3/6 t-shaped pins, with central screw.
+We need x 5
+http://uk.rs-online.com/web/p/product/2264515/?grossPrice=Y&cm_mmc=UK|Shopping-_-Google+PLA-_-Hirschmann|DIN+43650+Solenoid+Connectors-_-2264515&kpid=&istCompanyId=f7e7b05b-2daf-4c0e-8825-3633baf8113b&istItemId=xwppaxxxm&istBid=tztx&gclid=CO7txYz5wb0CFXGWtAodQxoAKQ
+ RS Stock No. 226-4515 
+Female 2P+E DIN 43650 Solenoid Connector GDS Series ,Central Screw,Gland Size PG7,IP65,6A,250V ac/dc
+
+http://uk.rs-online.com/web/p/product/1561095/?grossPrice=Y&cm_mmc=UK|Shopping-_-Google+PLA-_-Hirschmann|DIN+43650+Solenoid+Connectors-_-1561095&kpid=&istCompanyId=f7e7b05b-2daf-4c0e-8825-3633baf8113b&istItemId=xwpriixpi&istBid=tztx&gclid=CImGrt-Mwr0CFXMRtAodaVUA5w
+Female 3P+E DIN 43650 Solenoid Connector GDS Series ,Screw Down,Gland Size PG7,IP65,6A,250V ac/dc
+
+2 pin or 3 pin?
+2pin, as 3pin+E has 4 pins and we only have 3
+
+Fibre optics
+------------
+See bottom of:
+http://telescope.livjm.ac.uk/pmwiki/index.php?n=Main.IOIOnSiteBenchTests
+Apparently this translates to:
+SC-F - LC-M OM1 1x2m and 1x30m per instrument OR
+SC-M - LC-M OM1 1x2m and 1x30m per instrument plus SC-M-M converter x4 per instrument (actually 2x SC-M-M duplex converter per instrument.
+Therefore for Sprat and IO:I lets try for:
+SC-M - LC-M OM1 2x2m
+SC-M - LC-M OM1 2x30m
+SC-M-M duplex converter x 4
+
+SC-M - LC-M OM1 2x3m
+http://www.comms-express.com/products/lc-sc-multimode-duplex-fibre-patch-leads/?5~Metre?50/125~%28OM2%29&gclid=CJ2m0raBwr0CFazHtAodTh8AXQ
+Part No:	200LCSC3 x 2
+£7.62 Inc VAT. each
+
+SC-M - LC-M OM1 2x30m
+http://www.comms-express.com/products/lc-sc-multimode-duplex-fibre-patch-leads/?5~Metre?50/125~%28OM2%29&gclid=CJ2m0raBwr0CFazHtAodTh8AXQ
+Part No:	200LCSC30 x 2
+£18.00 Inc VAT each
+
+SC-M-M duplex converter
+http://www.comms-express.com/products/sc-duplex-multimode-fibre-coupler/
+Part No:	200SCAD x 4
+£3.84 Inc VAT. each
+
+Headers etc
+-----------
+
+Break Away Headers - Right Angle
+http://proto-pic.co.uk/break-away-headers-right-angle/
+£0.67 (inc VAT)
+
+Break Away Headers - Straight
+http://proto-pic.co.uk/break-away-headers-straight/
+£0.67 (inc VAT)
+
+Break Away Female Headers
+http://proto-pic.co.uk/break-away-female-headers/
+£0.64 (inc VAT)
+
+Female Header Pack
+http://proto-pic.co.uk/female-header-pack/
+£1.18 (inc VAT)
+
+Entrelec 016391114 Mounting Bracket DIN Rail
+http://uk.rs-online.com/web/p/din-rail-terminal-accessories/0423936/
+
+Ribbon cables
+-------------
+
+The protopic ones are more expensive, but are they longer?
+
+Premium Male/Male Ribbon Strip Jumper Wires - 40 x 20CM
+http://proto-pic.co.uk/premium-male-male-ribbon-strip-jumper-wires-40-x-20cm/
+£6.78 (inc VAT)
+
+Premium Female/Male Ribbon Strip Jumper Wires - 40 x 20CM
+http://proto-pic.co.uk/premium-female-male-ribbon-strip-jumper-wires-40-x-20cm/
+£6.78 (inc VAT)
+
+Premium Female/Female Ribbon Strip Jumper Wires - 40 x 20CM
+http://proto-pic.co.uk/premium-female-female-ribbon-strip-jumper-wires-40-x-20cm/
+£6.78 (inc VAT)
+
+Ribbon Cable Jumper Wires Female 40
+http://www.hobbytronics.co.uk/cables-connectors/ribbon-cable/ribbon-jumper-female-40
+£4.99 inc VAT
+
+Jumper Wire Ribbon Cable - Female to Female
+http://www.coolcomponents.co.uk/jumper-wire-ribbon-cable-female-to-female.html
+ Incl. Tax: £4.00 
+
+Jumper Wire Ribbon Cable - Male to Female
+Product Code : 001215
+http://www.coolcomponents.co.uk/jumper-wire-ribbon-cable-male-to-female.html
+ Incl. Tax: £4.00 
+
+Jumper Wire Ribbon Cable - Male to Male
+Product Code : 001214
+http://www.coolcomponents.co.uk/jumper-wire-ribbon-cable-male-to-male.html
+ Incl. Tax: £4.00 
+
+DIN mount equipment
+-------------------
+
+DIN Rail clip
+Black nylon DIN rail mounting clip
+http://uk.rs-online.com/web/p/enclosure-accessories/7733296/
+£2.75
+
+Carlo Gavazzi 
+Heatsink for RGS
+RS 775-3170
+http://uk.rs-online.com/web/p/solid-state-relay-heatsinks/7753170/
+£11.05
+
+RE520-HP, Single-Sided Stripboard FR-2 100 x 160 x 1.5mm FR1
+http://uk.rs-online.com/web/p/stripboards/2065841/
+£3.17
+
+
+Order status
+------------
+- Icron Ranger 2224 USB extender order email sent. Now resent to IAS/Caroline. Now chased up with caroline. Now approved for order. Now ordered. Arrived.
+- EtherMega order email sent. Now resent to IAS/Caroline. Now approved for order. Now arrived
+- Sensors: MPU-6050 from protopic, 2xWaterproof DS18B20 from protopic, 2xAM2302 from phenoptix, authorized. All arrived apart from missing AM2302 humidity sensor to be ordered from somewhere.
+phenoptix only had 1 AM2302, another needed.
+- 8-way relay - asked for authorization for order for 12v switching only. authorized. Now ordered. delay 2-3 weeks out of stock (18/3/14)
+- Forwarded on mains relay for IAS to look at. Mains relay OK according to IAS and AXP. Ready to order. Asked for authorization. Now received.
+- SPRAT / IO:I Fibre Optic Cables - sent email for authorisation. Now ordered. Order arrived.
+- SPRAT 13v PSU + Pneumatic solenoid connector x 5 + Arduino Power Jack plugs x5. RS Order. Email to IAS for authorisation. PSU and solenoid connector x 5 arrived - Power Jack plugs to come. Jack plugs now arrived.
+- CNMB/9V/Kit from rapidonline. Authorized.
+- Protopic wiring components order: Premium Female/Male Ribbon Strip Jumper Wires - 40 x 20CM,Break Away Headers - Right Angle,Break Away Headers - Straight,Break Away Female Headers,Female Header Pack
+
+TODO: Bulb (halogen?)
+Other connectors needed?
+
+
+HAMMOND - 1427DINCLIP - DIN CLIP, RAIL MOUNT, PLASTIC, PAIR 
+http://uk.farnell.com/hammond/1427dinclip/din-clip-rail-mount-plastic-pair/dp/1876535
+£4.15 
+
+

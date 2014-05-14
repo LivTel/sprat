@@ -8,7 +8,7 @@ import java.io.*;
 /**
  * This class holds some constant values for the Sprat program. 
  * @author Chris Mottram
- * @version $Revision: 35 $
+ * @version $Revision$
  */
 public class SpratConstants
 {

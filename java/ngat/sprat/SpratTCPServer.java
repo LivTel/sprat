@@ -11,7 +11,7 @@ import ngat.net.*;
 /**
  * This class extends the TCPServer class for the Sprat robotic control software.
  * @author Chris Mottram
- * @version $Revision: 28 $
+ * @version $Revision$
  */
 public class SpratTCPServer extends TCPServer
 {
