@@ -18,7 +18,10 @@ Mains power switching relay also required to turn on and off arc lamp:
 1 x 5v->mains relay (spare?)
 
 6 relays total (4xsolenoid, 1xtungsten, 1xarc lamp)
-
+Relays are SY5120-6DOSD-0
+1F-Q
+Seem to have resistance of around 390 ohm
+This agrees with 30mA being pulled at 12v :- 0.36W
 
 Reed/micro switches not needed, we have some for test in-house. There will be 8 inputs eventually.
 These are SMC D-C80 reed switches. See SMC_D-Auto_Switches.pdf P10 (16-6-9).
@@ -328,12 +331,12 @@ Order status
 - EtherMega order email sent. Now resent to IAS/Caroline. Now approved for order. Now arrived
 - Sensors: MPU-6050 from protopic, 2xWaterproof DS18B20 from protopic, 2xAM2302 from phenoptix, authorized. All arrived apart from missing AM2302 humidity sensor to be ordered from somewhere.
 phenoptix only had 1 AM2302, another needed.
-- 8-way relay - asked for authorization for order for 12v switching only. authorized. Now ordered. delay 2-3 weeks out of stock (18/3/14)
+- 8-way relay - asked for authorization for order for 12v switching only. authorized. Now ordered. delay 2-3 weeks out of stock (18/3/14). Now delivered.
 - Forwarded on mains relay for IAS to look at. Mains relay OK according to IAS and AXP. Ready to order. Asked for authorization. Now received.
 - SPRAT / IO:I Fibre Optic Cables - sent email for authorisation. Now ordered. Order arrived.
 - SPRAT 13v PSU + Pneumatic solenoid connector x 5 + Arduino Power Jack plugs x5. RS Order. Email to IAS for authorisation. PSU and solenoid connector x 5 arrived - Power Jack plugs to come. Jack plugs now arrived.
-- CNMB/9V/Kit from rapidonline. Authorized.
-- Protopic wiring components order: Premium Female/Male Ribbon Strip Jumper Wires - 40 x 20CM,Break Away Headers - Right Angle,Break Away Headers - Straight,Break Away Female Headers,Female Header Pack
+- CNMB/9V/Kit from rapidonline. Authorized. Ordered. Delivered. Arduino/relay seem to fit.
+- Protopic wiring components order: Premium Female/Male Ribbon Strip Jumper Wires - 40 x 20CM,Break Away Headers - Right Angle,Break Away Headers - Straight,Break Away Female Headers,Female Header Pack. Authorised. Ordered. Delivered.
 
 TODO: Bulb (halogen?)
 Other connectors needed?
@@ -343,4 +346,10 @@ HAMMOND - 1427DINCLIP - DIN CLIP, RAIL MOUNT, PLASTIC, PAIR
 http://uk.farnell.com/hammond/1427dinclip/din-clip-rail-mount-plastic-pair/dp/1876535
 £4.15 
 
+
+Power Bus Bars?
+e.g.
+http://proto-pic.co.uk/power-distribution-bus-7-x-6mm-diameter-solid-brass/?gclid=CMDrpOzM774CFSbKtAodfkUAPg
+Power Distribution Bus - 7 x 6mm diameter solid brass
+£1.72 (inc VAT)
 

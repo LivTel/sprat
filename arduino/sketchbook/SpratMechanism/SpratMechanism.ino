@@ -28,21 +28,22 @@
 #define ERROR_CODE_ILLEGAL_GRISM_ROT_POS        (5)
 #define ERROR_CODE_GRISM_NOT_OUT                (6)
 #define ERROR_CODE_ILLEGAL_GRISM_ROT_TARGET_POS (7)
+#define ERROR_CODE_NUMBER_OUT_OF_RANGE          (8)
 
 // Pin declarations
 #define PIN_ARC_LAMP_OUTPUT            (2)
 #define PIN_TEMPERATURE_0              (5)
 #define PIN_HUMIDITY_0                 (6)
 #define PIN_HUMIDITY_1                 (1)
-#define PIN_MIRROR_OUTPUT              (22) // IN = HIGH, OUT = LOW
+#define PIN_MIRROR_OUTPUT              (22) // IN = HIGH, OUT = LOW (RELAY1)
 #define PIN_MIRROR_OUT_INPUT           (23)
-#define PIN_SLIT_OUTPUT                (24) // IN = HIGH, OUT = LOW
+#define PIN_SLIT_OUTPUT                (24) // IN = HIGH, OUT = LOW (RELAY2)
 #define PIN_MIRROR_IN_INPUT            (25)
-#define PIN_GRISM_OUTPUT               (26) // IN = HIGH, OUT = LOW
+#define PIN_GRISM_OUTPUT               (26) // IN = HIGH, OUT = LOW (RELAY3)
 #define PIN_SLIT_OUT_INPUT             (27)
-#define PIN_GRISM_ROTATE_OUTPUT        (28) // Pos 1 = HIGH, Pos 0 = LOW
+#define PIN_GRISM_ROTATE_OUTPUT        (28) // Pos 1 = HIGH, Pos 0 = LOW (RELAY4)
 #define PIN_SLIT_IN_INPUT              (29)
-#define PIN_W_LAMP_OUTPUT              (30)
+#define PIN_W_LAMP_OUTPUT              (30) // (RELAY5)
 #define PIN_GRISM_OUT_INPUT            (31)
 #define PIN_RELAY6_OUTPUT              (32) // unused
 #define PIN_GRISM_IN_INPUT             (33)
@@ -50,7 +51,6 @@
 #define PIN_GRISM_ROT_POS_0_INPUT      (35)
 #define PIN_RELAY8_OUTPUT              (36) // unused
 #define PIN_GRISM_ROT_POS_1_INPUT      (37)
-
 
 // Ethernet Sheild mac address
 // Map to IP address
@@ -100,13 +100,16 @@ void setup()
   // TODO
   //PIN_TEMPERATURE_0
   //PIN_HUMIDITY_0
-  //PIN_HUMIDITY_0
+  //PIN_HUMIDITY_1
   pinMode(PIN_ARC_LAMP_OUTPUT,OUTPUT);
   pinMode(PIN_MIRROR_OUTPUT,OUTPUT);
   pinMode(PIN_SLIT_OUTPUT,OUTPUT);
   pinMode(PIN_GRISM_OUTPUT,OUTPUT);
   pinMode(PIN_GRISM_ROTATE_OUTPUT,OUTPUT);
   pinMode(PIN_W_LAMP_OUTPUT,OUTPUT);
+  pinMode(PIN_RELAY6_OUTPUT,OUTPUT);
+  pinMode(PIN_RELAY7_OUTPUT,OUTPUT);
+  pinMode(PIN_RELAY8_OUTPUT,OUTPUT);
   
   pinMode(PIN_MIRROR_OUT_INPUT,INPUT);
   pinMode(PIN_MIRROR_IN_INPUT,INPUT);
@@ -166,6 +169,8 @@ void loop()
 // slit [in|out]
 // temperature <n>
 // wlamp [on|off]
+// Engineering commands:
+// relay <n> [on|off]
 // @see #arcLampOn
 // @see #arcLampOff
 // @see #getArcLampStatus
@@ -181,6 +186,7 @@ void loop()
 // @see #mirrorIn
 // @see #mirrorIn
 // @see #getMirrorStatus
+// @see #relayInOut
 // @see #rotation
 // @see #getRotation
 // @see #slitIn
@@ -202,10 +208,11 @@ void loop()
 // @see #ERROR_CODE_ILLEGAL_GRISM_ROT_POS
 // @see #ERROR_CODE_GRISM_NOT_OUT
 // @see #ERROR_CODE_ILLEGAL_GRISM_ROT_TARGET_POS
+// @see #ERROR_CODE_NUMBER_OUT_OF_RANGE
 void messageReady()
 {
   double dvalue;
-  int errorCode,position,sensorNumber,rotationPosition;
+  int errorCode,position,sensorNumber,rotationPosition,relayNumber,isOn;
   
   Serial.println("messageReady:Processing message.");
   if(message.available())
@@ -311,6 +318,8 @@ void messageReady()
       client.println("slit [in|out]");
       client.println("temperature <n>");
       client.println("wlamp [on|off]");
+      client.println("Engineering commands:");
+      client.println("relay <n> [on|off]");
     }   
     else if(message.checkString("humidity"))
     {
@@ -354,7 +363,49 @@ void messageReady()
           client.println(errorCode);
           break;
       }
-    }   
+    }
+    else if(message.checkString("relay"))
+    {
+      relayNumber = message.readInt();
+      if(message.checkString("on"))
+        isOn = 1;
+      else  if(message.checkString("off"))
+        isOn = 0;
+      else
+      {
+          isOn = -1;
+          message.copyString(string,STRING_LENGTH);
+          client.print("error Illegal onoff argument for relay command:");
+          client.println(string);
+      }
+      if(isOn > -1)
+      {
+          errorCode = relayOnOff(relayNumber,isOn);
+          switch(errorCode)
+          {
+            case ERROR_CODE_ON:
+              client.println("on");
+              break;
+            case ERROR_CODE_OFF:
+              client.println("off");
+              break;
+            case ERROR_CODE_GRISM_NOT_OUT:
+              client.print("error ");
+              client.print(ERROR_CODE_GRISM_NOT_OUT);
+              client.println(" Grism was not OUT: cannot move grism rotation mechanism.");
+              break;
+            case ERROR_CODE_NUMBER_OUT_OF_RANGE:
+              client.print("error ");
+              client.print(ERROR_CODE_NUMBER_OUT_OF_RANGE);
+              client.println(" Input parameter was out of range.");
+              break;
+            default:
+              client.print("error ");
+              client.println(errorCode);
+              break;
+          }
+      }
+    }
     else if(message.checkString("rotation"))
     {
       if(message.checkString("0"))
@@ -725,6 +776,102 @@ int getMirrorStatus()
     currentState = ERROR_CODE_ILLEGAL_MIRROR_POS;
   }
   return currentState;
+}
+
+// Engineering command to turn a relay on or off.
+// If we are changing relay 4 (PIN_GRISM_ROTATE_OUTPUT) we use getGrismStatus
+// to ensure the grism is out before we change state.
+// @param relayNumber The relay to turn on from 1 to 8.
+// @param isOn Whether to turn the relay on or off :- 0 is off, 1 is on.
+// @return We return ERROR_CODE_ON or ERROR_CODE_OFF on success, and ERROR_CODE_GRISM_NOT_OUT 
+//         or ERROR_CODE_NUMBER_OUT_OF_RANGE on failure.
+// @see #getGrismStatus
+// @see #ERROR_CODE_ON
+// @see #ERROR_CODE_OFF
+// @see #ERROR_CODE_OUT
+// @see #PIN_MIRROR_OUTPUT 
+// @see #PIN_SLIT_OUTPUT
+// @see #PIN_GRISM_OUTPUT
+// @see #PIN_GRISM_ROTATE_OUTPUT
+// @see #PIN_W_LAMP_OUTPUT
+// @see #PIN_RELAY6_OUTPUT
+// @see #PIN_RELAY7_OUTPUT
+// @see #PIN_RELAY8_OUTPUT
+// @see #ERROR_CODE_NUMBER_OUT_OF_RANGE
+// @see #ERROR_CODE_GRISM_NOT_OUT
+int relayOnOff(int relayNumber,int isOn)
+{
+    int pinNumber,errorCode,grismStatus;
+    
+    switch(relayNumber)
+    {
+      case 1:
+        pinNumber = PIN_MIRROR_OUTPUT;
+        break;
+      case 2:
+        pinNumber = PIN_SLIT_OUTPUT;
+        break;
+      case 3:
+        pinNumber = PIN_GRISM_OUTPUT;
+        break;
+      case 4:
+        pinNumber = PIN_GRISM_ROTATE_OUTPUT;
+        break;
+      case 5:
+        pinNumber = PIN_W_LAMP_OUTPUT;
+        break;
+      case 6:
+        pinNumber = PIN_RELAY6_OUTPUT;
+        break;
+      case 7:
+        pinNumber = PIN_RELAY7_OUTPUT;
+        break;
+      case 8:
+        pinNumber = PIN_RELAY8_OUTPUT;
+        break;
+      default:
+        Serial.print("Error ");
+        Serial.print(ERROR_CODE_NUMBER_OUT_OF_RANGE);
+        Serial.print(":Relay Number ");
+        Serial.print(relayNumber);
+        Serial.println(" out of range (1..8)");
+        return ERROR_CODE_NUMBER_OUT_OF_RANGE;
+    }
+    // If we are rotating the grism check this is allowed
+    if(pinNumber == PIN_GRISM_ROTATE_OUTPUT)
+    {
+      // If the grism is not out, we cannot start moving the grism rotation stage due to it's design.
+      grismStatus = getGrismStatus();
+      if(grismStatus != ERROR_CODE_OUT)
+      {
+        Serial.print("Error ");
+        Serial.print(ERROR_CODE_GRISM_NOT_OUT);
+        Serial.print(" Grism was not OUT: cannot move grism rotation mechanism. Current grism status: ");
+        Serial.print(grismStatus);
+        Serial.println(".");
+        return ERROR_CODE_GRISM_NOT_OUT;
+      }
+    }
+    if(isOn == 0)
+    {
+      digitalWrite(pinNumber,LOW);
+      errorCode = ERROR_CODE_OFF;
+    }
+    else if(isOn == 1)
+    {
+      digitalWrite(pinNumber,HIGH);
+      errorCode = ERROR_CODE_ON;
+    }
+    else
+    {
+        Serial.print("Error ");
+        Serial.print(ERROR_CODE_NUMBER_OUT_OF_RANGE);
+        Serial.print(":IsOn Number ");
+        Serial.print(isOn);
+        Serial.println(" out of range (0..1)");
+        return ERROR_CODE_NUMBER_OUT_OF_RANGE;
+    }
+    return errorCode;
 }
 
 // Try and rotate the grism to the specified angle.
