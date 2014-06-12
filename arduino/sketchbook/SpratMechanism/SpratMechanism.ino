@@ -6,6 +6,10 @@
 // Ethernet parameters
 #include <Ethernet.h>
 #include <Messenger.h>
+// We are using Adafruit's DHT library for the humidity sensor for now
+// Copy to your libraries directory
+#include "DHT.h"
+
 
 // length of string used for command parsing.
 #define STRING_LENGTH                  (16)
@@ -33,7 +37,9 @@
 // Pin declarations
 #define PIN_ARC_LAMP_OUTPUT            (2)
 #define PIN_TEMPERATURE_0              (5)
-#define PIN_HUMIDITY_0                 (6)
+#define PIN_HUMIDITY_0                 (6)  // DHT22, also used for temperature 0 at the moment. 
+                                            // Data pin should have a 10k pullup resistor connected to 5v VCC, however
+                                            // the phenoptix unit has an inbuilt 5.5k resistor instead.
 #define PIN_HUMIDITY_1                 (1)
 #define PIN_MIRROR_OUTPUT              (22) // IN = HIGH, OUT = LOW (RELAY1)
 #define PIN_MIRROR_OUT_INPUT           (23)
@@ -87,19 +93,31 @@ int errorNumber = 0;
 // movement timeouts, all in milliseconds
 int moveTimeout = DEFAULT_MOVE_TIMEOUT;
 
+// humidity sensor. Phenoptix DHT22 / AM2302
+DHT dht0(PIN_HUMIDITY_0,DHT22);
+
 // gyro variables
 // angle in degrees
 double gyroAngleX = 0.0;
 double gyroAngleY = 0.0;
 double gyroAngleZ = 0.0;
 
+// keep track of when sensors were last read
+#define LAST_TIME_READ_COUNT            (1)
+#define LAST_TIME_READ_INDEX_HUMIDITY0  (0)
+unsigned long lastTimeRead[LAST_TIME_READ_COUNT];
+
 // setup
+// @see #dht0
 void setup()
 {
+  int i;
+  
   // configure pins
   // TODO
   //PIN_TEMPERATURE_0
   //PIN_HUMIDITY_0
+  dht0.begin();
   //PIN_HUMIDITY_1
   pinMode(PIN_ARC_LAMP_OUTPUT,OUTPUT);
   pinMode(PIN_MIRROR_OUTPUT,OUTPUT);
@@ -119,6 +137,12 @@ void setup()
   pinMode(PIN_GRISM_IN_INPUT,INPUT);
   pinMode(PIN_GRISM_ROT_POS_0_INPUT,INPUT);
   pinMode(PIN_GRISM_ROT_POS_1_INPUT,INPUT);
+  
+  // initialise lastTimeRead
+  for(i=0; i < LAST_TIME_READ_COUNT; i++)
+  {
+      lastTimeRead[i] = 0;
+  }
   // configure serial
   Serial.begin(9600);
   // configure ethernet and callback routine
@@ -129,6 +153,9 @@ void setup()
 }
 
 // main loop
+// @see #server
+// @see #client
+// @see #monitorSensors
 void loop()
 {
   // check if new connecion available
@@ -153,8 +180,55 @@ void loop()
       Serial.println();
   }
   // do other stuff here
+  monitorSensors();
   // wait a bit to stop the arduino locking up
   delay(10);
+}
+
+// Monitor humidity,temperature and orientation (gyro) periodically
+// @see #dht0
+// @see #LAST_TIME_READ_INDEX_HUMIDITY0
+// @see #LAST_TIME_READ_COUNT
+// @see #lastTimeRead
+void monitorSensors()
+{
+  unsigned long nowTime;
+  int i;
+  boolean retval;
+  
+  // get current time
+  nowTime = millis();
+  // check to see if time has wrapped (reset to 0)
+  // nowTime should always be greater than or equal to each lastTimeRead variable.
+  // If it isn't the internal clock must have wrapped to 0. Set lastTimeRead to nowTime
+  // so sensor readings resume in a few seconds
+  for(i=0; i < LAST_TIME_READ_COUNT; i++)
+  {
+    if(nowTime < lastTimeRead[i])
+    {
+        Serial.print("monitorSensors:lastTimeRead[");
+        Serial.print(i);
+        Serial.print("]in the past:Reseting to nowTime ");
+        Serial.print(nowTime);
+        Serial.print(".");
+        lastTimeRead[i] = nowTime;
+    }
+  }
+  // The humidity sensor should only be read about once every 2 seconds
+  // The DHT library has an internal clock and returns old values if read is queried more often than that.
+  // However this is not available external to the library, so we have our own external clock here.
+  if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_HUMIDITY0]) > 3000)
+  {
+    Serial.println("monitorSensors:Reading dht0.");
+    retval = dht0.read();
+    if(retval)
+    {
+        Serial.println("monitorSensors:Read dht0 successfully.");
+        lastTimeRead[LAST_TIME_READ_INDEX_HUMIDITY0] = millis();
+    }
+    else
+        Serial.println("monitorSensors:Failed to read dht0.");
+  }
 }
 
 // Messenger callback function
@@ -682,25 +756,38 @@ int getGyroPosition()
 }
 
 // Get the current humidity measured at the specified sensor.
+// Sensor 0 is currently humidity sensor 0 (dht0).
 // @param sensorNumber The sensor to use, an integer between 0 and 1 less than the number of humidity sensors.
 // @return A double, respresenting the relative humidity measured at the specified sensor (0..100%). Note there
 //         is no way to return an error if the measurement failed at the moment.
+// @see #dht0
 double getHumidity(int sensorNumber)
 {
+  float fvalue;
   double dvalue;
   
   Serial.print("getHumidity:Started for sensor number ");
   Serial.print(sensorNumber);
   Serial.println(".");
-  // TODO
-  dvalue = 0.0;
+  if(sensorNumber == 0)
+  {
+    fvalue = dht0.readHumidity();
+    dvalue = (double)fvalue;
+  }
+  else
+    dvalue = 0.0;
+  Serial.print("getHumidity:Returning humidity ");
+  Serial.print(fvalue);
+  Serial.println("%.");
   return dvalue;
 }
 
 // Get the current temperature measured at the specified sensor.
+// Sensor 0 is currently the temperature from humidity sensor 0 (dht0).
 // @param sensorNumber The sensor to use, an integer between 0 and 1 less than the number of temperature sensors.
 // @return A double, respresenting the temperature measured at the specified sensor. Note there
 //         is no way to return an error if the measurement failed at the moment.
+// @see #dht0
 double getTemperature(int sensorNumber)
 {
   double dvalue;
@@ -708,8 +795,15 @@ double getTemperature(int sensorNumber)
   Serial.print("getTemperature:Started for sensor number ");
   Serial.print(sensorNumber);
   Serial.println(".");
-  // TODO
-  dvalue = 0.0;
+  if(sensorNumber == 0)
+  {
+    dvalue = (double)dht0.readTemperature();
+  }
+  else
+    dvalue = 0.0;    
+  Serial.print("getTemperature:Returning temperature ");
+  Serial.print(dvalue);
+  Serial.println("C.");
   return dvalue;
 }
 
