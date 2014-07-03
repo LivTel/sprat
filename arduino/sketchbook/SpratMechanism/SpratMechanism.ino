@@ -25,12 +25,12 @@
 #define ERROR_CODE_OUT                          (-2)
 #define ERROR_CODE_UNKNOWN                      (-3)
 // error codes defining an actual error
-#define ERROR_CODE_GRISM_ROT_POS_NOT_KNOWN      (1)
+#define ERROR_CODE_ROT_POS_NOT_ZERO             (1)
 #define ERROR_CODE_ILLEGAL_GRISM_POS            (2)
 #define ERROR_CODE_ILLEGAL_MIRROR_POS           (3)
 #define ERROR_CODE_ILLEGAL_SLIT_POS             (4)
 #define ERROR_CODE_ILLEGAL_GRISM_ROT_POS        (5)
-#define ERROR_CODE_GRISM_NOT_OUT                (6)
+#define ERROR_CODE_GRISM_NOT_IN                 (6)
 #define ERROR_CODE_ILLEGAL_GRISM_ROT_TARGET_POS (7)
 #define ERROR_CODE_NUMBER_OUT_OF_RANGE          (8)
 
@@ -275,18 +275,18 @@ void monitorSensors()
 // @see #ERROR_CODE_IN
 // @see #ERROR_CODE_OUT
 // @see #ERROR_CODE_UNKNOWN
-// @see #ERROR_CODE_GRISM_ROT_POS_NOT_KNOWN
+// @see #ERROR_CODE_ILLEGAL_GRISM_ROT_POS
 // @see #ERROR_CODE_ILLEGAL_GRISM_POS
 // @see #ERROR_CODE_ILLEGAL_MIRROR_POS
 // @see #ERROR_CODE_ILLEGAL_SLIT_POS
-// @see #ERROR_CODE_ILLEGAL_GRISM_ROT_POS
-// @see #ERROR_CODE_GRISM_NOT_OUT
+// @see #ERROR_CODE_ROT_POS_NOT_ZERO
+// @see #ERROR_CODE_GRISM_NOT_IN
 // @see #ERROR_CODE_ILLEGAL_GRISM_ROT_TARGET_POS
 // @see #ERROR_CODE_NUMBER_OUT_OF_RANGE
 void messageReady()
 {
   double dvalue;
-  int errorCode,position,sensorNumber,rotationPosition,relayNumber,isOn;
+  int errorCode,position,sensorNumber,rotationPosition,relayNumber,isOn,pinNumber,currentState;
   
   Serial.println("messageReady:Processing message.");
   if(message.available())
@@ -344,10 +344,10 @@ void messageReady()
         case ERROR_CODE_UNKNOWN:
           client.println("unknown");
           break;
-        case ERROR_CODE_GRISM_ROT_POS_NOT_KNOWN:
+        case ERROR_CODE_ROT_POS_NOT_ZERO:
           client.print("error ");
-          client.print(ERROR_CODE_GRISM_ROT_POS_NOT_KNOWN);
-          client.println(" Grism Rotation not in a known position: Failing to start move.");
+          client.print(ERROR_CODE_ROT_POS_NOT_ZERO);
+          client.println(" Grism Rotation not in position 0: Failing to start move.");
           break;
         case ERROR_CODE_ILLEGAL_GRISM_POS:
           client.print("error ");
@@ -387,6 +387,7 @@ void messageReady()
       client.println("grism [in|out]");
       client.println("gyro");
       client.println("humidity <n>");
+      client.println("input [mirrorout|mirrorin|slitout|slitin|grismout|grismin|rotpos0|rotpos1]");
       client.println("mirror [in|out]");
       client.println("rotation [0|1]");
       client.println("slit [in|out]");
@@ -402,6 +403,51 @@ void messageReady()
       client.print("ok ");
       client.println(dvalue);
     }   
+    else if(message.checkString("input"))
+    {
+      pinNumber = -1;
+      if(message.checkString("mirrorout"))
+      {
+        pinNumber = PIN_MIRROR_OUT_INPUT;
+      }
+      else if(message.checkString("mirrorin"))
+      {
+        pinNumber = PIN_MIRROR_IN_INPUT;
+      }
+      else if(message.checkString("slitout"))
+      {
+        pinNumber = PIN_SLIT_OUT_INPUT;
+      }
+      else if(message.checkString("slitin"))
+      {
+        pinNumber = PIN_SLIT_IN_INPUT;
+      }
+      else if(message.checkString("grismout"))
+      {
+        pinNumber = PIN_GRISM_OUT_INPUT;
+      }
+      else if(message.checkString("grismin"))
+      {
+        pinNumber = PIN_GRISM_IN_INPUT;
+      }
+      else if(message.checkString("rotpos0"))
+      {
+        pinNumber = PIN_GRISM_ROT_POS_0_INPUT;
+      }
+      else if(message.checkString("rotpos1"))
+      {
+        pinNumber = PIN_GRISM_ROT_POS_1_INPUT;
+      }
+      if(pinNumber != -1)
+      {
+        currentState = digitalRead(pinNumber);
+        client.println(currentState);
+      }
+      else
+      {
+        client.println("error Unknown input");
+      }
+    }
     else if(message.checkString("mirror"))
     {
       if(message.checkString("in"))
@@ -463,10 +509,15 @@ void messageReady()
             case ERROR_CODE_OFF:
               client.println("off");
               break;
-            case ERROR_CODE_GRISM_NOT_OUT:
+            case ERROR_CODE_GRISM_NOT_IN:
               client.print("error ");
-              client.print(ERROR_CODE_GRISM_NOT_OUT);
-              client.println(" Grism was not OUT: cannot move grism rotation mechanism.");
+              client.print(ERROR_CODE_GRISM_NOT_IN);
+              client.println(" Grism was not IN: cannot move grism rotation mechanism in.");
+              break;
+            case ERROR_CODE_ROT_POS_NOT_ZERO:
+              client.print("error ");
+              client.print(ERROR_CODE_ROT_POS_NOT_ZERO);
+              client.println(" Grism Rotation was not in position 0: cannot move grism mechanism.");
               break;
             case ERROR_CODE_NUMBER_OUT_OF_RANGE:
               client.print("error ");
@@ -512,10 +563,10 @@ void messageReady()
           client.print(ERROR_CODE_ILLEGAL_GRISM_ROT_POS);
           client.println(" Illegal Grism Rotation position: Both 0 and 1 sensors are high at the same time.");
           break;
-        case ERROR_CODE_GRISM_NOT_OUT:
+        case ERROR_CODE_GRISM_NOT_IN:
           client.print("error ");
-          client.print(ERROR_CODE_GRISM_NOT_OUT);
-          client.println(" Grism was not OUT: cannot move grism rotation mechanism.");
+          client.print(ERROR_CODE_GRISM_NOT_IN);
+          client.println(" Grism was not IN: cannot move grism rotation mechanism to position 1.");
           break;
         case ERROR_CODE_ILLEGAL_GRISM_ROT_TARGET_POS:
           client.print("error ");
@@ -656,15 +707,15 @@ int getArcLampStatus()
 }
 
 // Try and move the grism into the beam.
-// We can only move the grism in in the grism rotation is in a know position (due to mechanism interlocking constraints).
-// If it is moving, we should not start moving the grism in.
+// We can only move the grism if the grism rotation is in position 0 (due to mechanism interlocking constraints).
+// If the grism rotation cylinder is not stowed, it may be damaged by moving the grism in or out.
 // @return Return an error code: ERROR_CODE_OUT or ERROR_CODE_IN or ERROR_CODE_UNKNOWN (the current grism position) 
 //         if we start moving the grism successfully, or a non-zero number for failure. 
-//         Error 1 (ERROR_CODE_GRISM_ROT_POS_NOT_KNOWN) is:Grism Rotation not in a known position: Failing to start move.
+//         Error 1 (ERROR_CODE_ROT_POS_NOT_ZERO) is: Grism Rotation not in position 0: Failing to start move.
 // @see #ERROR_CODE_IN
 // @see #ERROR_CODE_OUT
 // @see #ERROR_CODE_UNKNOWN
-// @see #ERROR_CODE_GRISM_ROT_POS_NOT_KNOWN
+// @see #ERROR_CODE_ROT_POS_NOT_ZERO
 // @see #getGrismStatus
 // @see #getRotation
 int grismIn()
@@ -672,28 +723,39 @@ int grismIn()
   int grismRotationStatus;
   
   Serial.println("grismIn:Started.");
-  // We can only move the grism in if the grism rotation is in a known position.
-  // If it is moving, we should not start moving the grism in.
+  // We can only move the grism if the grism rotation is in position 0.
   grismRotationStatus = getRotation();
-  if(grismRotationStatus == ERROR_CODE_UNKNOWN) // we are moving
+  if(grismRotationStatus != 0) // The grism rotation cylinder is not stowed
   {
-    Serial.println("grismIn:Error:Grism Rotation not in a known position: Failing to start move.");
-    return ERROR_CODE_GRISM_ROT_POS_NOT_KNOWN;
+    Serial.println("grismIn:Error:Grism Rotation not in position 0: Failing to start move.");
+    return ERROR_CODE_ROT_POS_NOT_ZERO;
   }
   digitalWrite(PIN_GRISM_OUTPUT,HIGH);
   return getGrismStatus();
 }
 
 // Try and move the grism out of the beam.
+// We can only move the grism if the grism rotation is in position 0 (due to mechanism interlocking constraints).
+// If the grism rotation cylinder is not stowed, it may be damaged by moving the grism in or out.
 // @return Return an error code: ERROR_CODE_IN or ERROR_CODE_OUT or ERROR_CODE_UNKNOWN (the current grism position) 
 //         if we start moving the grism successfully, or a non-zero number for failure.
 // @see #ERROR_CODE_IN
 // @see #ERROR_CODE_OUT
 // @see #ERROR_CODE_UNKNOWN
+// @see #ERROR_CODE_ROT_POS_NOT_ZERO
 // @see #getGrismStatus
 int grismOut()
 {
+  int grismRotationStatus;
+  
   Serial.println("grismOut:Started.");
+  // We can only move the grism if the grism rotation is in position 0.
+  grismRotationStatus = getRotation();
+  if(grismRotationStatus != 0) // The grism rotation cylinder is not stowed
+  {
+    Serial.println("grismOut:Error:Grism Rotation not in position 0: Failing to start move.");
+    return ERROR_CODE_ROT_POS_NOT_ZERO;
+  }
   digitalWrite(PIN_GRISM_OUTPUT,LOW);
   return getGrismStatus();
 }
@@ -873,13 +935,16 @@ int getMirrorStatus()
 }
 
 // Engineering command to turn a relay on or off.
-// If we are changing relay 4 (PIN_GRISM_ROTATE_OUTPUT) we use getGrismStatus
-// to ensure the grism is out before we change state.
+// If we are changing relay 3 (PIN_GRISM_OUTPUT) we use getRotation
+// to ensure the grism rotation cylinder is out of the way (position 0) before we change state.
+// If we are moving relay 4 in (PIN_GRISM_ROTATE_OUTPUT) we use getGrismStatus
+// to ensure the grism is in before we change state.
 // @param relayNumber The relay to turn on from 1 to 8.
 // @param isOn Whether to turn the relay on or off :- 0 is off, 1 is on.
-// @return We return ERROR_CODE_ON or ERROR_CODE_OFF on success, and ERROR_CODE_GRISM_NOT_OUT 
+// @return We return ERROR_CODE_ON or ERROR_CODE_OFF on success, and ERROR_CODE_GRISM_NOT_IN, ERROR_CODE_ROT_POS_NOT_ZERO
 //         or ERROR_CODE_NUMBER_OUT_OF_RANGE on failure.
 // @see #getGrismStatus
+// @see #getRotation
 // @see #ERROR_CODE_ON
 // @see #ERROR_CODE_OFF
 // @see #ERROR_CODE_OUT
@@ -892,10 +957,11 @@ int getMirrorStatus()
 // @see #PIN_RELAY7_OUTPUT
 // @see #PIN_RELAY8_OUTPUT
 // @see #ERROR_CODE_NUMBER_OUT_OF_RANGE
-// @see #ERROR_CODE_GRISM_NOT_OUT
+// @see #ERROR_CODE_GRISM_NOT_IN
+// @see #ERROR_CODE_ROT_POS_NOT_ZERO
 int relayOnOff(int relayNumber,int isOn)
 {
-    int pinNumber,errorCode,grismStatus;
+    int pinNumber,errorCode,grismStatus,grismRotationStatus;
     
     switch(relayNumber)
     {
@@ -931,19 +997,33 @@ int relayOnOff(int relayNumber,int isOn)
         Serial.println(" out of range (1..8)");
         return ERROR_CODE_NUMBER_OUT_OF_RANGE;
     }
-    // If we are rotating the grism check this is allowed
-    if(pinNumber == PIN_GRISM_ROTATE_OUTPUT)
+    // Check the grism rotation is stowed before moving the grism in or out of the beam 
+    if(pinNumber == PIN_GRISM_OUTPUT)
     {
-      // If the grism is not out, we cannot start moving the grism rotation stage due to it's design.
-      grismStatus = getGrismStatus();
-      if(grismStatus != ERROR_CODE_OUT)
+      grismRotationStatus = getRotation();
+      if(grismRotationStatus != 0)
       {
         Serial.print("Error ");
-        Serial.print(ERROR_CODE_GRISM_NOT_OUT);
-        Serial.print(" Grism was not OUT: cannot move grism rotation mechanism. Current grism status: ");
+        Serial.print(ERROR_CODE_ROT_POS_NOT_ZERO);
+        Serial.print(" Grism Rotation position was not 0: cannot move grism mechanism. Current grism status: ");
         Serial.print(grismStatus);
         Serial.println(".");
-        return ERROR_CODE_GRISM_NOT_OUT;
+        return ERROR_CODE_ROT_POS_NOT_ZERO;
+      }
+    }
+    // If we are rotating the grism check the grism is in the beam
+    if(pinNumber == PIN_GRISM_ROTATE_OUTPUT)
+    {
+      // If the grism is not in, we cannot start moving the grism rotation stage in due to it's design.
+      grismStatus = getGrismStatus();
+      if((isOn == 1) && (grismStatus != ERROR_CODE_IN))
+      {
+        Serial.print("Error ");
+        Serial.print(ERROR_CODE_GRISM_NOT_IN);
+        Serial.print(" Grism was not IN: cannot move grism rotation mechanism to position 1. Current grism status: ");
+        Serial.print(grismStatus);
+        Serial.println(".");
+        return ERROR_CODE_GRISM_NOT_IN;
       }
     }
     if(isOn == 0)
@@ -973,10 +1053,10 @@ int relayOnOff(int relayNumber,int isOn)
 // @return Return an error code: 0|1 on success, 
 //          ERROR_CODE_UNKNOWN if the grism rotation mechanism ends up in an indeterminate state,
 //         or a number greater than 1 for failure.
-//         Error ERROR_CODE_GRISM_NOT_OUT: Grism was not OUT: cannot move grism rotation mechanism.
+//         Error ERROR_CODE_GRISM_NOT_IN: Grism was not IN: cannot move grism rotation mechanism in.
 //         Error ERROR_CODE_ILLEGAL_GRISM_ROT_TARGET_POS: Illegal grism rotation target position.
 // @see #ERROR_CODE_UNKNOWN
-// @see #ERROR_CODE_GRISM_NOT_OUT
+// @see #ERROR_CODE_GRISM_NOT_IN
 // @see #ERROR_CODE_ILLEGAL_GRISM_ROT_TARGET_POS
 // @see #PIN_GRISM_ROTATE_OUTPUT
 // @see #getGrismStatus
@@ -988,16 +1068,19 @@ int rotation(int targetPosition)
   Serial.print("rotation:Started rotating grism to position: ");
   Serial.print(targetPosition);
   Serial.println(".");
-  // If the grism is not out, we cannot start moving the grism rotation stage due to it's design.
-  grismStatus = getGrismStatus();
-  if(grismStatus != ERROR_CODE_OUT)
+  // If the grism is not in, we cannot start moving the grism rotation stage to position 1 due to it's design.
+  if(targetPosition == 1)
   {
-    Serial.print("Error ");
-    Serial.print(ERROR_CODE_GRISM_NOT_OUT);
-    Serial.print(" Grism was not OUT: cannot move grism rotation mechanism. Current grism status: ");
-    Serial.print(grismStatus);
-    Serial.println(".");
-    return ERROR_CODE_GRISM_NOT_OUT;
+    grismStatus = getGrismStatus();
+    if(grismStatus != ERROR_CODE_IN)
+    {
+      Serial.print("Error ");
+      Serial.print(ERROR_CODE_GRISM_NOT_IN);
+      Serial.print(" Grism was not IN: cannot move grism rotation mechanism to position 1. Current grism status: ");
+      Serial.print(grismStatus);
+      Serial.println(".");
+      return ERROR_CODE_GRISM_NOT_IN;
+    }
   }
   if(targetPosition == 0)
   {

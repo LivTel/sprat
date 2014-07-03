@@ -353,3 +353,85 @@ http://proto-pic.co.uk/power-distribution-bus-7-x-6mm-diameter-solid-brass/?gcli
 Power Distribution Bus - 7 x 6mm diameter solid brass
 £1.72 (inc VAT)
 
+
+Din Rail terminal block equipment
+---------------------------------
+
+We have lots of:
+Weidmuller IEC 60947-7-1 4 way connector WDK 2.5V 400v 2.5mm^2
+
+One of:
+ 
+Weidmuller IEC 947-7-1 2 x 2 way connector WDK 2.5V 400v 2.5mm^2
+
+
+Non-Fuse DIN Rail Terminal, 32A, 400V, Beige ,Screw Down Termination
+http://uk.rs-online.com/web/p/non-fused-din-rail-terminals/0779598/?origin=PSF_435785|rel
+ RS Stock No. 779-598
+Brand Weidmuller
+Mfr. Part No. 1021500000 
+Looks like 2x2 terminal we have
+They are they are identical.
+
+Weidmuller 1059100000 End Plate, Series: W
+http://uk.rs-online.com/web/p/din-rail-terminal-accessories/1316700/?origin=PSF_435779|acc
+ RS Stock No. 131-6700
+Brand Weidmuller
+Mfr. Part No. 1059100000 
+
+http://uk.rs-online.com/web/p/non-fused-din-rail-terminals/2355239/?origin=PSF_435785|alt
+Non-Fuse DIN Rail Terminal, 32A, 400V, Beige ,Screw Down Termination
+ RS Stock No. 235-5239
+Brand Weidmuller
+Mfr. Part No. 1022300000 
+
+Weidmuller W-Series
+http://docs-europe.electrocomponents.com/webdocs/0033/0900766b80033d92.pdf
+From:
+http://uk.rs-online.com/web/p/din-rail-terminal-accessories/3830113/?origin=PSF_435779|acc
+Weidmuller 1084000000 End Plate, Series: W
+See page 4:
+WDK 2.5 2x2 Manfacturer Number : 102150 102158 102156 (100)  102560 102570 (10)
+WDK 2.5V (vertically connected) 4 Manfacturer Number : 102230 102238 (100)
+
+We need  2x2
+end plates
+cross connectors (10/8/4)?
+
+Weidmuller order sent to Stu:
+
+Non-Fuse DIN Rail Terminal, 32A, 400V, Beige ,Screw Down Termination (2x2)
+http://uk.rs-online.com/web/p/non-fused-din-rail-terminals/0779598/?origin=PSF_435785|rel 
+RS Stock No. 779-598
+Brand Weidmuller
+Mfr. Part No. 1021500000 
+Qty 10 (manufacturer says 100?)
+Qty	Unit price
+10	£1.264
+Temporarily out of stock - back order for despatch 07/07/2014
+
+
+This appears to match the W series manual end plate
+http://uk.rs-online.com/web/p/din-rail-terminal-accessories/1316700/?origin=PSF_435779|acc
+Weidmuller 1059100000 End Plate, Series: W
+RS Stock No. 131-6700
+Brand Weidmuller
+Mfr. Part No. 1059100000 
+Qty 10 (manufacturer says 20)
+Qty	Unit price
+10	£0.428
+
+
+105446 10x10 cross connection for for 2x2
+105446 10x10 cross connection for for 4
+
+http://uk.rs-online.com/web/p/din-rail-terminal-accessories/0425320/
+Weidmuller 1054460000 Cross Connector, Series: WQV
+RS Stock No. 425-320
+Brand Weidmuller
+Mfr. Part No. 1054460000
+RoHS Status
+Compliant 
+Qty	Unit price
+5       £2.21
+

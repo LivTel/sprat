@@ -213,16 +213,17 @@ public class CONFIGImplementation extends CommandImplementation implements JMSCo
 			return configDone;
 		// configure sprat mechanisms
 		// move and rotate grism.
-		// we have to stow/move the grism out of the beam, to rotate the grism, due to the way the
-		// mechanism works.
 		try
 		{
-			// move grism to OUT position so we can rotate the grism
-			moveGrism(SpratConfig.POSITION_OUT);
-			// rotate the grism to the configured position
-			rotateGrism(config.getGrismRotation());
+			// we can only move the grism in and out, if the rotation cylinder is stowed
+			rotateGrism(0);
 			// move the grism to the configured position
 			moveGrism(config.getGrismPosition());
+			// rotate the grism to the configured position
+			// Due to the construction of the rotation mechanism, this will only work if the
+			// grism is IN the beam
+			if(config.getGrismPosition() == SpratConfig.POSITION_IN)
+				rotateGrism(config.getGrismRotation());
 		}
 		catch(Exception e)
 		{

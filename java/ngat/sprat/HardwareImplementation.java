@@ -3,6 +3,7 @@
 package ngat.sprat;
 
 import java.lang.*;
+import java.net.*;
 import java.text.*;
 import java.util.*;
 
@@ -107,6 +108,8 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 
 	/**
 	 * This routine clears the current set of FITS headers. 
+	 * @exception UnknownHostException Thrown if the C layer hostname address it not known.
+	 * @exception Exception Thrown if sending the command fails.
 	 * @see ngat.sprat.SpratStatus#getProperty
 	 * @see ngat.sprat.SpratStatus#getPropertyInteger
 	 * @see ngat.sprat.ccd.command.FitsHeaderClearCommand
@@ -116,7 +119,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * @see ngat.sprat.ccd.command.FitsHeaderClearCommand#getReturnCode
 	 * @see ngat.sprat.ccd.command.FitsHeaderClearCommand#getParsedReply
 	 */
-	public void clearFitsHeaders()
+	public void clearFitsHeaders() throws UnknownHostException, Exception
 	{
 		FitsHeaderClearCommand clearCommand = null;
 		int portNumber,returnCode;
