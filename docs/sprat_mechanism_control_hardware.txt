@@ -111,6 +111,9 @@ Waterproof DS18B20 (Zej wants this one):
 http://proto-pic.co.uk/temperature-sensor-waterproof-ds18b20/
 £8.82 (inc VAT)
 
+Sensor Address: 28772D5D05000067 = { 0x28, 0x77, 0x2D, 0x5D, 0x05, 0x00, 0x00, 0x67 };
+Sensor Address: 2873355D050000F9 = { 0x28, 0x73, 0x35, 0x5D, 0x05, 0x00, 0x00, 0xF9 };
+
 Humidity Sensors
 ----------------
 DHT22

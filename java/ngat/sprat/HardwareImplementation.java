@@ -10,7 +10,9 @@ import java.util.*;
 import ngat.fits.*;
 import ngat.message.base.*;
 import ngat.message.ISS_INST.*;
+import ngat.phase2.*;
 import ngat.sprat.ccd.command.*;
+import ngat.sprat.mechanism.*;
 import ngat.sprat.mechanism.command.*;
 import ngat.util.logging.*;
 
@@ -104,6 +106,62 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Move the Sprat calibration mirror to the desired position.
+	 * The following status is used to configure the move parameters:
+	 * <ul>
+	 * <li><b>sprat.mechanism.hostname</b>
+	 * <li><b>sprat.mechanism.port_number</b>
+	 * <li><b>sprat.config.mirror.move.sleep_time</b>
+	 * <li><b>sprat.config.mirror.move.timeout_time</b>
+	 * </ul>
+	 * @param position The position to attain, one of POSITION_IN, POSITION_OUT.
+	 * @exception Exception Thrown if an error occurs.
+	 * @see #sprat
+	 * @see #status
+	 * @see Sprat#log
+	 * @see SpratStatus#getProperty
+	 * @see SpratStatus#getPropertyInteger
+	 * @see ngat.phase2.SpratConfig#POSITION_IN
+	 * @see ngat.phase2.SpratConfig#POSITION_OUT
+	 * @see ngat.phase2.SpratConfig#positionToString
+	 * @see ngat.sprat.mechansim.command.MirrorCommand
+	 * @see ngat.sprat.mechansim.MoveInOutMechanism
+	 * @see ngat.sprat.mechansim.MoveInOutMechanism#setCommand
+	 * @see ngat.sprat.mechansim.MoveInOutMechanism#setSleepTime
+	 * @see ngat.sprat.mechansim.MoveInOutMechanism#setTimeoutTime
+	 * @see ngat.sprat.mechansim.MoveInOutMechanism#moveInOutMechanism
+	 */
+	protected void moveMirror(int position) throws Exception
+	{
+		MoveInOutMechanism mechanismMover = null;
+		MirrorCommand command = null;
+		int portNumber,sleepTime,timeoutTime;
+		String hostname = null;
+		String errorString = null;
+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"moveMirror:"+
+			  "Position = "+SpratConfig.positionToString(position)+" ("+position+").");
+		// retrieve config
+		hostname = status.getProperty("sprat.mechanism.hostname");
+		portNumber = status.getPropertyInteger("sprat.mechanism.port_number");
+		sleepTime = status.getPropertyInteger("sprat.config.mirror.move.sleep_time");
+		timeoutTime = status.getPropertyInteger("sprat.config.mirror.move.timeout_time");
+		// setup command and mover objects
+		sprat.log(Logging.VERBOSITY_VERBOSE,"moveMirror:Creating MirrorCommand to send to "+
+			  hostname+":"+portNumber+".");
+		command = new MirrorCommand(hostname,portNumber);
+		mechanismMover = new MoveInOutMechanism();
+		mechanismMover.setCommand(command,position);
+		sprat.log(Logging.VERBOSITY_VERBOSE,"moveMirror:Setting mover sleep time to "+sleepTime+
+			  " and timeout time to "+timeoutTime+".");
+		mechanismMover.setSleepTime(sleepTime);
+		mechanismMover.setTimeoutTime(timeoutTime);
+		sprat.log(Logging.VERBOSITY_TERSE,"moveMirror:Starting move.");
+		mechanismMover.moveInOutMechanism();
+		sprat.log(Logging.VERBOSITY_TERSE,"moveMirror:Finished move.");
 	}
 
 	/**

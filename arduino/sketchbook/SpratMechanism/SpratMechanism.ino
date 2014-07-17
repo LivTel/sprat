@@ -9,6 +9,10 @@
 // We are using Adafruit's DHT library for the humidity sensor for now
 // Copy to your libraries directory
 #include "DHT.h"
+// We are using Zej's copy of the OneWire and Dallas_Temperature libraries
+// Copy from ~dev/src/sprat/arduino/ZejLibraries to the Arduino SDK libraries directory
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 
 // length of string used for command parsing.
@@ -36,7 +40,10 @@
 
 // Pin declarations
 #define PIN_ARC_LAMP_OUTPUT            (2)
-#define PIN_TEMPERATURE_0              (5)
+#define PIN_TEMPERATURE                (5)  // All Dallas sensors on this OneWire bus
+                                            // Data pin also has a 4.7k pullup resistor connected to the
+                                            // 5v line, even though we are powering the Dallas from the 5v
+                                            // directory (not using parasitic power mode)
 #define PIN_HUMIDITY_0                 (6)  // DHT22, also used for temperature 0 at the moment. 
                                             // Data pin should have a 10k pullup resistor connected to 5v VCC, however
                                             // the phenoptix unit has an inbuilt 5.5k resistor instead.
@@ -57,6 +64,9 @@
 #define PIN_GRISM_ROT_POS_0_INPUT      (35)
 #define PIN_RELAY8_OUTPUT              (36) // unused
 #define PIN_GRISM_ROT_POS_1_INPUT      (37)
+
+// Use 12bit conversions for the Dallas sensors
+#define TEMPERATURE_PRECISION 12
 
 // Ethernet Sheild mac address
 // Map to IP address
@@ -96,6 +106,14 @@ int moveTimeout = DEFAULT_MOVE_TIMEOUT;
 // humidity sensor. Phenoptix DHT22 / AM2302
 DHT dht0(PIN_HUMIDITY_0,DHT22);
 
+// Dallas temperature data
+OneWire oneWire(PIN_TEMPERATURE);
+// Pass our oneWire reference to Dallas Temperature. 
+DallasTemperature dallasTemperature(&oneWire);
+// Dallas device addresses
+DeviceAddress temperatureSensor1 = { 0x28, 0x77, 0x2D, 0x5D, 0x05, 0x00, 0x00, 0x67 };
+DeviceAddress temperatureSensor2 = { 0x28, 0x73, 0x35, 0x5D, 0x05, 0x00, 0x00, 0xF9 };
+
 // gyro variables
 // angle in degrees
 double gyroAngleX = 0.0;
@@ -103,8 +121,9 @@ double gyroAngleY = 0.0;
 double gyroAngleZ = 0.0;
 
 // keep track of when sensors were last read
-#define LAST_TIME_READ_COUNT            (1)
-#define LAST_TIME_READ_INDEX_HUMIDITY0  (0)
+#define LAST_TIME_READ_COUNT             (2)
+#define LAST_TIME_READ_INDEX_HUMIDITY0   (0)
+#define LAST_TIME_READ_INDEX_TEMPERATURE (1)
 unsigned long lastTimeRead[LAST_TIME_READ_COUNT];
 
 // setup
@@ -114,8 +133,6 @@ void setup()
   int i;
   
   // configure pins
-  // TODO
-  //PIN_TEMPERATURE_0
   //PIN_HUMIDITY_0
   dht0.begin();
   //PIN_HUMIDITY_1
@@ -145,11 +162,85 @@ void setup()
   }
   // configure serial
   Serial.begin(9600);
+  // setup Dallas temperature sensors :- after serial setup so we can log what we have found
+  //PIN_TEMPERATURE
+  setupDallas();
   // configure ethernet and callback routine
   Ethernet.begin(mac,ip,gateway,subnet);
   server.begin();
   // messenger callback function
   message.attach(messageReady);
+}
+
+// Setup the Dallas sensors on the onewire pin.
+// @see #TEMPERATURE_PRECISION
+// @see #dallasTemperature
+// @see #dallasTemperature
+void setupDallas()
+{
+  DeviceAddress tempDeviceAddress; // We'll use this variable to store a found device address
+  int numberOfDevices; // Number of temperature devices found
+
+  // Start up the library
+  dallasTemperature.begin();
+  
+  // Grab a count of devices on the wire
+  Serial.println("Locating OneWire devices...");
+  numberOfDevices = dallasTemperature.getDeviceCount();
+  
+  // locate devices on the bus
+  
+  Serial.print("Found ");
+  Serial.print(numberOfDevices, DEC);
+  Serial.println(" OneWire devices.");
+
+  // report parasite power requirements
+  Serial.print("Parasite power is: "); 
+  if (dallasTemperature.isParasitePowerMode()) 
+    Serial.println("ON");
+  else 
+    Serial.println("OFF");
+  
+  // Loop through each device, print out address
+  for(int i=0;i<numberOfDevices; i++)
+  {
+    // Search the wire for address
+    if(dallasTemperature.getAddress(tempDeviceAddress, i))
+    {
+	Serial.print("Found device ");
+	Serial.print(i, DEC);
+	Serial.print(" with address: ");
+	printDallasAddress(tempDeviceAddress);
+	Serial.println();
+		
+	Serial.print("Setting resolution to ");
+	Serial.println(TEMPERATURE_PRECISION, DEC);
+		
+	// set the resolution to TEMPERATURE_PRECISION bit (Each Dallas/Maxim device is capable of several different resolutions)
+	dallasTemperature.setResolution(tempDeviceAddress, TEMPERATURE_PRECISION);
+		
+	Serial.print("Resolution actually set to: ");
+	Serial.print(dallasTemperature.getResolution(tempDeviceAddress), DEC); 
+	Serial.println();
+    }
+    else
+    {
+      Serial.print("Found ghost device at ");
+      Serial.print(i, DEC);
+      Serial.print(" but could not detect address. Check power and cabling");
+    }
+  }
+}
+
+// Print the address of the specified Dallas temperature deviceAddress in hexidecimal.
+// @param deviceAddress The device address to print.
+void printDallasAddress(DeviceAddress deviceAddress)
+{
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    if (deviceAddress[i] < 16) Serial.print("0");
+    Serial.print(deviceAddress[i], HEX);
+  }
 }
 
 // main loop
@@ -187,7 +278,9 @@ void loop()
 
 // Monitor humidity,temperature and orientation (gyro) periodically
 // @see #dht0
+// @see #dallasTemperature
 // @see #LAST_TIME_READ_INDEX_HUMIDITY0
+// @see #LAST_TIME_READ_INDEX_TEMPERATURE
 // @see #LAST_TIME_READ_COUNT
 // @see #lastTimeRead
 void monitorSensors()
@@ -228,6 +321,12 @@ void monitorSensors()
     }
     else
         Serial.println("monitorSensors:Failed to read dht0.");
+  }
+  if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_TEMPERATURE]) > 5000)
+  {
+    Serial.println("monitorSensors:Reading dallas temperatures.");
+    dallasTemperature.requestTemperatures();
+    lastTimeRead[LAST_TIME_READ_INDEX_TEMPERATURE] = millis();
   }
 }
 
@@ -840,18 +939,25 @@ double getHumidity(int sensorNumber)
     dvalue = 0.0;
   Serial.print("getHumidity:Returning humidity ");
   Serial.print(fvalue);
-  Serial.println("%.");
+  Serial.println("(");
+  Serial.print(dvalue);
+  Serial.println(")%.");
   return dvalue;
 }
 
 // Get the current temperature measured at the specified sensor.
 // Sensor 0 is currently the temperature from humidity sensor 0 (dht0).
+// Sensor 1 is currently the temperature from Dallas temperature sensor 1 
+// Sensor 2 is currently the temperature from Dallas temperature sensor 2 
 // @param sensorNumber The sensor to use, an integer between 0 and 1 less than the number of temperature sensors.
 // @return A double, respresenting the temperature measured at the specified sensor. Note there
 //         is no way to return an error if the measurement failed at the moment.
 // @see #dht0
+// @see #dallasTemperature
+// @see #temperatureSensor1
 double getTemperature(int sensorNumber)
 {
+  float fvalue;
   double dvalue;
   
   Serial.print("getTemperature:Started for sensor number ");
@@ -859,13 +965,26 @@ double getTemperature(int sensorNumber)
   Serial.println(".");
   if(sensorNumber == 0)
   {
-    dvalue = (double)dht0.readTemperature();
+    fvalue = dht0.readTemperature();
+    dvalue = (float)fvalue;
+  }
+  else if(sensorNumber == 1)
+  {
+    fvalue = dallasTemperature.getTempC(temperatureSensor1);
+    dvalue = (float)fvalue;
+  }
+  else if(sensorNumber == 2)
+  {
+    fvalue = dallasTemperature.getTempC(temperatureSensor2);
+    dvalue = (float)fvalue;
   }
   else
     dvalue = 0.0;    
   Serial.print("getTemperature:Returning temperature ");
-  Serial.print(dvalue);
-  Serial.println("C.");
+  Serial.print(fvalue);
+  Serial.println("(");
+  Serial.println(dvalue);
+  Serial.println(") C.");
   return dvalue;
 }
 

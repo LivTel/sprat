@@ -99,6 +99,7 @@ public class MULTRUNImplementation extends HardwareImplementation implements JMS
 	/**
 	 * This method implements the MULTRUN command. 
 	 * <ul>
+	 * <li>moveMirror is called to move the calibration mirror out of the beam.
 	 * <li>It moves the fold mirror to the correct location.
 	 * <li>clearFitsHeaders is called.
 	 * <li>setFitsHeaders is called to get some FITS headers from the properties files and add them to the C layer.
@@ -113,6 +114,8 @@ public class MULTRUNImplementation extends HardwareImplementation implements JMS
 	 * @see ngat.sprat.HardwareImplementation#setFitsHeaders
 	 * @see ngat.sprat.HardwareImplementation#getFitsHeadersFromISS
 	 * @see #sendMultrunCommand
+	 * @see ngat.sprat.HardwareImplementation#moveMirror
+	 * @see ngat.phase2.SpratConfig#POSITION_OUT
 	 */
 	public COMMAND_DONE processCommand(COMMAND command)
 	{
@@ -125,8 +128,23 @@ public class MULTRUNImplementation extends HardwareImplementation implements JMS
 		sprat.log(Logging.VERBOSITY_TERSE,this.getClass().getName()+":processCommand:Started.");
 		if(testAbort(multRunCommand,multRunDone) == true)
 			return multRunDone;
-	// move the fold mirror to the correct location
-		sprat.log(Logging.VERBOSITY_TERSE,this.getClass().getName()+":processCommand:Moving fold.");
+		// move the sprat calibration mirror out of the beam
+		sprat.log(Logging.VERBOSITY_TERSE,this.getClass().getName()+":processCommand:Moving calibration mirror.");
+		try
+		{
+			moveMirror(SpratConfig.POSITION_OUT);
+		}
+		catch(Exception e)
+		{
+			sprat.error(this.getClass().getName()+":processCommand:Moving Calibration Mirror failed:"+
+				    command,e);
+			configDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1201);
+			configDone.setErrorString(e.toString());
+			configDone.setSuccessful(false);
+			return configDone;
+		}
+		// move the fold mirror to the correct location
+		sprat.log(Logging.VERBOSITY_TERSE,this.getClass().getName()+":processCommand:Moving fold mirror.");
 		if(moveFold(multRunCommand,multRunDone) == false)
 			return multRunDone;
 		if(testAbort(multRunCommand,multRunDone) == true)
