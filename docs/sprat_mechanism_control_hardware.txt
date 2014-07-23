@@ -132,6 +132,19 @@ MPU-6050 gyroscope
 http://proto-pic.co.uk/triple-axis-accelerometer-and-gyro-breakout-mpu-6050/
 £31.50 (inc VAT)
 SparkFun breakout board
+https://www.sparkfun.com/products/11028
+http://www.i2cdevlib.com/usage
+http://invensense.com/mems/gyro/mpu6050.html
+
+Explanation of how to calculate angles etc:
+http://hobbylogs.me.pn/?p=47
+
+3.3v voltage shifting:
+https://www.circuitlab.com/circuit/j82vg9/sparkfun-mpu6050-to-arduino-with-voltage-shift/
+
+Sparkfun logic level convertor for I2C lines:
+https://www.sparkfun.com/products/12009
+You still need a 3.3v supply though
 
 Mains relay
 -----------

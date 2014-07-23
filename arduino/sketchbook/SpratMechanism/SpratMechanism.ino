@@ -13,12 +13,14 @@
 // Copy from ~dev/src/sprat/arduino/ZejLibraries to the Arduino SDK libraries directory
 #include <OneWire.h>
 #include <DallasTemperature.h>
-
+// We are usiong the i2cdevlib library installed  from jrowberg's tarball for the MPU6050 control
+// The I2Cdev and MPU6050 sub-libraries are used out of the tarball.
+#include "I2Cdev.h"
+#include "MPU6050_6Axis_MotionApps20.h"
+#include "Wire.h"
 
 // length of string used for command parsing.
 #define STRING_LENGTH                  (16)
-// timeout in milloiseconds for mechanism movement
-#define DEFAULT_MOVE_TIMEOUT           (10000)
 #define ERROR_CODE_SUCCESS                      (0)
 // errorCodes indicating mechanism positions (rather than an actual error)
 // For on|off mechanisms
@@ -39,7 +41,8 @@
 #define ERROR_CODE_NUMBER_OUT_OF_RANGE          (8)
 
 // Pin declarations
-#define PIN_ARC_LAMP_OUTPUT            (2)
+#define MPU6050_INTERRUPT              (0)  // MPU6050 INT pin must be connected to Arduino interrupt 0, which is pin 2
+#define PIN_MPU6050_INTERRUPT          (2)  // MPU6050 INT pin must be connected to Arduino interrupt 0, which is pin 2
 #define PIN_TEMPERATURE                (5)  // All Dallas sensors on this OneWire bus
                                             // Data pin also has a 4.7k pullup resistor connected to the
                                             // 5v line, even though we are powering the Dallas from the 5v
@@ -47,6 +50,7 @@
 #define PIN_HUMIDITY_0                 (6)  // DHT22, also used for temperature 0 at the moment. 
                                             // Data pin should have a 10k pullup resistor connected to 5v VCC, however
                                             // the phenoptix unit has an inbuilt 5.5k resistor instead.
+#define PIN_ARC_LAMP_OUTPUT            (8)
 #define PIN_HUMIDITY_1                 (1)
 #define PIN_MIRROR_OUTPUT              (22) // IN = HIGH, OUT = LOW (RELAY1)
 #define PIN_MIRROR_OUT_INPUT           (23)
@@ -66,7 +70,7 @@
 #define PIN_GRISM_ROT_POS_1_INPUT      (37)
 
 // Use 12bit conversions for the Dallas sensors
-#define TEMPERATURE_PRECISION 12
+#define TEMPERATURE_PRECISION          (12)
 
 // Ethernet Sheild mac address
 // Map to IP address
@@ -100,9 +104,6 @@ char string[STRING_LENGTH];
 // error number
 int errorNumber = 0;
 
-// movement timeouts, all in milliseconds
-int moveTimeout = DEFAULT_MOVE_TIMEOUT;
-
 // humidity sensor. Phenoptix DHT22 / AM2302
 DHT dht0(PIN_HUMIDITY_0,DHT22);
 
@@ -113,8 +114,24 @@ DallasTemperature dallasTemperature(&oneWire);
 // Dallas device addresses
 DeviceAddress temperatureSensor1 = { 0x28, 0x77, 0x2D, 0x5D, 0x05, 0x00, 0x00, 0x67 };
 DeviceAddress temperatureSensor2 = { 0x28, 0x73, 0x35, 0x5D, 0x05, 0x00, 0x00, 0xF9 };
+// Extra variables for asynchronous polling of the temperatures
+//unsigned long lastTempRequestTime = 0;
+//diddly
 
 // gyro variables
+// Use default address (0x68) for Sparkfun board
+MPU6050 mpu;
+bool dmpReady = false;              // set true if DMP init was successful
+uint8_t mpuIntStatus;               // holds actual interrupt status byte from MPU
+uint16_t dmpPacketSize;             // expected DMP packet size (default is 42 bytes)
+uint16_t dmpFifoCount;              // count of all bytes currently in FIFO
+uint8_t dmpFifoBuffer[64];          // FIFO storage buffer
+// orientation/motion vars
+Quaternion dmpQuat;                 // [w, x, y, z]         quaternion container
+VectorFloat dmpGravity;             // [x, y, z]            gravity vector
+float dmpYPR[3];                       // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
+volatile bool mpuInterrupt = false; // indicates whether MPU interrupt pin has gone high
+
 // angle in degrees
 double gyroAngleX = 0.0;
 double gyroAngleY = 0.0;
@@ -128,6 +145,10 @@ unsigned long lastTimeRead[LAST_TIME_READ_COUNT];
 
 // setup
 // @see #dht0
+// @see #setupDallas
+// @see #setupMPU6050
+// @see #lastTimeRead
+// @see #LAST_TIME_READ_COUNT
 void setup()
 {
   int i;
@@ -165,6 +186,8 @@ void setup()
   // setup Dallas temperature sensors :- after serial setup so we can log what we have found
   //PIN_TEMPERATURE
   setupDallas();
+  // setup MPU6050 gyro/accelerometer
+  setupMPU6050();
   // configure ethernet and callback routine
   Ethernet.begin(mac,ip,gateway,subnet);
   server.begin();
@@ -185,17 +208,16 @@ void setupDallas()
   dallasTemperature.begin();
   
   // Grab a count of devices on the wire
-  Serial.println("Locating OneWire devices...");
+  printTime(); Serial.println("setupDallas: Locating OneWire devices...");
   numberOfDevices = dallasTemperature.getDeviceCount();
   
   // locate devices on the bus
-  
-  Serial.print("Found ");
+  printTime(); Serial.print("setupDallas: Found ");
   Serial.print(numberOfDevices, DEC);
   Serial.println(" OneWire devices.");
 
   // report parasite power requirements
-  Serial.print("Parasite power is: "); 
+  printTime(); Serial.print("setupDallas: Parasite power is: "); 
   if (dallasTemperature.isParasitePowerMode()) 
     Serial.println("ON");
   else 
@@ -207,25 +229,25 @@ void setupDallas()
     // Search the wire for address
     if(dallasTemperature.getAddress(tempDeviceAddress, i))
     {
-	Serial.print("Found device ");
+	printTime(); Serial.print("setupDallas: Found device ");
 	Serial.print(i, DEC);
 	Serial.print(" with address: ");
 	printDallasAddress(tempDeviceAddress);
 	Serial.println();
 		
-	Serial.print("Setting resolution to ");
+	printTime(); Serial.print("setupDallas: Setting resolution to ");
 	Serial.println(TEMPERATURE_PRECISION, DEC);
 		
 	// set the resolution to TEMPERATURE_PRECISION bit (Each Dallas/Maxim device is capable of several different resolutions)
 	dallasTemperature.setResolution(tempDeviceAddress, TEMPERATURE_PRECISION);
 		
-	Serial.print("Resolution actually set to: ");
+	printTime(); Serial.print("setupDallas: Resolution actually set to: ");
 	Serial.print(dallasTemperature.getResolution(tempDeviceAddress), DEC); 
 	Serial.println();
     }
     else
     {
-      Serial.print("Found ghost device at ");
+      printTime(); Serial.print("setupDallas: Found ghost device at ");
       Serial.print(i, DEC);
       Serial.print(" but could not detect address. Check power and cabling");
     }
@@ -243,6 +265,92 @@ void printDallasAddress(DeviceAddress deviceAddress)
   }
 }
 
+// Setup the MPU6050 gyro/accelerometer
+// @see #Wire
+// @see #mpu
+// @see #MPU6050_INTERRUPT
+// @see #dmpDataReady
+// @see #mpuIntStatus
+// @see #dmpReady
+// @see #dmpPacketSize
+void setupMPU6050()
+{
+  uint8_t devStatus;
+  
+  // join I2C bus (I2Cdev library doesn't do this automatically)
+  Wire.begin();
+  TWBR = 24; // 400kHz I2C clock (200kHz if CPU is 8MHz)
+  printTime(); Serial.println(F("setupMPU6050:Initializing I2C devices..."));
+  mpu.initialize();
+  printTime(); Serial.println(F("setupMPU6050:Testing MPU6050 device connections..."));
+  printTime(); Serial.println(mpu.testConnection() ? F("setupMPU6050:MPU6050 connection successful") : F("setupMPU6050:MPU6050 connection failed"));
+  printTime(); Serial.println(F("setupMPU6050: Initializing MPU6050 DMP..."));
+  devStatus = mpu.dmpInitialize();
+  // Slow down sample rate
+  // The arduino gets FIFO overflows followed by Arduino lockup if we use the standard sample rate 
+  // (~100-200Hz). 1Hz is sufficient
+  // Rate defaults to 4: If gryo sample rate is 8kH this gives a DMP sample rate of 1.6kHz?
+  // We also get FIFO overflows and lockups if we use 'D_0_22 inv_set_fifo_rate' = 0x01 and mpu.setRate(50);
+  // Therefore change 'D_0_22 inv_set_fifo_rate' in MPU6050_6Axis_MotionApps20.h to 0x09
+  printTime(); Serial.print(F("setupMPU6050: MPU6050 DMP Sampling Rate originally:"));
+  Serial.print(mpu.getRate());
+  Serial.println();
+  // At 1Hz the device takes several minutes to slew to each new position - this is no good
+  //  Serial.println(F("Setting sample rate to 1Hz..."));
+  //  mpu.setRate(999);
+  // At 10Hz the slew is fast enough, currently this doesn't seem to lock up the Arduino
+  printTime(); Serial.println(F("setupMPU6050:Setting sample rate to 10Hz..."));
+  mpu.setRate(9);// if 'D_0_22 inv_set_fifo_rate' is 0x09
+  //mpu.setRate(50); // if 'D_0_22 inv_set_fifo_rate' is 0x01
+  printTime(); Serial.print(F("setupMPU6050:DMP Sampling Rate now:"));
+  Serial.print(mpu.getRate());
+  Serial.println();
+  // supply your own gyro offsets here, scaled for min sensitivity
+  mpu.setXGyroOffset(220);
+  mpu.setYGyroOffset(76);
+  mpu.setZGyroOffset(-85);
+  mpu.setZAccelOffset(1788); // 1688 factory default for my test chip
+  // make sure it worked (returns 0 if so)
+  if (devStatus == 0)
+  {
+    // turn on the DMP, now that it's ready
+    printTime(); Serial.println(F("setupMPU6050:Enabling DMP..."));
+    mpu.setDMPEnabled(true);
+
+    // enable Arduino interrupt detection
+    printTime(); Serial.println(F("setupMPU6050:Enabling interrupt detection (Arduino external interrupt 0)..."));
+    attachInterrupt(MPU6050_INTERRUPT, dmpDataReady, RISING);
+    mpuIntStatus = mpu.getIntStatus();
+
+    // set our DMP Ready flag so the main loop() function knows it's okay to use it
+    printTime(); Serial.println(F("setupMPU6050:DMP ready! Waiting for first interrupt..."));
+    dmpReady = true;
+
+    // get expected DMP packet size for later comparison
+    dmpPacketSize = mpu.dmpGetFIFOPacketSize();
+  }
+  else
+  {
+    // ERROR!
+    // 1 = initial memory load failed
+    // 2 = DMP configuration updates failed
+    // (if it's going to break, usually the code will be 1)
+    printTime(); Serial.print(F("setupMPU6050:DMP Initialization failed (code "));
+    Serial.print(devStatus);
+    Serial.println(F(")"));
+  }
+}
+
+// Interrupt routine called when the MPU6050 DMP (digital motion processor) has completed a calculation.
+// This should get called at the rate setup by mpu.setRate.
+// Here we set a flag (mpuInterrupt) wheich in the main loop causes us to read out the FIFO and retrieve the data.
+// @see #mpuInterrupt
+void dmpDataReady() 
+{
+  mpuInterrupt = true;
+}
+
+
 // main loop
 // @see #server
 // @see #client
@@ -254,12 +362,12 @@ void loop()
   {
       connectFlag = 1;
       client = server.available();
-      Serial.println("loop:New client connected.");
+      printTime(); Serial.println("loop:New client connected.");
   }
   // check for input from client
   if(client.connected() && client.available())
   {
-      Serial.print("loop:Reading characters from Ethernet:");
+      printTime(); Serial.print("loop:Reading characters from Ethernet:");
       while(client.available())
       {
         char ch;
@@ -272,11 +380,12 @@ void loop()
   }
   // do other stuff here
   monitorSensors();
+  checkMPU6050();
   // wait a bit to stop the arduino locking up
   delay(10);
 }
 
-// Monitor humidity,temperature and orientation (gyro) periodically
+// Monitor humidity,temperature periodically
 // @see #dht0
 // @see #dallasTemperature
 // @see #LAST_TIME_READ_INDEX_HUMIDITY0
@@ -299,11 +408,11 @@ void monitorSensors()
   {
     if(nowTime < lastTimeRead[i])
     {
-        Serial.print("monitorSensors:lastTimeRead[");
+        printTime(); Serial.print("monitorSensors:lastTimeRead[");
         Serial.print(i);
         Serial.print("]in the past:Reseting to nowTime ");
         Serial.print(nowTime);
-        Serial.print(".");
+        Serial.println(".");
         lastTimeRead[i] = nowTime;
     }
   }
@@ -312,22 +421,100 @@ void monitorSensors()
   // However this is not available external to the library, so we have our own external clock here.
   if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_HUMIDITY0]) > 3000)
   {
-    Serial.println("monitorSensors:Reading dht0.");
+    printTime(); Serial.println("monitorSensors:Reading dht0.");
     retval = dht0.read();
     if(retval)
     {
-        Serial.println("monitorSensors:Read dht0 successfully.");
+        printTime(); Serial.println("monitorSensors:Read dht0 successfully.");
         lastTimeRead[LAST_TIME_READ_INDEX_HUMIDITY0] = millis();
     }
     else
-        Serial.println("monitorSensors:Failed to read dht0.");
+    {
+        printTime(); Serial.println("monitorSensors:Failed to read dht0.");
+    }
   }
   if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_TEMPERATURE]) > 5000)
   {
-    Serial.println("monitorSensors:Reading dallas temperatures.");
+    printTime(); Serial.println("monitorSensors:Reading dallas temperatures.");
     dallasTemperature.requestTemperatures();
+    printTime(); Serial.println("monitorSensors:Read dallas temperatures.");
     lastTimeRead[LAST_TIME_READ_INDEX_TEMPERATURE] = millis();
   }
+}
+
+// Routine to check whether the MPU6050 DMP interrupt flag is set.
+// If it is set and the FIFO buffer has data, read the data until the FIFO is empty.
+// Process the data and update the gyro angles accordingly
+// @see #dmpReady
+// @see #mpuInterrupt
+// @see #dmpFifoCount
+// @see #dmpPacketSize
+// @see #mpuIntStatus
+// @see #gyroAngleX
+// @see #gyroAngleY
+// @see #gyroAngleZ
+void checkMPU6050()
+{
+    printTime(); Serial.println("checkMPU6050:Started.");
+    if (!dmpReady)
+    { 
+      printTime(); Serial.println("checkMPU6050:dmpReady was false:terminating.");
+      return;
+    }
+    // wait for MPU interrupt or extra packet(s) available
+    if(!mpuInterrupt && dmpFifoCount < dmpPacketSize)
+    {
+      printTime(); Serial.println("checkMPU6050:mpuInterrupt was false or dmpFifoCount was too small:terminating.");
+      return;
+    }
+    // reset interrupt flag and get INT_STATUS byte
+    mpuInterrupt = false;
+    mpuIntStatus = mpu.getIntStatus();
+
+    // get current FIFO count
+    dmpFifoCount = mpu.getFIFOCount();
+
+    // check for overflow (this should never happen unless our code is too inefficient)
+    if ((mpuIntStatus & 0x10) || dmpFifoCount == 1024)
+    {
+        // reset so we can continue cleanly
+        printTime(); Serial.println(F("checkMPU6050: FIFO overflow!"));
+        mpu.resetFIFO();
+       printTime();  Serial.println(F("checkMPU6050: FIFO reset."));
+    // otherwise, check for DMP data ready interrupt (this should happen frequently)
+    } 
+    else if (mpuIntStatus & 0x02)
+    {
+        printTime(); Serial.println(F("checkMPU6050: Waiting for FIFO to fill."));
+        // wait for correct available data length, should be a VERY short wait
+        while (dmpFifoCount < dmpPacketSize) 
+          dmpFifoCount = mpu.getFIFOCount();
+
+        printTime(); Serial.println(F("checkMPU6050:Reading FIFO."));
+        // read a packet from FIFO
+        mpu.getFIFOBytes(dmpFifoBuffer, dmpPacketSize);
+        
+        // track FIFO count here in case there is > 1 packet available
+        // (this lets us immediately read more without waiting for an interrupt)
+        dmpFifoCount -= dmpPacketSize;
+
+        // display Euler angles in degrees
+        mpu.dmpGetQuaternion(&dmpQuat, dmpFifoBuffer);
+        mpu.dmpGetGravity(&dmpGravity, &dmpQuat);
+        mpu.dmpGetYawPitchRoll(dmpYPR, &dmpQuat, &dmpGravity);
+        // yaw = Z
+        gyroAngleZ = dmpYPR[0] * 180/M_PI;
+        // pitch = X
+        gyroAngleX = dmpYPR[1] * 180/M_PI;
+        // roll = Y
+        gyroAngleY = dmpYPR[2] * 180/M_PI;
+        printTime(); Serial.print("checkMPU6050: yaw pitch roll = ");
+        Serial.print(gyroAngleZ);
+        Serial.print(",");
+        Serial.print(gyroAngleX);
+        Serial.print(",");
+        Serial.println(gyroAngleY);
+    }
 }
 
 // Messenger callback function
@@ -387,7 +574,7 @@ void messageReady()
   double dvalue;
   int errorCode,position,sensorNumber,rotationPosition,relayNumber,isOn,pinNumber,currentState;
   
-  Serial.println("messageReady:Processing message.");
+  printTime(); Serial.println("messageReady:Processing message.");
   if(message.available())
   {
     if(message.checkString("arclamp"))
@@ -461,6 +648,8 @@ void messageReady()
     }   
     else if(message.checkString("gyro"))
     {
+      // diddly rewrite, use dmp variables to determine whether there is an error
+      // delete getGyroPosition
       errorCode = getGyroPosition();
       switch(errorCode)
       {
@@ -769,7 +958,7 @@ void messageReady()
 // @see #PIN_ARC_LAMP_OUTPUT
 int arcLampOn()
 {
-  Serial.println("arcLampOn:Started.");
+  printTime(); Serial.println("arcLampOn:Started.");
   digitalWrite(PIN_ARC_LAMP_OUTPUT,HIGH);
   return ERROR_CODE_ON;
 }
@@ -781,7 +970,7 @@ int arcLampOn()
 // @see #PIN_ARC_LAMP_OUTPUT
 int arcLampOff()
 {
-  Serial.println("arcLampOff:Started.");
+  printTime(); Serial.println("arcLampOff:Started.");
   digitalWrite(PIN_ARC_LAMP_OUTPUT,LOW);
   return ERROR_CODE_OFF;
 }
@@ -796,7 +985,7 @@ int getArcLampStatus()
 {
   int currentState;
 
-  Serial.println("getArcLampStatus:Started.");
+  printTime(); Serial.println("getArcLampStatus:Started.");
   currentState = digitalRead(PIN_ARC_LAMP_OUTPUT);
   //currentState = bitRead(PORTD,PIN_ARC_LAMP_OUTPUT);
   if(currentState == HIGH)
@@ -821,12 +1010,12 @@ int grismIn()
 {
   int grismRotationStatus;
   
-  Serial.println("grismIn:Started.");
+  printTime(); Serial.println("grismIn:Started.");
   // We can only move the grism if the grism rotation is in position 0.
   grismRotationStatus = getRotation();
   if(grismRotationStatus != 0) // The grism rotation cylinder is not stowed
   {
-    Serial.println("grismIn:Error:Grism Rotation not in position 0: Failing to start move.");
+    printTime(); Serial.println("grismIn:Error:Grism Rotation not in position 0: Failing to start move.");
     return ERROR_CODE_ROT_POS_NOT_ZERO;
   }
   digitalWrite(PIN_GRISM_OUTPUT,HIGH);
@@ -847,12 +1036,12 @@ int grismOut()
 {
   int grismRotationStatus;
   
-  Serial.println("grismOut:Started.");
+  printTime(); Serial.println("grismOut:Started.");
   // We can only move the grism if the grism rotation is in position 0.
   grismRotationStatus = getRotation();
   if(grismRotationStatus != 0) // The grism rotation cylinder is not stowed
   {
-    Serial.println("grismOut:Error:Grism Rotation not in position 0: Failing to start move.");
+    printTime(); Serial.println("grismOut:Error:Grism Rotation not in position 0: Failing to start move.");
     return ERROR_CODE_ROT_POS_NOT_ZERO;
   }
   digitalWrite(PIN_GRISM_OUTPUT,LOW);
@@ -874,7 +1063,7 @@ int getGrismStatus()
 {
   int isIn,isOut,currentState;
 
-  Serial.println("getGrismStatus:Started.");
+  printTime(); Serial.println("getGrismStatus:Started.");
   isIn = digitalRead(PIN_GRISM_IN_INPUT);
   isOut = digitalRead(PIN_GRISM_OUT_INPUT);
   if((isIn == HIGH) && (isOut == LOW))
@@ -886,7 +1075,7 @@ int getGrismStatus()
   else // isIn and isOut both true - an error
   {
     // Error ERROR_CODE_ILLEGAL_GRISM_POS: The Grism is both IN and OUT at the same time.
-    Serial.print("Error ");
+    printTime(); Serial.print("Error ");
     Serial.print(ERROR_CODE_ILLEGAL_GRISM_POS);
     Serial.println(" Illegal Grism Current Position: Both IN and OUT sensors are high.");
     currentState = ERROR_CODE_ILLEGAL_GRISM_POS;
@@ -907,12 +1096,9 @@ int getGyroPosition()
 {
   int errorCode;
   
-  Serial.println("getGyroPosition:Started.");
+  printTime(); Serial.println("getGyroPosition:Started.");
   errorCode = ERROR_CODE_SUCCESS;
-  // TODO
-  gyroAngleX = 0.0;
-  gyroAngleY = 0.0;
-  gyroAngleZ = 0.0;
+  // gyroAngles actually retrieved via an interupt : see checkMPU6050
   return errorCode;
 }
 
@@ -927,7 +1113,7 @@ double getHumidity(int sensorNumber)
   float fvalue;
   double dvalue;
   
-  Serial.print("getHumidity:Started for sensor number ");
+  printTime(); Serial.print("getHumidity:Started for sensor number ");
   Serial.print(sensorNumber);
   Serial.println(".");
   if(sensorNumber == 0)
@@ -937,9 +1123,9 @@ double getHumidity(int sensorNumber)
   }
   else
     dvalue = 0.0;
-  Serial.print("getHumidity:Returning humidity ");
+  printTime(); Serial.print("getHumidity:Returning humidity ");
   Serial.print(fvalue);
-  Serial.println("(");
+  Serial.print("(");
   Serial.print(dvalue);
   Serial.println(")%.");
   return dvalue;
@@ -960,7 +1146,7 @@ double getTemperature(int sensorNumber)
   float fvalue;
   double dvalue;
   
-  Serial.print("getTemperature:Started for sensor number ");
+  printTime(); Serial.print("getTemperature:Started for sensor number ");
   Serial.print(sensorNumber);
   Serial.println(".");
   if(sensorNumber == 0)
@@ -980,10 +1166,10 @@ double getTemperature(int sensorNumber)
   }
   else
     dvalue = 0.0;    
-  Serial.print("getTemperature:Returning temperature ");
+  printTime(); Serial.print("getTemperature:Returning temperature ");
   Serial.print(fvalue);
-  Serial.println("(");
-  Serial.println(dvalue);
+  Serial.print("(");
+  Serial.print(dvalue);
   Serial.println(") C.");
   return dvalue;
 }
@@ -998,7 +1184,7 @@ double getTemperature(int sensorNumber)
 // @see #getMirrorStatus
 int mirrorIn()
 {
-  Serial.println("mirrorIn:Started.");
+  printTime(); Serial.println("mirrorIn:Started.");
   digitalWrite(PIN_MIRROR_OUTPUT,HIGH);
   return getMirrorStatus();
 }
@@ -1013,7 +1199,7 @@ int mirrorIn()
 // @see #getMirrorStatus
 int mirrorOut()
 {
-  Serial.println("mirrorOut:Started.");
+  printTime(); Serial.println("mirrorOut:Started.");
   digitalWrite(PIN_MIRROR_OUTPUT,LOW);
   return getMirrorStatus();
 }
@@ -1033,7 +1219,7 @@ int getMirrorStatus()
 {
   int isIn,isOut,currentState;
 
-  Serial.println("getMirrorStatus:Started.");
+  printTime(); Serial.println("getMirrorStatus:Started.");
   isIn = digitalRead(PIN_MIRROR_IN_INPUT);
   isOut = digitalRead(PIN_MIRROR_OUT_INPUT);
   if((isIn == HIGH) && (isOut == LOW))
@@ -1045,7 +1231,7 @@ int getMirrorStatus()
   else // isIn and isOut both true - an error
   {
     // Error ERROR_CODE_ILLEGAL_MIRROR_POS: The Mirror is both IN and OUT at the same time.
-    Serial.print("Error ");
+    printTime(); Serial.print("Error ");
     Serial.print(ERROR_CODE_ILLEGAL_MIRROR_POS);
     Serial.println(" Illegal Mirror Current Position: Both IN and OUT sensors are high.");
     currentState = ERROR_CODE_ILLEGAL_MIRROR_POS;
@@ -1109,7 +1295,7 @@ int relayOnOff(int relayNumber,int isOn)
         pinNumber = PIN_RELAY8_OUTPUT;
         break;
       default:
-        Serial.print("Error ");
+        printTime(); Serial.print("Error ");
         Serial.print(ERROR_CODE_NUMBER_OUT_OF_RANGE);
         Serial.print(":Relay Number ");
         Serial.print(relayNumber);
@@ -1122,7 +1308,7 @@ int relayOnOff(int relayNumber,int isOn)
       grismRotationStatus = getRotation();
       if(grismRotationStatus != 0)
       {
-        Serial.print("Error ");
+        printTime(); Serial.print("Error ");
         Serial.print(ERROR_CODE_ROT_POS_NOT_ZERO);
         Serial.print(" Grism Rotation position was not 0: cannot move grism mechanism. Current grism status: ");
         Serial.print(grismStatus);
@@ -1137,7 +1323,7 @@ int relayOnOff(int relayNumber,int isOn)
       grismStatus = getGrismStatus();
       if((isOn == 1) && (grismStatus != ERROR_CODE_IN))
       {
-        Serial.print("Error ");
+        printTime(); Serial.print("Error ");
         Serial.print(ERROR_CODE_GRISM_NOT_IN);
         Serial.print(" Grism was not IN: cannot move grism rotation mechanism to position 1. Current grism status: ");
         Serial.print(grismStatus);
@@ -1157,7 +1343,7 @@ int relayOnOff(int relayNumber,int isOn)
     }
     else
     {
-        Serial.print("Error ");
+        printTime(); Serial.print("Error ");
         Serial.print(ERROR_CODE_NUMBER_OUT_OF_RANGE);
         Serial.print(":IsOn Number ");
         Serial.print(isOn);
@@ -1184,7 +1370,7 @@ int rotation(int targetPosition)
 {
   int grismStatus;
   
-  Serial.print("rotation:Started rotating grism to position: ");
+  printTime(); Serial.print("rotation:Started rotating grism to position: ");
   Serial.print(targetPosition);
   Serial.println(".");
   // If the grism is not in, we cannot start moving the grism rotation stage to position 1 due to it's design.
@@ -1193,7 +1379,7 @@ int rotation(int targetPosition)
     grismStatus = getGrismStatus();
     if(grismStatus != ERROR_CODE_IN)
     {
-      Serial.print("Error ");
+      printTime(); Serial.print("Error ");
       Serial.print(ERROR_CODE_GRISM_NOT_IN);
       Serial.print(" Grism was not IN: cannot move grism rotation mechanism to position 1. Current grism status: ");
       Serial.print(grismStatus);
@@ -1211,7 +1397,7 @@ int rotation(int targetPosition)
   }
   else
   {
-    Serial.print("Error ");
+    printTime(); Serial.print("Error ");
     Serial.print(ERROR_CODE_ILLEGAL_GRISM_ROT_TARGET_POS);
     Serial.print(" Illegal grism rotation target position: ");
     Serial.print(targetPosition);
@@ -1233,7 +1419,7 @@ int getRotation()
 {
   int isInPos0,isInPos1,currentState;
 
-  Serial.println("getRotation:Started.");
+  printTime(); Serial.println("getRotation:Started.");
   isInPos0 = digitalRead(PIN_GRISM_ROT_POS_0_INPUT);
   isInPos1 = digitalRead(PIN_GRISM_ROT_POS_1_INPUT);
   if((isInPos0 == HIGH) && (isInPos1 == LOW))
@@ -1245,7 +1431,7 @@ int getRotation()
   else // isInPos0 and isInPos0 both true - an error
   {
     // Error ERROR_CODE_ILLEGAL_GRISM_ROT_POS: The Grism is in Rotation position 0 and 1 at the same time.
-    Serial.print("Error ");
+    printTime(); Serial.print("Error ");
     Serial.print(ERROR_CODE_ILLEGAL_GRISM_ROT_POS);
     Serial.println(" The Grism is in Rotation position 0 and 1 at the same time.");
     currentState = ERROR_CODE_ILLEGAL_GRISM_ROT_POS;
@@ -1263,7 +1449,7 @@ int getRotation()
 // @see #getSlitStatus
 int slitIn()
 {
-  Serial.println("slitIn:Started.");
+  printTime(); Serial.println("slitIn:Started.");
   digitalWrite(PIN_SLIT_OUTPUT,HIGH);
   return getSlitStatus();
 }
@@ -1278,7 +1464,7 @@ int slitIn()
 // @see #getSlitStatus
 int slitOut()
 {
-  Serial.println("slitOut:Started.");
+  printTime(); Serial.println("slitOut:Started.");
   digitalWrite(PIN_SLIT_OUTPUT,LOW);
   return getSlitStatus();
 }
@@ -1298,7 +1484,7 @@ int getSlitStatus()
 {
   int isIn,isOut,currentState;
 
-  Serial.println("getSlitStatus:Started.");
+  printTime(); Serial.println("getSlitStatus:Started.");
   isIn = digitalRead(PIN_SLIT_IN_INPUT);
   isOut = digitalRead(PIN_SLIT_OUT_INPUT);
   if((isIn == HIGH) && (isOut == LOW))
@@ -1310,7 +1496,7 @@ int getSlitStatus()
   else // isIn and isOut both true - an error
   {
     // Error ERROR_CODE_ILLEGAL_SLIT_POS: The Slit is both IN and OUT at the same time.
-    Serial.print("Error ");
+    printTime(); Serial.print("Error ");
     Serial.print(ERROR_CODE_ILLEGAL_SLIT_POS);
     Serial.println(" Illegal Slit Current Position: Both IN and OUT sensors are high.");
     currentState = ERROR_CODE_ILLEGAL_SLIT_POS;
@@ -1325,7 +1511,7 @@ int getSlitStatus()
 // @see #PIN_W_LAMP_OUTPUT
 int wLampOn()
 {
-  Serial.println("wLampOn:Started.");
+  printTime(); Serial.println("wLampOn:Started.");
   digitalWrite(PIN_W_LAMP_OUTPUT,HIGH);
   return ERROR_CODE_ON;
 }
@@ -1337,7 +1523,7 @@ int wLampOn()
 // @see #PIN_W_LAMP_OUTPUT
 int wLampOff()
 {
-  Serial.println("wLampOff:Started.");
+  printTime(); Serial.println("wLampOff:Started.");
   digitalWrite(PIN_W_LAMP_OUTPUT,LOW);
   return ERROR_CODE_OFF;
 }
@@ -1352,7 +1538,7 @@ int getWLampStatus()
 {
   int currentState;
 
-  Serial.println("getWLampStatus:Started.");
+  printTime(); Serial.println("getWLampStatus:Started.");
   currentState = digitalRead(PIN_W_LAMP_OUTPUT);
   //currentState = bitRead(PORTD,PIN_W_LAMP_OUTPUT);
   if(currentState == HIGH)
@@ -1361,3 +1547,10 @@ int getWLampStatus()
     return ERROR_CODE_OFF;
 }
 
+// Print the current time in milliseconds followed by a space, to the serial line.
+// Used to start logging lines .
+void printTime()
+{
+  Serial.print(millis());
+  Serial.print(" ");
+}
