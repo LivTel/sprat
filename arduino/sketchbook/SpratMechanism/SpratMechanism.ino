@@ -71,6 +71,8 @@
 
 // Use 12bit conversions for the Dallas sensors
 #define TEMPERATURE_PRECISION          (12)
+// 12 bit conversion takes 750ms. See DallasTemperature::blockTillConversionComplete
+#define TEMPERATURE_CONVERSION_DELAY_TIME (750)
 
 // Ethernet Sheild mac address
 // Map to IP address
@@ -115,8 +117,10 @@ DallasTemperature dallasTemperature(&oneWire);
 DeviceAddress temperatureSensor1 = { 0x28, 0x77, 0x2D, 0x5D, 0x05, 0x00, 0x00, 0x67 };
 DeviceAddress temperatureSensor2 = { 0x28, 0x73, 0x35, 0x5D, 0x05, 0x00, 0x00, 0xF9 };
 // Extra variables for asynchronous polling of the temperatures
-//unsigned long lastTempRequestTime = 0;
-//diddly
+// last time we asked the dallas to sample the temperature
+unsigned long lastTempRequestTime = 0;
+// last retrieved temeprature from the scratchpad
+float temperatureList[2];
 
 // gyro variables
 // Use default address (0x68) for Sparkfun board
@@ -138,9 +142,9 @@ double gyroAngleY = 0.0;
 double gyroAngleZ = 0.0;
 
 // keep track of when sensors were last read
-#define LAST_TIME_READ_COUNT             (2)
+#define LAST_TIME_READ_COUNT             (1)
 #define LAST_TIME_READ_INDEX_HUMIDITY0   (0)
-#define LAST_TIME_READ_INDEX_TEMPERATURE (1)
+//#define LAST_TIME_READ_INDEX_TEMPERATURE (1)
 unsigned long lastTimeRead[LAST_TIME_READ_COUNT];
 
 // setup
@@ -222,7 +226,14 @@ void setupDallas()
     Serial.println("ON");
   else 
     Serial.println("OFF");
-  
+
+  // Convert temperatures asynchronously. requestTemperatures returns immediately rather than
+  // delaying until the Dallas A/D is complete, allowing us to service gyro interrupts and stop
+  // gyro FIFO overflows and Arduino lockups. We therefore have to monitor the conversion progress
+  // asynchronously and retrieve the converted temperatures from the scratchpad ourselves.
+  printTime(); Serial.println("setupDallas:Setup library for asynchronous conversion to help gyro code."); 
+  dallasTemperature.setWaitForConversion(false);
+
   // Loop through each device, print out address
   for(int i=0;i<numberOfDevices; i++)
   {
@@ -328,6 +339,9 @@ void setupMPU6050()
 
     // get expected DMP packet size for later comparison
     dmpPacketSize = mpu.dmpGetFIFOPacketSize();
+    printTime(); Serial.print(F("setupMPU6050: dmpPacketSize = "));
+    Serial.print(dmpPacketSize);
+    Serial.println(F("."));
   }
   else
   {
@@ -389,9 +403,9 @@ void loop()
 // @see #dht0
 // @see #dallasTemperature
 // @see #LAST_TIME_READ_INDEX_HUMIDITY0
-// @see #LAST_TIME_READ_INDEX_TEMPERATURE
 // @see #LAST_TIME_READ_COUNT
 // @see #lastTimeRead
+// @see #TEMPERATURE_CONVERSION_DELAY_TIME
 void monitorSensors()
 {
   unsigned long nowTime;
@@ -433,12 +447,33 @@ void monitorSensors()
         printTime(); Serial.println("monitorSensors:Failed to read dht0.");
     }
   }
-  if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_TEMPERATURE]) > 5000)
+  // Dallas temperature conversion
+  // This is now done asynchonously :- We use requestTemperatures 
+  // after setting setWaitForConversion to false in setup. We use lastTempRequestTime to determine when the
+  // Dallas has finished the conversion, for 12bits this is 750ms. We then read the scratchpad for each sensor,
+  // and start another conversion. This allows us to service the MPU6050 interrupt whilst Dallas temperature
+  // conversion is taking place.
+  if((nowTime - lastTempRequestTime) > TEMPERATURE_CONVERSION_DELAY_TIME)
   {
-    printTime(); Serial.println("monitorSensors:Reading dallas temperatures.");
+    if(lastTempRequestTime != 0)
+    {
+      printTime(); Serial.println("monitorSensors:Retrieving dallas temperatures from dallas scratchpad.");
+      // get last set of converted temperatures into variables
+      temperatureList[0] = dallasTemperature.getTempC(temperatureSensor1);
+      printTime(); Serial.print("monitorSensors:Dallas temperature Sensor 1 returned ");
+      Serial.print(temperatureList[0]);
+      Serial.println(".");
+      temperatureList[1] = dallasTemperature.getTempC(temperatureSensor2);
+      printTime(); Serial.print("monitorSensors:Dallas temperature Sensor 2 returned ");
+      Serial.print(temperatureList[1]);
+      Serial.println(".");
+      printTime(); Serial.println("monitorSensors:Retrieved dallas temperatures from dallas scratchpad.");
+    }
+    // request a conversion is done, and make a note of when we have done the request
+    printTime(); Serial.println("monitorSensors:Requesting dallas temperatures.");
     dallasTemperature.requestTemperatures();
-    printTime(); Serial.println("monitorSensors:Read dallas temperatures.");
-    lastTimeRead[LAST_TIME_READ_INDEX_TEMPERATURE] = millis();
+    printTime(); Serial.println("monitorSensors:Requested dallas temperatures.");
+    lastTempRequestTime = millis();
   }
 }
 
@@ -461,6 +496,10 @@ void checkMPU6050()
       printTime(); Serial.println("checkMPU6050:dmpReady was false:terminating.");
       return;
     }
+    
+    // get current FIFO count
+    dmpFifoCount = mpu.getFIFOCount();
+    
     // wait for MPU interrupt or extra packet(s) available
     if(!mpuInterrupt && dmpFifoCount < dmpPacketSize)
     {
@@ -471,16 +510,13 @@ void checkMPU6050()
     mpuInterrupt = false;
     mpuIntStatus = mpu.getIntStatus();
 
-    // get current FIFO count
-    dmpFifoCount = mpu.getFIFOCount();
-
     // check for overflow (this should never happen unless our code is too inefficient)
     if ((mpuIntStatus & 0x10) || dmpFifoCount == 1024)
     {
-        // reset so we can continue cleanly
-        printTime(); Serial.println(F("checkMPU6050: FIFO overflow!"));
-        mpu.resetFIFO();
-       printTime();  Serial.println(F("checkMPU6050: FIFO reset."));
+      // reset so we can continue cleanly
+      printTime(); Serial.println(F("checkMPU6050: FIFO overflow!"));
+      mpu.resetFIFO();
+      printTime();  Serial.println(F("checkMPU6050: FIFO reset."));
     // otherwise, check for DMP data ready interrupt (this should happen frequently)
     } 
     else if (mpuIntStatus & 0x02)
@@ -490,18 +526,24 @@ void checkMPU6050()
         while (dmpFifoCount < dmpPacketSize) 
           dmpFifoCount = mpu.getFIFOCount();
 
-        printTime(); Serial.println(F("checkMPU6050:Reading FIFO."));
-        // read a packet from FIFO
-        mpu.getFIFOBytes(dmpFifoBuffer, dmpPacketSize);
+        printTime(); Serial.print(F("checkMPU6050: dmpFifoCount = "));
+        Serial.print(dmpFifoCount);
+        Serial.println(F("."));
+        // get the latest sample
+        while (dmpFifoCount >= dmpPacketSize)
+        {
+          printTime(); Serial.println(F("checkMPU6050:Reading FIFO."));
+          // read a packet from FIFO
+          mpu.getFIFOBytes(dmpFifoBuffer, dmpPacketSize);
         
-        // track FIFO count here in case there is > 1 packet available
-        // (this lets us immediately read more without waiting for an interrupt)
-        dmpFifoCount -= dmpPacketSize;
-
-        // display Euler angles in degrees
-        mpu.dmpGetQuaternion(&dmpQuat, dmpFifoBuffer);
-        mpu.dmpGetGravity(&dmpGravity, &dmpQuat);
-        mpu.dmpGetYawPitchRoll(dmpYPR, &dmpQuat, &dmpGravity);
+          // track FIFO count here in case there is > 1 packet available
+          // (this lets us immediately read more without waiting for an interrupt)
+          dmpFifoCount -= dmpPacketSize;
+          // calculate yaw pitch roll
+          mpu.dmpGetQuaternion(&dmpQuat, dmpFifoBuffer);
+          mpu.dmpGetGravity(&dmpGravity, &dmpQuat);
+          mpu.dmpGetYawPitchRoll(dmpYPR, &dmpQuat, &dmpGravity);
+        }
         // yaw = Z
         gyroAngleZ = dmpYPR[0] * 180/M_PI;
         // pitch = X
@@ -571,6 +613,7 @@ void checkMPU6050()
 // @see #ERROR_CODE_NUMBER_OUT_OF_RANGE
 void messageReady()
 {
+  float fvalue;
   double dvalue;
   int errorCode,position,sensorNumber,rotationPosition,relayNumber,isOn,pinNumber,currentState;
   
@@ -906,9 +949,9 @@ void messageReady()
     else if(message.checkString("temperature"))
     {
       sensorNumber = message.readInt();
-      dvalue = getTemperature(sensorNumber);
+      fvalue = getTemperature(sensorNumber);
       client.print("ok ");
-      client.println(dvalue);
+      client.println(fvalue,4);
     }   
     else if(message.checkString("wlamp"))
     {
@@ -1133,18 +1176,18 @@ double getHumidity(int sensorNumber)
 
 // Get the current temperature measured at the specified sensor.
 // Sensor 0 is currently the temperature from humidity sensor 0 (dht0).
-// Sensor 1 is currently the temperature from Dallas temperature sensor 1 
-// Sensor 2 is currently the temperature from Dallas temperature sensor 2 
+// Sensor 1 is currently the last cached temperature from Dallas temperature sensor 1. 
+// Sensor 2 is currently the last cached temperature from Dallas temperature sensor 2.
 // @param sensorNumber The sensor to use, an integer between 0 and 1 less than the number of temperature sensors.
-// @return A double, respresenting the temperature measured at the specified sensor. Note there
+// @return A float, respresenting the temperature measured at the specified sensor. Note there
 //         is no way to return an error if the measurement failed at the moment.
 // @see #dht0
 // @see #dallasTemperature
 // @see #temperatureSensor1
-double getTemperature(int sensorNumber)
+// @see #temperatureList
+float getTemperature(int sensorNumber)
 {
   float fvalue;
-  double dvalue;
   
   printTime(); Serial.print("getTemperature:Started for sensor number ");
   Serial.print(sensorNumber);
@@ -1152,26 +1195,21 @@ double getTemperature(int sensorNumber)
   if(sensorNumber == 0)
   {
     fvalue = dht0.readTemperature();
-    dvalue = (float)fvalue;
   }
   else if(sensorNumber == 1)
   {
-    fvalue = dallasTemperature.getTempC(temperatureSensor1);
-    dvalue = (float)fvalue;
+    fvalue = temperatureList[0];
   }
   else if(sensorNumber == 2)
   {
-    fvalue = dallasTemperature.getTempC(temperatureSensor2);
-    dvalue = (float)fvalue;
+    fvalue = temperatureList[1];
   }
   else
-    dvalue = 0.0;    
+    fvalue = 0.0;    
   printTime(); Serial.print("getTemperature:Returning temperature ");
   Serial.print(fvalue);
-  Serial.print("(");
-  Serial.print(dvalue);
-  Serial.println(") C.");
-  return dvalue;
+  Serial.print(" C.");
+  return fvalue;
 }
 
 // Try and move the mirror into the beam.
