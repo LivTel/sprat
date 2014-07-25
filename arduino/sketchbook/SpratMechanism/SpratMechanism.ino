@@ -16,7 +16,7 @@
 // We are usiong the i2cdevlib library installed  from jrowberg's tarball for the MPU6050 control
 // The I2Cdev and MPU6050 sub-libraries are used out of the tarball.
 #include "I2Cdev.h"
-#include "MPU6050_6Axis_MotionApps20.h"
+#include "MPU6050.h"
 #include "Wire.h"
 
 // length of string used for command parsing.
@@ -41,7 +41,7 @@
 #define ERROR_CODE_NUMBER_OUT_OF_RANGE          (8)
 
 // Pin declarations
-#define MPU6050_INTERRUPT              (0)  // MPU6050 INT pin must be connected to Arduino interrupt 0, which is pin 2
+//#define MPU6050_INTERRUPT              (0)  // MPU6050 INT pin must be connected to Arduino interrupt 0, which is pin 2
 #define PIN_MPU6050_INTERRUPT          (2)  // MPU6050 INT pin must be connected to Arduino interrupt 0, which is pin 2
 #define PIN_TEMPERATURE                (5)  // All Dallas sensors on this OneWire bus
                                             // Data pin also has a 4.7k pullup resistor connected to the
@@ -73,6 +73,9 @@
 #define TEMPERATURE_PRECISION          (12)
 // 12 bit conversion takes 750ms. See DallasTemperature::blockTillConversionComplete
 #define TEMPERATURE_CONVERSION_DELAY_TIME (750)
+
+// Number of gyro samples to average over
+#define MPU6050_SAMPLE_COUNT              (10)
 
 // Ethernet Sheild mac address
 // Map to IP address
@@ -125,26 +128,17 @@ float temperatureList[2];
 // gyro variables
 // Use default address (0x68) for Sparkfun board
 MPU6050 mpu;
-bool dmpReady = false;              // set true if DMP init was successful
-uint8_t mpuIntStatus;               // holds actual interrupt status byte from MPU
-uint16_t dmpPacketSize;             // expected DMP packet size (default is 42 bytes)
-uint16_t dmpFifoCount;              // count of all bytes currently in FIFO
-uint8_t dmpFifoBuffer[64];          // FIFO storage buffer
-// orientation/motion vars
-Quaternion dmpQuat;                 // [w, x, y, z]         quaternion container
-VectorFloat dmpGravity;             // [x, y, z]            gravity vector
-float dmpYPR[3];                       // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
-volatile bool mpuInterrupt = false; // indicates whether MPU interrupt pin has gone high
 
-// angle in degrees
-double gyroAngleX = 0.0;
-double gyroAngleY = 0.0;
-double gyroAngleZ = 0.0;
+// gyro ADU counts
+int gyroX = 0.0;
+int gyroY = 0.0;
+int gyroZ = 0.0;
 
 // keep track of when sensors were last read
-#define LAST_TIME_READ_COUNT             (1)
+#define LAST_TIME_READ_COUNT             (2)
 #define LAST_TIME_READ_INDEX_HUMIDITY0   (0)
 //#define LAST_TIME_READ_INDEX_TEMPERATURE (1)
+#define LAST_TIME_READ_INDEX_GYRO        (1)
 unsigned long lastTimeRead[LAST_TIME_READ_COUNT];
 
 // setup
@@ -171,14 +165,14 @@ void setup()
   pinMode(PIN_RELAY7_OUTPUT,OUTPUT);
   pinMode(PIN_RELAY8_OUTPUT,OUTPUT);
   
-  pinMode(PIN_MIRROR_OUT_INPUT,INPUT);
-  pinMode(PIN_MIRROR_IN_INPUT,INPUT);
-  pinMode(PIN_SLIT_OUT_INPUT,INPUT);
-  pinMode(PIN_SLIT_IN_INPUT,INPUT);
-  pinMode(PIN_GRISM_OUT_INPUT,INPUT);
-  pinMode(PIN_GRISM_IN_INPUT,INPUT);
-  pinMode(PIN_GRISM_ROT_POS_0_INPUT,INPUT);
-  pinMode(PIN_GRISM_ROT_POS_1_INPUT,INPUT);
+  pinMode(PIN_MIRROR_OUT_INPUT,INPUT_PULLUP);
+  pinMode(PIN_MIRROR_IN_INPUT,INPUT_PULLUP);
+  pinMode(PIN_SLIT_OUT_INPUT,INPUT_PULLUP);
+  pinMode(PIN_SLIT_IN_INPUT,INPUT_PULLUP);
+  pinMode(PIN_GRISM_OUT_INPUT,INPUT_PULLUP);
+  pinMode(PIN_GRISM_IN_INPUT,INPUT_PULLUP);
+  pinMode(PIN_GRISM_ROT_POS_0_INPUT,INPUT_PULLUP);
+  pinMode(PIN_GRISM_ROT_POS_1_INPUT,INPUT_PULLUP);
   
   // initialise lastTimeRead
   for(i=0; i < LAST_TIME_READ_COUNT; i++)
@@ -279,91 +273,18 @@ void printDallasAddress(DeviceAddress deviceAddress)
 // Setup the MPU6050 gyro/accelerometer
 // @see #Wire
 // @see #mpu
-// @see #MPU6050_INTERRUPT
-// @see #dmpDataReady
-// @see #mpuIntStatus
-// @see #dmpReady
-// @see #dmpPacketSize
 void setupMPU6050()
 {
   uint8_t devStatus;
   
   // join I2C bus (I2Cdev library doesn't do this automatically)
   Wire.begin();
-  TWBR = 24; // 400kHz I2C clock (200kHz if CPU is 8MHz)
+  //TWBR = 24; // 400kHz I2C clock (200kHz if CPU is 8MHz)
   printTime(); Serial.println(F("setupMPU6050:Initializing I2C devices..."));
   mpu.initialize();
   printTime(); Serial.println(F("setupMPU6050:Testing MPU6050 device connections..."));
   printTime(); Serial.println(mpu.testConnection() ? F("setupMPU6050:MPU6050 connection successful") : F("setupMPU6050:MPU6050 connection failed"));
-  printTime(); Serial.println(F("setupMPU6050: Initializing MPU6050 DMP..."));
-  devStatus = mpu.dmpInitialize();
-  // Slow down sample rate
-  // The arduino gets FIFO overflows followed by Arduino lockup if we use the standard sample rate 
-  // (~100-200Hz). 1Hz is sufficient
-  // Rate defaults to 4: If gryo sample rate is 8kH this gives a DMP sample rate of 1.6kHz?
-  // We also get FIFO overflows and lockups if we use 'D_0_22 inv_set_fifo_rate' = 0x01 and mpu.setRate(50);
-  // Therefore change 'D_0_22 inv_set_fifo_rate' in MPU6050_6Axis_MotionApps20.h to 0x09
-  printTime(); Serial.print(F("setupMPU6050: MPU6050 DMP Sampling Rate originally:"));
-  Serial.print(mpu.getRate());
-  Serial.println();
-  // At 1Hz the device takes several minutes to slew to each new position - this is no good
-  //  Serial.println(F("Setting sample rate to 1Hz..."));
-  //  mpu.setRate(999);
-  // At 10Hz the slew is fast enough, currently this doesn't seem to lock up the Arduino
-  printTime(); Serial.println(F("setupMPU6050:Setting sample rate to 10Hz..."));
-  mpu.setRate(9);// if 'D_0_22 inv_set_fifo_rate' is 0x09
-  //mpu.setRate(50); // if 'D_0_22 inv_set_fifo_rate' is 0x01
-  printTime(); Serial.print(F("setupMPU6050:DMP Sampling Rate now:"));
-  Serial.print(mpu.getRate());
-  Serial.println();
-  // supply your own gyro offsets here, scaled for min sensitivity
-  mpu.setXGyroOffset(220);
-  mpu.setYGyroOffset(76);
-  mpu.setZGyroOffset(-85);
-  mpu.setZAccelOffset(1788); // 1688 factory default for my test chip
-  // make sure it worked (returns 0 if so)
-  if (devStatus == 0)
-  {
-    // turn on the DMP, now that it's ready
-    printTime(); Serial.println(F("setupMPU6050:Enabling DMP..."));
-    mpu.setDMPEnabled(true);
-
-    // enable Arduino interrupt detection
-    printTime(); Serial.println(F("setupMPU6050:Enabling interrupt detection (Arduino external interrupt 0)..."));
-    attachInterrupt(MPU6050_INTERRUPT, dmpDataReady, RISING);
-    mpuIntStatus = mpu.getIntStatus();
-
-    // set our DMP Ready flag so the main loop() function knows it's okay to use it
-    printTime(); Serial.println(F("setupMPU6050:DMP ready! Waiting for first interrupt..."));
-    dmpReady = true;
-
-    // get expected DMP packet size for later comparison
-    dmpPacketSize = mpu.dmpGetFIFOPacketSize();
-    printTime(); Serial.print(F("setupMPU6050: dmpPacketSize = "));
-    Serial.print(dmpPacketSize);
-    Serial.println(F("."));
-  }
-  else
-  {
-    // ERROR!
-    // 1 = initial memory load failed
-    // 2 = DMP configuration updates failed
-    // (if it's going to break, usually the code will be 1)
-    printTime(); Serial.print(F("setupMPU6050:DMP Initialization failed (code "));
-    Serial.print(devStatus);
-    Serial.println(F(")"));
-  }
 }
-
-// Interrupt routine called when the MPU6050 DMP (digital motion processor) has completed a calculation.
-// This should get called at the rate setup by mpu.setRate.
-// Here we set a flag (mpuInterrupt) wheich in the main loop causes us to read out the FIFO and retrieve the data.
-// @see #mpuInterrupt
-void dmpDataReady() 
-{
-  mpuInterrupt = true;
-}
-
 
 // main loop
 // @see #server
@@ -394,7 +315,6 @@ void loop()
   }
   // do other stuff here
   monitorSensors();
-  checkMPU6050();
   // wait a bit to stop the arduino locking up
   delay(10);
 }
@@ -406,11 +326,18 @@ void loop()
 // @see #LAST_TIME_READ_COUNT
 // @see #lastTimeRead
 // @see #TEMPERATURE_CONVERSION_DELAY_TIME
+// @see #mpu
+// @see #gyroX
+// @see #gyroY
+// @see #gyroZ
 void monitorSensors()
 {
   unsigned long nowTime;
   int i;
   boolean retval;
+  int16_t ax, ay, az;
+  int16_t gx, gy, gz;
+  long totalAX,totalAY,totalAZ,totalGX,totalGY,totalGZ;
   
   // get current time
   nowTime = millis();
@@ -475,88 +402,50 @@ void monitorSensors()
     printTime(); Serial.println("monitorSensors:Requested dallas temperatures.");
     lastTempRequestTime = millis();
   }
-}
-
-// Routine to check whether the MPU6050 DMP interrupt flag is set.
-// If it is set and the FIFO buffer has data, read the data until the FIFO is empty.
-// Process the data and update the gyro angles accordingly
-// @see #dmpReady
-// @see #mpuInterrupt
-// @see #dmpFifoCount
-// @see #dmpPacketSize
-// @see #mpuIntStatus
-// @see #gyroAngleX
-// @see #gyroAngleY
-// @see #gyroAngleZ
-void checkMPU6050()
-{
-    printTime(); Serial.println("checkMPU6050:Started.");
-    if (!dmpReady)
-    { 
-      printTime(); Serial.println("checkMPU6050:dmpReady was false:terminating.");
-      return;
-    }
-    
-    // get current FIFO count
-    dmpFifoCount = mpu.getFIFOCount();
-    
-    // wait for MPU interrupt or extra packet(s) available
-    if(!mpuInterrupt && dmpFifoCount < dmpPacketSize)
+  // MPU6050 gyroscope
+  if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_GYRO]) > 1001)
+  {
+    printTime(); Serial.print("monitorSensors:Reading MPU6050 ");
+    Serial.print(MPU6050_SAMPLE_COUNT);
+    Serial.println(" times.");
+    totalAX = 0;
+    totalAY = 0;
+    totalAZ = 0;
+    totalGX = 0;
+    totalGY = 0;
+    totalGZ = 0;
+    for(i = 0; i < MPU6050_SAMPLE_COUNT; i++)
     {
-      printTime(); Serial.println("checkMPU6050:mpuInterrupt was false or dmpFifoCount was too small:terminating.");
-      return;
+      mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+      printTime(); Serial.print("monitorSensors:MPU6050: reading ");
+      Serial.print(i);
+      Serial.print(":accel(xyz),g(xyz):");
+      Serial.print(ax); Serial.print(",");
+      Serial.print(ay); Serial.print(",");
+      Serial.print(az); Serial.print(",");
+      Serial.print(gx); Serial.print(",");
+      Serial.print(gy); Serial.print(",");
+      Serial.println(gz);
+      totalAX += (long)ax;
+      totalAY += (long)ay;
+      totalAZ += (long)az;
+      totalGX += (long)gx;
+      totalGY += (long)gy;
+      totalGZ += (long)gz;
     }
-    // reset interrupt flag and get INT_STATUS byte
-    mpuInterrupt = false;
-    mpuIntStatus = mpu.getIntStatus();
-
-    // check for overflow (this should never happen unless our code is too inefficient)
-    if ((mpuIntStatus & 0x10) || dmpFifoCount == 1024)
-    {
-      // reset so we can continue cleanly
-      printTime(); Serial.println(F("checkMPU6050: FIFO overflow!"));
-      mpu.resetFIFO();
-      printTime();  Serial.println(F("checkMPU6050: FIFO reset."));
-    // otherwise, check for DMP data ready interrupt (this should happen frequently)
-    } 
-    else if (mpuIntStatus & 0x02)
-    {
-        printTime(); Serial.println(F("checkMPU6050: Waiting for FIFO to fill."));
-        // wait for correct available data length, should be a VERY short wait
-        while (dmpFifoCount < dmpPacketSize) 
-          dmpFifoCount = mpu.getFIFOCount();
-
-        printTime(); Serial.print(F("checkMPU6050: dmpFifoCount = "));
-        Serial.print(dmpFifoCount);
-        Serial.println(F("."));
-        // get the latest sample
-        while (dmpFifoCount >= dmpPacketSize)
-        {
-          printTime(); Serial.println(F("checkMPU6050:Reading FIFO."));
-          // read a packet from FIFO
-          mpu.getFIFOBytes(dmpFifoBuffer, dmpPacketSize);
-        
-          // track FIFO count here in case there is > 1 packet available
-          // (this lets us immediately read more without waiting for an interrupt)
-          dmpFifoCount -= dmpPacketSize;
-          // calculate yaw pitch roll
-          mpu.dmpGetQuaternion(&dmpQuat, dmpFifoBuffer);
-          mpu.dmpGetGravity(&dmpGravity, &dmpQuat);
-          mpu.dmpGetYawPitchRoll(dmpYPR, &dmpQuat, &dmpGravity);
-        }
-        // yaw = Z
-        gyroAngleZ = dmpYPR[0] * 180/M_PI;
-        // pitch = X
-        gyroAngleX = dmpYPR[1] * 180/M_PI;
-        // roll = Y
-        gyroAngleY = dmpYPR[2] * 180/M_PI;
-        printTime(); Serial.print("checkMPU6050: yaw pitch roll = ");
-        Serial.print(gyroAngleZ);
-        Serial.print(",");
-        Serial.print(gyroAngleX);
-        Serial.print(",");
-        Serial.println(gyroAngleY);
-    }
+    printTime(); Serial.println("monitorSensors:Read MPU6050 successfully.");
+    lastTimeRead[LAST_TIME_READ_INDEX_GYRO] = millis();
+    gyroX = (int)(totalGX/MPU6050_SAMPLE_COUNT);
+    gyroY = (int)(totalGY/MPU6050_SAMPLE_COUNT);
+    gyroZ = (int)(totalGZ/MPU6050_SAMPLE_COUNT);
+    printTime(); Serial.print("monitorSensors:MPU6050:final average: accel(xyz),g(xyz):");
+    Serial.print(totalAX/MPU6050_SAMPLE_COUNT); Serial.print(",");
+    Serial.print(totalAY/MPU6050_SAMPLE_COUNT); Serial.print(",");
+    Serial.print(totalAZ/MPU6050_SAMPLE_COUNT); Serial.print(",");
+    Serial.print(gyroX); Serial.print(",");
+    Serial.print(gyroY); Serial.print(",");
+    Serial.println(gyroZ);
+  }
 }
 
 // Messenger callback function
@@ -580,9 +469,9 @@ void checkMPU6050()
 // @see #grismOut
 // @see #getGrismStatus
 // @see #getGyroPosition
-// @see #gyroAngleX
-// @see #gyroAngleY
-// @see #gyroAngleZ
+// @see #gyroX
+// @see #gyroY
+// @see #gyroZ
 // @see #getHumidity
 // @see #getTemperature
 // @see #mirrorIn
@@ -698,11 +587,11 @@ void messageReady()
       {
         case ERROR_CODE_SUCCESS:
           client.print("ok ");
-          client.print(gyroAngleX);
+          client.print(gyroX);
           client.print(" ");
-          client.print(gyroAngleY);
+          client.print(gyroY);
           client.print(" ");
-          client.println(gyroAngleZ);
+          client.println(gyroZ);
           break;
         default:
           client.print("error ");
@@ -1126,14 +1015,14 @@ int getGrismStatus()
   return currentState;
 }
 
-// Get the current gyro position. The global variables gyroAngleX,gyroAngleY and gyroAngleZ
+// Get the current gyro position. The global variables gyroX,gyroY and gyroZ
 // should be updated with the current gyro position on success.
 // @return Return an error code: ERROR_CODE_SUCCESS if the position is updated successfully,
 //         a positive integer error code if the operation failed.
 // @see #getGyroPosition
-// @see #gyroAngleX
-// @see #gyroAngleY
-// @see #gyroAngleZ
+// @see #gyroX
+// @see #gyroY
+// @see #gyroZ
 // @see #ERROR_CODE_SUCCESS
 int getGyroPosition()
 {
@@ -1141,7 +1030,7 @@ int getGyroPosition()
   
   printTime(); Serial.println("getGyroPosition:Started.");
   errorCode = ERROR_CODE_SUCCESS;
-  // gyroAngles actually retrieved via an interupt : see checkMPU6050
+  // gyros actually updated in monitorSensors
   return errorCode;
 }
 
