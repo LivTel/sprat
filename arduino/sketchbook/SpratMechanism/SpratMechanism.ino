@@ -9,10 +9,6 @@
 // We are using Adafruit's DHT library for the humidity sensor for now
 // Copy to your libraries directory
 #include "DHT.h"
-// We are using Zej's copy of the OneWire and Dallas_Temperature libraries
-// Copy from ~dev/src/sprat/arduino/ZejLibraries to the Arduino SDK libraries directory
-#include <OneWire.h>
-#include <DallasTemperature.h>
 // We are usiong the i2cdevlib library installed  from jrowberg's tarball for the MPU6050 control
 // The I2Cdev and MPU6050 sub-libraries are used out of the tarball.
 #include "I2Cdev.h"
@@ -43,10 +39,6 @@
 // Pin declarations
 //#define MPU6050_INTERRUPT              (0)  // MPU6050 INT pin must be connected to Arduino interrupt 0, which is pin 2
 #define PIN_MPU6050_INTERRUPT          (2)  // MPU6050 INT pin must be connected to Arduino interrupt 0, which is pin 2
-#define PIN_TEMPERATURE                (5)  // All Dallas sensors on this OneWire bus
-                                            // Data pin also has a 4.7k pullup resistor connected to the
-                                            // 5v line, even though we are powering the Dallas from the 5v
-                                            // directory (not using parasitic power mode)
 #define PIN_HUMIDITY_0                 (6)  // DHT22, also used for temperature 0 at the moment. 
                                             // Data pin should have a 10k pullup resistor connected to 5v VCC, however
                                             // the phenoptix unit has an inbuilt 5.5k resistor instead.
@@ -68,11 +60,6 @@
 #define PIN_GRISM_ROT_POS_0_INPUT      (35) // LOW when in position, HIGH when NOT in this position
 #define PIN_RELAY8_OUTPUT              (36) // unused
 #define PIN_GRISM_ROT_POS_1_INPUT      (37) // LOW when in position, HIGH when NOT in this position
-
-// Use 12bit conversions for the Dallas sensors
-#define TEMPERATURE_PRECISION          (12)
-// 12 bit conversion takes 750ms. See DallasTemperature::blockTillConversionComplete
-#define TEMPERATURE_CONVERSION_DELAY_TIME (750)
 
 // Number of gyro samples to average over
 #define MPU6050_SAMPLE_COUNT              (10)
@@ -112,19 +99,6 @@ int errorNumber = 0;
 // humidity sensor. Phenoptix DHT22 / AM2302
 DHT dht0(PIN_HUMIDITY_0,DHT22);
 
-// Dallas temperature data
-OneWire oneWire(PIN_TEMPERATURE);
-// Pass our oneWire reference to Dallas Temperature. 
-DallasTemperature dallasTemperature(&oneWire);
-// Dallas device addresses
-DeviceAddress temperatureSensor1 = { 0x28, 0x77, 0x2D, 0x5D, 0x05, 0x00, 0x00, 0x67 };
-DeviceAddress temperatureSensor2 = { 0x28, 0x73, 0x35, 0x5D, 0x05, 0x00, 0x00, 0xF9 };
-// Extra variables for asynchronous polling of the temperatures
-// last time we asked the dallas to sample the temperature
-unsigned long lastTempRequestTime = 0;
-// last retrieved temeprature from the scratchpad
-float temperatureList[2];
-
 // gyro variables
 // Use default address (0x68) for Sparkfun board
 MPU6050 mpu;
@@ -143,7 +117,6 @@ unsigned long lastTimeRead[LAST_TIME_READ_COUNT];
 
 // setup
 // @see #dht0
-// @see #setupDallas
 // @see #setupMPU6050
 // @see #lastTimeRead
 // @see #LAST_TIME_READ_COUNT
@@ -181,9 +154,6 @@ void setup()
   }
   // configure serial
   Serial.begin(9600);
-  // setup Dallas temperature sensors :- after serial setup so we can log what we have found
-  //PIN_TEMPERATURE
-  setupDallas();
   // setup MPU6050 gyro/accelerometer
   setupMPU6050();
   // configure ethernet and callback routine
@@ -191,83 +161,6 @@ void setup()
   server.begin();
   // messenger callback function
   message.attach(messageReady);
-}
-
-// Setup the Dallas sensors on the onewire pin.
-// @see #TEMPERATURE_PRECISION
-// @see #dallasTemperature
-// @see #dallasTemperature
-void setupDallas()
-{
-  DeviceAddress tempDeviceAddress; // We'll use this variable to store a found device address
-  int numberOfDevices; // Number of temperature devices found
-
-  // Start up the library
-  dallasTemperature.begin();
-  
-  // Grab a count of devices on the wire
-  printTime(); Serial.println("setupDallas: Locating OneWire devices...");
-  numberOfDevices = dallasTemperature.getDeviceCount();
-  
-  // locate devices on the bus
-  printTime(); Serial.print("setupDallas: Found ");
-  Serial.print(numberOfDevices, DEC);
-  Serial.println(" OneWire devices.");
-
-  // report parasite power requirements
-  printTime(); Serial.print("setupDallas: Parasite power is: "); 
-  if (dallasTemperature.isParasitePowerMode()) 
-    Serial.println("ON");
-  else 
-    Serial.println("OFF");
-
-  // Convert temperatures asynchronously. requestTemperatures returns immediately rather than
-  // delaying until the Dallas A/D is complete, allowing us to service gyro interrupts and stop
-  // gyro FIFO overflows and Arduino lockups. We therefore have to monitor the conversion progress
-  // asynchronously and retrieve the converted temperatures from the scratchpad ourselves.
-  printTime(); Serial.println("setupDallas:Setup library for asynchronous conversion to help gyro code."); 
-  dallasTemperature.setWaitForConversion(false);
-
-  // Loop through each device, print out address
-  for(int i=0;i<numberOfDevices; i++)
-  {
-    // Search the wire for address
-    if(dallasTemperature.getAddress(tempDeviceAddress, i))
-    {
-	printTime(); Serial.print("setupDallas: Found device ");
-	Serial.print(i, DEC);
-	Serial.print(" with address: ");
-	printDallasAddress(tempDeviceAddress);
-	Serial.println();
-		
-	printTime(); Serial.print("setupDallas: Setting resolution to ");
-	Serial.println(TEMPERATURE_PRECISION, DEC);
-		
-	// set the resolution to TEMPERATURE_PRECISION bit (Each Dallas/Maxim device is capable of several different resolutions)
-	dallasTemperature.setResolution(tempDeviceAddress, TEMPERATURE_PRECISION);
-		
-	printTime(); Serial.print("setupDallas: Resolution actually set to: ");
-	Serial.print(dallasTemperature.getResolution(tempDeviceAddress), DEC); 
-	Serial.println();
-    }
-    else
-    {
-      printTime(); Serial.print("setupDallas: Found ghost device at ");
-      Serial.print(i, DEC);
-      Serial.print(" but could not detect address. Check power and cabling");
-    }
-  }
-}
-
-// Print the address of the specified Dallas temperature deviceAddress in hexidecimal.
-// @param deviceAddress The device address to print.
-void printDallasAddress(DeviceAddress deviceAddress)
-{
-  for (uint8_t i = 0; i < 8; i++)
-  {
-    if (deviceAddress[i] < 16) Serial.print("0");
-    Serial.print(deviceAddress[i], HEX);
-  }
 }
 
 // Setup the MPU6050 gyro/accelerometer
@@ -321,11 +214,9 @@ void loop()
 
 // Monitor humidity,temperature periodically
 // @see #dht0
-// @see #dallasTemperature
 // @see #LAST_TIME_READ_INDEX_HUMIDITY0
 // @see #LAST_TIME_READ_COUNT
 // @see #lastTimeRead
-// @see #TEMPERATURE_CONVERSION_DELAY_TIME
 // @see #mpu
 // @see #gyroX
 // @see #gyroY
@@ -373,34 +264,6 @@ void monitorSensors()
     {
         printTime(); Serial.println("monitorSensors:Failed to read dht0.");
     }
-  }
-  // Dallas temperature conversion
-  // This is now done asynchonously :- We use requestTemperatures 
-  // after setting setWaitForConversion to false in setup. We use lastTempRequestTime to determine when the
-  // Dallas has finished the conversion, for 12bits this is 750ms. We then read the scratchpad for each sensor,
-  // and start another conversion. This allows us to service the MPU6050 interrupt whilst Dallas temperature
-  // conversion is taking place.
-  if((nowTime - lastTempRequestTime) > TEMPERATURE_CONVERSION_DELAY_TIME)
-  {
-    if(lastTempRequestTime != 0)
-    {
-      printTime(); Serial.println("monitorSensors:Retrieving dallas temperatures from dallas scratchpad.");
-      // get last set of converted temperatures into variables
-      temperatureList[0] = dallasTemperature.getTempC(temperatureSensor1);
-      printTime(); Serial.print("monitorSensors:Dallas temperature Sensor 1 returned ");
-      Serial.print(temperatureList[0]);
-      Serial.println(".");
-      temperatureList[1] = dallasTemperature.getTempC(temperatureSensor2);
-      printTime(); Serial.print("monitorSensors:Dallas temperature Sensor 2 returned ");
-      Serial.print(temperatureList[1]);
-      Serial.println(".");
-      printTime(); Serial.println("monitorSensors:Retrieved dallas temperatures from dallas scratchpad.");
-    }
-    // request a conversion is done, and make a note of when we have done the request
-    printTime(); Serial.println("monitorSensors:Requesting dallas temperatures.");
-    dallasTemperature.requestTemperatures();
-    printTime(); Serial.println("monitorSensors:Requested dallas temperatures.");
-    lastTempRequestTime = millis();
   }
   // MPU6050 gyroscope
   if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_GYRO]) > 1001)
@@ -1068,8 +931,6 @@ double getHumidity(int sensorNumber)
 
 // Get the current temperature measured at the specified sensor.
 // Sensor 0 is currently the temperature from humidity sensor 0 (dht0).
-// Sensor 1 is currently the last cached temperature from Dallas temperature sensor 1. 
-// Sensor 2 is currently the last cached temperature from Dallas temperature sensor 2.
 // @param sensorNumber The sensor to use, an integer between 0 and 1 less than the number of temperature sensors.
 // @return A float, respresenting the temperature measured at the specified sensor. Note there
 //         is no way to return an error if the measurement failed at the moment.
@@ -1087,14 +948,6 @@ float getTemperature(int sensorNumber)
   if(sensorNumber == 0)
   {
     fvalue = dht0.readTemperature();
-  }
-  else if(sensorNumber == 1)
-  {
-    fvalue = temperatureList[0];
-  }
-  else if(sensorNumber == 2)
-  {
-    fvalue = temperatureList[1];
   }
   else
     fvalue = 0.0;    
