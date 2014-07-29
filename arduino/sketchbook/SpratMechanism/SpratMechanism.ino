@@ -53,21 +53,21 @@
 #define PIN_ARC_LAMP_OUTPUT            (8)
 #define PIN_HUMIDITY_1                 (1)
 #define PIN_MIRROR_OUTPUT              (22) // IN = HIGH, OUT = LOW (RELAY1)
-#define PIN_MIRROR_OUT_INPUT           (23)
+#define PIN_MIRROR_OUT_INPUT           (23) // LOW when in position, HIGH when NOT in this position
 #define PIN_SLIT_OUTPUT                (24) // IN = HIGH, OUT = LOW (RELAY2)
-#define PIN_MIRROR_IN_INPUT            (25)
+#define PIN_MIRROR_IN_INPUT            (25) // LOW when in position, HIGH when NOT in this position
 #define PIN_GRISM_OUTPUT               (26) // IN = HIGH, OUT = LOW (RELAY3)
-#define PIN_SLIT_OUT_INPUT             (27)
+#define PIN_SLIT_OUT_INPUT             (27) // LOW when in position, HIGH when NOT in this position
 #define PIN_GRISM_ROTATE_OUTPUT        (28) // Pos 1 = HIGH, Pos 0 = LOW (RELAY4)
-#define PIN_SLIT_IN_INPUT              (29)
+#define PIN_SLIT_IN_INPUT              (29) // LOW when in position, HIGH when NOT in this position
 #define PIN_W_LAMP_OUTPUT              (30) // (RELAY5)
-#define PIN_GRISM_OUT_INPUT            (31)
+#define PIN_GRISM_OUT_INPUT            (31) // LOW when in position, HIGH when NOT in this position
 #define PIN_RELAY6_OUTPUT              (32) // unused
-#define PIN_GRISM_IN_INPUT             (33)
+#define PIN_GRISM_IN_INPUT             (33) // LOW when in position, HIGH when NOT in this position
 #define PIN_RELAY7_OUTPUT              (34) // unused
-#define PIN_GRISM_ROT_POS_0_INPUT      (35)
+#define PIN_GRISM_ROT_POS_0_INPUT      (35) // LOW when in position, HIGH when NOT in this position
 #define PIN_RELAY8_OUTPUT              (36) // unused
-#define PIN_GRISM_ROT_POS_1_INPUT      (37)
+#define PIN_GRISM_ROT_POS_1_INPUT      (37) // LOW when in position, HIGH when NOT in this position
 
 // Use 12bit conversions for the Dallas sensors
 #define TEMPERATURE_PRECISION          (12)
@@ -981,6 +981,8 @@ int grismOut()
 }
 
 // Get the current status of the grism mechanism.
+// Note the sense of the inputs have been inverted now we have swapped to internal pullups:
+// Input is LOW when the cylinder is in the specified position
 // @return Return an error code: ERROR_CODE_IN or ERROR_CODE_OUT if the grism is in a known position,
 //         ERROR_CODE_UNKNOWN if the grism is not in a known position, or a positive error code if
 //         an error occured.
@@ -996,8 +998,9 @@ int getGrismStatus()
   int isIn,isOut,currentState;
 
   printTime(); Serial.println("getGrismStatus:Started.");
-  isIn = digitalRead(PIN_GRISM_IN_INPUT);
-  isOut = digitalRead(PIN_GRISM_OUT_INPUT);
+  // Input is LOW when the cylinder is in the specified position
+  isIn = (digitalRead(PIN_GRISM_IN_INPUT) == LOW);
+  isOut = (digitalRead(PIN_GRISM_OUT_INPUT) == LOW);
   if((isIn == HIGH) && (isOut == LOW))
     currentState = ERROR_CODE_IN;
   else if((isIn == LOW) && (isOut == HIGH))
@@ -1132,6 +1135,8 @@ int mirrorOut()
 }
 
 // Get the current status of the mirror mechanism.
+// Note the sense of the inputs have been inverted now we have swapped to internal pullups:
+// Input is LOW when the cylinder is in the specified position
 // @return Return an error code: ERROR_CODE_IN or ERROR_CODE_OUT if the mirror is in a known position,
 //         ERROR_CODE_UNKNOWN if the mirror is not in a known position, or a positive error code if
 //         an error occured.
@@ -1147,8 +1152,9 @@ int getMirrorStatus()
   int isIn,isOut,currentState;
 
   printTime(); Serial.println("getMirrorStatus:Started.");
-  isIn = digitalRead(PIN_MIRROR_IN_INPUT);
-  isOut = digitalRead(PIN_MIRROR_OUT_INPUT);
+  // Input is LOW when the cylinder is in the specified position
+  isIn = (digitalRead(PIN_MIRROR_IN_INPUT) == LOW);
+  isOut = (digitalRead(PIN_MIRROR_OUT_INPUT) == LOW);
   if((isIn == HIGH) && (isOut == LOW))
     currentState = ERROR_CODE_IN;
   else if((isIn == LOW) && (isOut == HIGH))
@@ -1335,6 +1341,8 @@ int rotation(int targetPosition)
 }
 
 // Return the current rotation position of the grism.
+// Note the sense of the inputs have been inverted now we have swapped to internal pullups:
+// Input is LOW when the cylinder is in the specified position
 // @return Return a rotation position or an error code: 0|1 on success, 
 //          ERROR_CODE_UNKNOWN if the grism rotation mechanism ends up in an indeterminate state,
 //         or a number greater than 1 for failure.
@@ -1347,8 +1355,9 @@ int getRotation()
   int isInPos0,isInPos1,currentState;
 
   printTime(); Serial.println("getRotation:Started.");
-  isInPos0 = digitalRead(PIN_GRISM_ROT_POS_0_INPUT);
-  isInPos1 = digitalRead(PIN_GRISM_ROT_POS_1_INPUT);
+  // Input is LOW when the cylinder is in the specified position
+  isInPos0 = (digitalRead(PIN_GRISM_ROT_POS_0_INPUT) == LOW);
+  isInPos1 = (digitalRead(PIN_GRISM_ROT_POS_1_INPUT) == LOW);
   if((isInPos0 == HIGH) && (isInPos1 == LOW))
     currentState = 0;
   else if((isInPos0 == LOW) && (isInPos1 == HIGH))
@@ -1397,6 +1406,8 @@ int slitOut()
 }
 
 // Get the current status of the slit mechanism.
+// Note the sense of the inputs have been inverted now we have swapped to internal pullups:
+// Input is LOW when the cylinder is in the specified position
 // @return Return an error code: ERROR_CODE_IN or ERROR_CODE_OUT if the slit is in a known position,
 //         ERROR_CODE_UNKNOWN if the slit is not in a known position, or a positive error code if
 //         an error occured.
@@ -1412,8 +1423,9 @@ int getSlitStatus()
   int isIn,isOut,currentState;
 
   printTime(); Serial.println("getSlitStatus:Started.");
-  isIn = digitalRead(PIN_SLIT_IN_INPUT);
-  isOut = digitalRead(PIN_SLIT_OUT_INPUT);
+  // Input is LOW when the cylinder is in the specified position
+  isIn = (digitalRead(PIN_SLIT_IN_INPUT) == LOW);
+  isOut = (digitalRead(PIN_SLIT_OUT_INPUT) == LOW);
   if((isIn == HIGH) && (isOut == LOW))
     currentState = ERROR_CODE_IN;
   else if((isIn == LOW) && (isOut == HIGH))
