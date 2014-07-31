@@ -159,8 +159,9 @@ int Sprat_Multrun_Dimensions_Set(int ncols,int nrows,int xbin,int ybin,
  * Perform multiple bias exposure operation. Uses the multrun configuration.
  * @param exposure_count The number of biases.
  * @param multrun_number The address of an integer to store the multrun number for this multrun.
- * @param filename The address of a string to hold the last created filename.
- * @param filename_length The allocated length of filename.
+ * @param filename_list The address of an array of strings to hold a created filenames. These are the FITS images
+ *        created as part of this process.
+ * @param filename_count The address of an integer to fill in with the number of filenames in the list.
  * @return The routine returns TRUE on success, and FALSE on failure.
  * @see #Multrun_Data
  * @see #Multrun_Fits_Headers_Set
@@ -168,6 +169,7 @@ int Sprat_Multrun_Dimensions_Set(int ncols,int nrows,int xbin,int ybin,
  * @see sprat_global.html#Sprat_Global_Log_Format
  * @see sprat_global.html#Sprat_Global_Error_Number
  * @see sprat_global.html#Sprat_Global_Error_String
+ * @see sprat_global.html#Sprat_Global_String_List_Add
  * @see sprat_config.html#Sprat_Config_Get_Integer
  * @see sprat_config.html#Sprat_Config_Get_Double
  * @see ../ccd/cdocs/ccd_setup.html#CCD_Setup_Dimensions
@@ -182,10 +184,11 @@ int Sprat_Multrun_Dimensions_Set(int ncols,int nrows,int xbin,int ybin,
  * @see ../ccd/cdocs/ccd_temperature.html#CCD_Temperature_Get
  * @see ../ccd/cdocs/ccd_temperature.html#CCD_TEMPERATURE_STATUS
  */
-int Sprat_Multrun_Bias(int exposure_count,int *multrun_number,char *filename,int filename_length)
+int Sprat_Multrun_Bias(int exposure_count,int *multrun_number,char **filename_list[],int *filename_count)
 {
 	struct CCD_Setup_Window_Struct window;
 	struct timespec start_time;
+	char filename[256];
 	int retval,i;
 
 #if SPRAT_DEBUG > 1
@@ -209,10 +212,16 @@ int Sprat_Multrun_Bias(int exposure_count,int *multrun_number,char *filename,int
 		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Bias:multrun_number was NULL.");
 		return FALSE;
 	}
-	if(filename == NULL)
+	if(filename_list == NULL)
 	{
 		Sprat_Global_Error_Number = 416;
-		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Bias:filename was NULL.");
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Bias:filename_list was NULL.");
+		return FALSE;
+	}
+	if(filename_count == NULL)
+	{
+		Sprat_Global_Error_Number = 425;
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Bias:filename_count was NULL.");
 		return FALSE;
 	}
 	Sprat_Global_Error_Number = 0;
@@ -247,7 +256,7 @@ int Sprat_Multrun_Bias(int exposure_count,int *multrun_number,char *filename,int
 		/* get fits filename */
 		if(!CCD_Fits_Filename_Get_Filename(CCD_FITS_FILENAME_EXPOSURE_TYPE_BIAS,
 						   CCD_FITS_FILENAME_PIPELINE_FLAG_UNREDUCED,
-						   filename,filename_length))
+						   filename,256))
 		{
 			/* reset active flag */
 			Multrun_Data.Is_Active = FALSE;
@@ -277,6 +286,16 @@ int Sprat_Multrun_Bias(int exposure_count,int *multrun_number,char *filename,int
 		Sprat_Global_Log("multrun","sprat_multrun.c","Sprat_Multrun_Bias",LOG_VERBOSITY_VERBOSE,"MULTRUN",
 				 "Exposure completed.");
 #endif
+		retval = Sprat_Global_String_List_Add(filename_list,filename_count,filename);
+		if(retval == FALSE)
+		{
+			/* reset active flag */
+			Multrun_Data.Is_Active = FALSE;
+			Sprat_Global_Error_Number = 426;
+			sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Bias:Failed to add filename to list(%d).",
+				(*filename_count));
+			return FALSE;
+		}
 		Multrun_Data.Exposure_Index++;
 	}/* end for on count */
 	/* reset active flag */
@@ -292,8 +311,9 @@ int Sprat_Multrun_Bias(int exposure_count,int *multrun_number,char *filename,int
  * @param exposure_length The length of the dark, in milliseconds.
  * @param exposure_count The number of darks to do.
  * @param multrun_number The address of an integer to store the multrun number for this multrun.
- * @param filename The address of a string to hold the created filename.
- * @param filename_length The allocated length of filename.
+ * @param filename_list The address of an array of strings to hold a created filenames. These are the FITS images
+ *        created as part of this process.
+ * @param filename_count The address of an integer to fill in with the number of filenames in the list.
  * @return The routine returns TRUE on success, and FALSE on failure.
  * @see #Multrun_Data
  * @see #Multrun_Fits_Headers_Set
@@ -301,6 +321,7 @@ int Sprat_Multrun_Bias(int exposure_count,int *multrun_number,char *filename,int
  * @see sprat_global.html#Sprat_Global_Log_Format
  * @see sprat_global.html#Sprat_Global_Error_Number
  * @see sprat_global.html#Sprat_Global_Error_String
+ * @see sprat_global.html#Sprat_Global_String_List_Add
  * @see sprat_config.html#Sprat_Config_Get_Integer
  * @see sprat_config.html#Sprat_Config_Get_Double
  * @see ../ccd/cdocs/ccd_exposure.html#CCD_Exposure_Expose
@@ -312,10 +333,12 @@ int Sprat_Multrun_Bias(int exposure_count,int *multrun_number,char *filename,int
  * @see ../ccd/cdocs/ccd_temperature.html#CCD_TEMPERATURE_STATUS
  * @see ../ccd/cdocs/ccd_temperature.html#CCD_Temperature_Get
  */
-int Sprat_Multrun_Dark(int exposure_length,int exposure_count,int *multrun_number,char *filename,int filename_length)
+int Sprat_Multrun_Dark(int exposure_length,int exposure_count,int *multrun_number,
+		       char **filename_list[],int *filename_count)
 {
 	struct CCD_Setup_Window_Struct window;
 	struct timespec start_time;
+	char filename[256];
 	unsigned short *buffer_ptr = NULL;
 	int retval,i;
 
@@ -340,10 +363,16 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,int *multrun_numbe
 		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Dark:Exposure Count too small(%d).",exposure_count);
 		return FALSE;
 	}
-	if(filename == NULL)
+	if(filename_list == NULL)
 	{
 		Sprat_Global_Error_Number = 419;
-		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Dark:filename was NULL.");
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Dark:filename_list was NULL.");
+		return FALSE;
+	}
+	if(filename_count == NULL)
+	{
+		Sprat_Global_Error_Number = 427;
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Dark:filename_count was NULL.");
 		return FALSE;
 	}
 	Sprat_Global_Error_Number = 0;
@@ -387,7 +416,7 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,int *multrun_numbe
 		}
 		/* get fits filename */
 		if(!CCD_Fits_Filename_Get_Filename(CCD_FITS_FILENAME_EXPOSURE_TYPE_DARK,
-						   CCD_FITS_FILENAME_PIPELINE_FLAG_UNREDUCED,filename,filename_length))
+						   CCD_FITS_FILENAME_PIPELINE_FLAG_UNREDUCED,filename,256))
 		{
 			/* reset active flag */
 			Multrun_Data.Is_Active = FALSE;
@@ -416,6 +445,16 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,int *multrun_numbe
 		Sprat_Global_Log("multrun","sprat_multrun.c","Sprat_Multrun_Dark",LOG_VERBOSITY_VERBOSE,"MULTRUN",
 				 "Exposure completed.");
 #endif
+		retval = Sprat_Global_String_List_Add(filename_list,filename_count,filename);
+		if(retval == FALSE)
+		{
+			/* reset active flag */
+			Multrun_Data.Is_Active = FALSE;
+			Sprat_Global_Error_Number = 428;
+			sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Dark:Failed to add filename to list(%d).",
+				(*filename_count));
+			return FALSE;
+		}
 		/* increment exposure index */
 		Multrun_Data.Exposure_Index++;
 	}/* exposure count */
@@ -433,9 +472,9 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,int *multrun_numbe
  * @param exposure_count The number of exposures to do.
  * @param standard A boolean, if TRUE the MULTRUN is a standard otherwise it is a science exposure.
  * @param multrun_number The address of an integer to store the multrun number for this multrun.
- * @param filename The address of a string to hold a created filename. This is one of the FITS images
+ * @param filename_list The address of an array of strings to hold a created filenames. These are the FITS images
  *        created as part of this process.
- * @param filename_length The allocated length of the filename.
+ * @param filename_count The address of an integer to fill in with the number of filenames in the list.
  * @return The routine returns TRUE on success, and FALSE on failure.
  * @see #Multrun_Data
  * @see #Multrun_Fits_Headers_Set
@@ -445,6 +484,7 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,int *multrun_numbe
  * @see sprat_global.html#Sprat_Global_Log_Format
  * @see sprat_global.html#Sprat_Global_Error_Number
  * @see sprat_global.html#Sprat_Global_Error_String
+ * @see sprat_global.html#Sprat_Global_String_List_Add
  * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_Fits_Filename_Next_Multrun
  * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_Fits_Filename_Next_Run
  * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_Fits_Filename_Get_Filename
@@ -455,10 +495,11 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,int *multrun_numbe
  * @see ../ccd/cdocs/ccd_temperature.html#CCD_TEMPERATURE_STATUS
  */
 int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,int standard,int *multrun_number,
-			  char *filename,int filename_length)
+			  char **filename_list[],int *filename_count)
 {
 	struct CCD_Setup_Window_Struct window;
 	struct timespec start_time;
+	char filename[256];
 	unsigned short *buffer_ptr = NULL;
 	int retval,i,exposure_type;
 
@@ -485,16 +526,24 @@ int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,int standard,in
 			exposure_count);
 		return FALSE;
 	}
-	if(filename == NULL)
+	if(filename_list == NULL)
 	{
 		Sprat_Global_Error_Number = 422;
-		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:filename was NULL.");
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:filename_list was NULL.");
+		return FALSE;
+	}
+	if(filename_count == NULL)
+	{
+		Sprat_Global_Error_Number = 423;
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:filename_count was NULL.");
 		return FALSE;
 	}
 	Sprat_Global_Error_Number = 0;
 	Multrun_Data.Is_Active = TRUE;
 	Multrun_Data.Exposure_Count = exposure_count;
 	Multrun_Data.Exposure_Index = 0;
+	(*filename_list) = NULL;
+	(*filename_count) = 0;
 	/* CCD is setup in Sprat_Multrun_Dimensions_Set. */
 	/* exposure length */
 	Multrun_Data.Exposure_Length = exposure_length;
@@ -548,7 +597,7 @@ int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,int standard,in
 		}
 		/* get fits filename */
 		if(!CCD_Fits_Filename_Get_Filename(exposure_type,CCD_FITS_FILENAME_PIPELINE_FLAG_UNREDUCED,
-						   filename,filename_length))
+						   filename,256))
 		{
 			/* reset active flag */
 			Multrun_Data.Is_Active = FALSE;
@@ -572,6 +621,16 @@ int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,int standard,in
 			Multrun_Data.Is_Active = FALSE;
 			Sprat_Global_Error_Number = 414;
 			sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:CCD_Exposure_Expose failed.");
+			return FALSE;
+		}
+		retval = Sprat_Global_String_List_Add(filename_list,filename_count,filename);
+		if(retval == FALSE)
+		{
+			/* reset active flag */
+			Multrun_Data.Is_Active = FALSE;
+			Sprat_Global_Error_Number = 424;
+			sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:Failed to add filename to list(%d).",
+				(*filename_count));
 			return FALSE;
 		}
 #if SPRAT_DEBUG > 7

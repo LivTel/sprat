@@ -895,6 +895,85 @@ int Sprat_Global_Int_List_Sort(const void *f,const void *s)
 {
 	return (*(int*)f) - (*(int*)s);
 }
+
+/**
+ * Add a string to a list of strings.
+ * @param string_list The address of a reallocatable list of strings.
+ * @param string_list_count The address of an integer holding the number of strings in the lsit.
+ * @param string The string to add.
+ * @return The routine returns TRUE on success and FALSE on failure.
+ */
+int Sprat_Global_String_List_Add(char **string_list[],int *string_list_count,char *string)
+{
+	if(string_list == NULL)
+	{
+		Sprat_Global_Error_Number = 102;
+		sprintf(Sprat_Global_Error_String,"Sprat_Global_String_List_Add:string_list was NULL.");
+		return FALSE;
+	}
+	if(string_list_count == NULL)
+	{
+		Sprat_Global_Error_Number = 105;
+		sprintf(Sprat_Global_Error_String,"Sprat_Global_String_List_Add:string_list_count was NULL.");
+		return FALSE;
+	}
+	if((*string_list) == NULL)
+		(*string_list) = (char **)malloc(sizeof(char *));
+	else
+		(*string_list) = (char **)realloc((*string_list),((*string_list_count)+1)*sizeof(char *));
+	if((*string_list) == NULL)
+	{
+		Sprat_Global_Error_Number = 114;
+		sprintf(Sprat_Global_Error_String,"Sprat_Global_String_List_Add:Failed to reallocate string_list(%d).",
+			(*string_list_count));
+		return FALSE;
+	}
+	(*string_list)[(*string_list_count)] = strdup(string);
+	if((*string_list)[(*string_list_count)] == NULL)
+	{
+		Sprat_Global_Error_Number = 115;
+		sprintf(Sprat_Global_Error_String,
+			"Sprat_Global_String_List_Add:Failed to copy string_list[%d] (%80s).",
+			(*string_list_count),string);
+		return FALSE;
+	}
+	(*string_list_count)++;
+	return TRUE;
+}
+
+/**
+ * Free the memory associated with the specified string list.
+ * @param string_list The address of a list of strings to free.
+ * @param string_list_count The address of an integer containing the number of strings in the list.
+ */
+int Sprat_Global_String_List_Free(char **string_list[],int *string_list_count)
+{
+	int i;
+
+	if(string_list == NULL)
+	{
+		Sprat_Global_Error_Number = 120;
+		sprintf(Sprat_Global_Error_String,"Sprat_Global_String_List_Free:string_list was NULL.");
+		return FALSE;
+	}
+	if(string_list_count == NULL)
+	{
+		Sprat_Global_Error_Number = 121;
+		sprintf(Sprat_Global_Error_String,"Sprat_Global_String_List_Free:string_list_count was NULL.");
+		return FALSE;
+	}
+	for(i=0;i<(*string_list_count);i++)
+	{
+		if((*string_list)[i] != NULL)
+			free((*string_list)[i]);
+		(*string_list)[i] = NULL;
+	}
+	if((*string_list) != NULL)
+		free((*string_list));
+	(*string_list) = NULL;
+	(*string_list_count) = 0;
+}
+
 /**
  * Set the config filename.
  * @param filename The string to copy.

@@ -107,19 +107,20 @@ int Sprat_Command_Abort(char *command_string,char **reply_string)
  * @see sprat_global.html#Sprat_Global_Error_Number
  * @see sprat_global.html#Sprat_Global_Error_String
  * @see sprat_global.html#Sprat_Global_Log
+ * @see sprat_global.html#Sprat_Global_String_List_Free
  */
 int Sprat_Command_Bias(char *command_string,char **reply_string)
 {
-	char filename[256];
+	char **filename_list = NULL;
 	char multrun_number_string[16];
-	int retval,multrun_number;
+	int retval,multrun_number,filename_count,i;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Bias",LOG_VERBOSITY_TERSE,
 			    "COMMAND","started.");
 #endif
 	/* do bias */
-	retval = Sprat_Multrun_Bias(1,&multrun_number,filename,256);
+	retval = Sprat_Multrun_Bias(1,&multrun_number,&filename_list,&filename_count);
 	if(retval == FALSE)
 	{
 		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Bias",
@@ -133,14 +134,20 @@ int Sprat_Command_Bias(char *command_string,char **reply_string)
 	}
 	if(!Sprat_Global_Add_String(reply_string,"0 "))
 		return FALSE;
-	sprintf(multrun_number_string,"%d ",multrun_number);
+	sprintf(multrun_number_string,"%d",multrun_number);
 	if(!Sprat_Global_Add_String(reply_string,multrun_number_string))
 		return FALSE;
-	if(!Sprat_Global_Add_String(reply_string,filename))
+	for(i=0; i < filename_count;i++)
+	{
+		if(!Sprat_Global_Add_String(reply_string," "))
+			return FALSE;
+		if(!Sprat_Global_Add_String(reply_string,filename_list[i]))
+			return FALSE;
+	}
+	if(!Sprat_Global_String_List_Free(&filename_list,&filename_count))
 		return FALSE;
 #if SPRAT_DEBUG > 1
-	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Bias",LOG_VERBOSITY_TERSE,
-			       "COMMAND","finished.");
+	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Bias",LOG_VERBOSITY_TERSE,"COMMAND","finished.");
 #endif
 	return TRUE;
 }
@@ -272,13 +279,14 @@ int Sprat_Command_Config(char *command_string,char **reply_string)
  * @see sprat_global.html#Sprat_Global_Error_String
  * @see sprat_global.html#Sprat_Global_Add_String
  * @see sprat_global.html#Sprat_Global_Log
+ * @see sprat_global.html#Sprat_Global_String_List_Free
  * @see sprat_multrun.html#Sprat_Multrun_Dark
  */
 int Sprat_Command_Dark(char *command_string,char **reply_string)
 {
-	char filename[256];
+	char **filename_list = NULL;
 	char multrun_number_string[16];
-	int retval,exposure_length,multrun_number;
+	int retval,exposure_length,multrun_number,filename_count,i;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Dark",LOG_VERBOSITY_TERSE,"COMMAND","started.");
@@ -303,7 +311,7 @@ int Sprat_Command_Dark(char *command_string,char **reply_string)
 		return FALSE;
 	}
 	/* do exposure */
-	retval = Sprat_Multrun_Dark(exposure_length,1,&multrun_number,filename,256);
+	retval = Sprat_Multrun_Dark(exposure_length,1,&multrun_number,&filename_list,&filename_count);
 	if(retval == FALSE)
 	{
 		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Dark",LOG_VERBOSITY_TERSE,
@@ -316,10 +324,17 @@ int Sprat_Command_Dark(char *command_string,char **reply_string)
 	}
 	if(!Sprat_Global_Add_String(reply_string,"0 "))
 		return FALSE;
-	sprintf(multrun_number_string,"%d ",multrun_number);
+	sprintf(multrun_number_string,"%d",multrun_number);
 	if(!Sprat_Global_Add_String(reply_string,multrun_number_string))
 		return FALSE;
-	if(!Sprat_Global_Add_String(reply_string,filename))
+	for(i=0; i < filename_count; i++)
+	{
+		if(!Sprat_Global_Add_String(reply_string," "))
+			return FALSE;
+		if(!Sprat_Global_Add_String(reply_string,filename_list[i]))
+			return FALSE;
+	}
+	if(!Sprat_Global_String_List_Free(&filename_list,&filename_count))
 		return FALSE;
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Dark",LOG_VERBOSITY_TERSE,"COMMAND","finished.");
@@ -340,12 +355,13 @@ int Sprat_Command_Dark(char *command_string,char **reply_string)
  * @see sprat_global.html#Sprat_Global_Error_Number
  * @see sprat_global.html#Sprat_Global_Error_String
  * @see sprat_global.html#Sprat_Global_Log
+ * @see sprat_global.html#Sprat_Global_String_List_Free
  */
 int Sprat_Command_Expose(char *command_string,char **reply_string)
 {
-	char filename[256];
+	char **filename_list = NULL;
 	char multrun_number_string[16];
-	int retval,exposure_length,multrun_number;
+	int retval,exposure_length,multrun_number,filename_count;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Expose",LOG_VERBOSITY_TERSE,"COMMAND","started.");
@@ -371,7 +387,7 @@ int Sprat_Command_Expose(char *command_string,char **reply_string)
 		return FALSE;
 	}
 	/* do exposure */
-	retval = Sprat_Multrun_Multrun(exposure_length,1,FALSE,&multrun_number,filename,256);
+	retval = Sprat_Multrun_Multrun(exposure_length,1,FALSE,&multrun_number,&filename_list,&filename_count);
 	if(retval == FALSE)
 	{
 		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Expose",
@@ -388,7 +404,12 @@ int Sprat_Command_Expose(char *command_string,char **reply_string)
 	sprintf(multrun_number_string,"%d ",multrun_number);
 	if(!Sprat_Global_Add_String(reply_string,multrun_number_string))
 		return FALSE;
-	if(!Sprat_Global_Add_String(reply_string,filename))
+	if(filename_count > 0)
+	{
+		if(!Sprat_Global_Add_String(reply_string,filename_list[0]))
+			return FALSE;
+	}
+	if(!Sprat_Global_String_List_Free(&filename_list,&filename_count))
 		return FALSE;
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Expose",LOG_VERBOSITY_TERSE,"COMMAND",
@@ -778,12 +799,13 @@ int Sprat_Command_Fits_Header(char *command_string,char **reply_string)
  * @see sprat_global.html#Sprat_Global_Error_Number
  * @see sprat_global.html#Sprat_Global_Error_String
  * @see sprat_global.html#Sprat_Global_Log
+ * @see sprat_global.html#Sprat_Global_String_List_Free
  */
 int Sprat_Command_MultBias(char *command_string,char **reply_string)
 {
-	char filename[256];
+	char **filename_list = NULL;
 	char multrun_number_string[16];
-	int retval,exposure_count,multrun_number;
+	int retval,exposure_count,multrun_number,filename_count,i;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_MultBias",LOG_VERBOSITY_TERSE,
@@ -810,7 +832,7 @@ int Sprat_Command_MultBias(char *command_string,char **reply_string)
 		return FALSE;
 	}
 	/* do bias */
-	retval = Sprat_Multrun_Bias(exposure_count,&multrun_number,filename,256);
+	retval = Sprat_Multrun_Bias(exposure_count,&multrun_number,&filename_list,&filename_count);
 	if(retval == FALSE)
 	{
 		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_MultBias",
@@ -824,10 +846,17 @@ int Sprat_Command_MultBias(char *command_string,char **reply_string)
 	}
 	if(!Sprat_Global_Add_String(reply_string,"0 "))
 		return FALSE;
-	sprintf(multrun_number_string,"%d ",multrun_number);
+	sprintf(multrun_number_string,"%d",multrun_number);
 	if(!Sprat_Global_Add_String(reply_string,multrun_number_string))
 		return FALSE;
-	if(!Sprat_Global_Add_String(reply_string,filename))
+	for(i=0; i < filename_count; i++)
+	{
+		if(!Sprat_Global_Add_String(reply_string," "))
+			return FALSE;
+		if(!Sprat_Global_Add_String(reply_string,filename_list[i]))
+			return FALSE;
+	}
+	if(!Sprat_Global_String_List_Free(&filename_list,&filename_count))
 		return FALSE;
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_MultBias",LOG_VERBOSITY_TERSE,
@@ -849,12 +878,13 @@ int Sprat_Command_MultBias(char *command_string,char **reply_string)
  * @see sprat_global.html#Sprat_Global_Error_Number
  * @see sprat_global.html#Sprat_Global_Error_String
  * @see sprat_global.html#Sprat_Global_Log
+ * @see sprat_global.html#Sprat_Global_String_List_Free
  */
 int Sprat_Command_MultDark(char *command_string,char **reply_string)
 {
-	char filename[256];
+	char **filename_list = NULL;
 	char multrun_number_string[16];
-	int retval,exposure_length,exposure_count,multrun_number,standard;
+	int retval,exposure_length,exposure_count,multrun_number,standard,filename_count,i;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_MultDark",LOG_VERBOSITY_TERSE,
@@ -881,7 +911,7 @@ int Sprat_Command_MultDark(char *command_string,char **reply_string)
 		return FALSE;
 	}
 	/* do exposure */
-	retval = Sprat_Multrun_Dark(exposure_length,exposure_count,&multrun_number,filename,256);
+	retval = Sprat_Multrun_Dark(exposure_length,exposure_count,&multrun_number,&filename_list,&filename_count);
 	if(retval == FALSE)
 	{
 		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_MultDark",
@@ -895,10 +925,17 @@ int Sprat_Command_MultDark(char *command_string,char **reply_string)
 	}
 	if(!Sprat_Global_Add_String(reply_string,"0 "))
 		return FALSE;
-	sprintf(multrun_number_string,"%d ",multrun_number);
+	sprintf(multrun_number_string,"%d",multrun_number);
 	if(!Sprat_Global_Add_String(reply_string,multrun_number_string))
 		return FALSE;
-	if(!Sprat_Global_Add_String(reply_string,filename))
+	for(i = 0; i < filename_count; i++)
+	{
+		if(!Sprat_Global_Add_String(reply_string," "))
+			return FALSE;
+		if(!Sprat_Global_Add_String(reply_string,filename_list[i]))
+			return FALSE;
+	}
+	if(!Sprat_Global_String_List_Free(&filename_list,&filename_count))
 		return FALSE;
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_MultDark",LOG_VERBOSITY_TERSE,
@@ -920,13 +957,14 @@ int Sprat_Command_MultDark(char *command_string,char **reply_string)
  * @see sprat_global.html#Sprat_Global_Error_Number
  * @see sprat_global.html#Sprat_Global_Error_String
  * @see sprat_global.html#Sprat_Global_Log
+ * @see sprat_global.html#Sprat_Global_String_List_Free
  */
 int Sprat_Command_Multrun(char *command_string,char **reply_string)
 {
-	char filename[256];
+	char **filename_list = NULL;
 	char standard_string[8];
 	char multrun_number_string[16];
-	int retval,exposure_length,exposure_count,multrun_number,standard;
+	int retval,exposure_length,exposure_count,multrun_number,standard,filename_count,i;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Multrun",LOG_VERBOSITY_TERSE,"COMMAND","started.");
@@ -970,7 +1008,8 @@ int Sprat_Command_Multrun(char *command_string,char **reply_string)
 		return TRUE;
 	}
 	/* do exposure */
-	retval = Sprat_Multrun_Multrun(exposure_length,exposure_count,standard,&multrun_number,filename,256);
+	retval = Sprat_Multrun_Multrun(exposure_length,exposure_count,standard,&multrun_number,
+				       &filename_list,&filename_count);
 	if(retval == FALSE)
 	{
 		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Multrun",
@@ -982,12 +1021,20 @@ int Sprat_Command_Multrun(char *command_string,char **reply_string)
 			return FALSE;
 		return TRUE;
 	}
-	if(!Sprat_Global_Add_String(reply_string,"0 "))
+	if(!Sprat_Global_Add_String(reply_string,"0"))
 		return FALSE;
 	sprintf(multrun_number_string,"%d ",multrun_number);
 	if(!Sprat_Global_Add_String(reply_string,multrun_number_string))
 		return FALSE;
-	if(!Sprat_Global_Add_String(reply_string,filename))
+	/* Add all filenames to the reply string */
+	for(i=0; i < filename_count; i++)
+	{
+		if(!Sprat_Global_Add_String(reply_string," "))
+			return FALSE;
+		if(!Sprat_Global_Add_String(reply_string,filename_list[i]))
+			return FALSE;
+	}
+	if(!Sprat_Global_String_List_Free(&filename_list,&filename_count))
 		return FALSE;
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Multrun",LOG_VERBOSITY_TERSE,

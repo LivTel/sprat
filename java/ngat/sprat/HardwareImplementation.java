@@ -127,12 +127,12 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * @see ngat.phase2.SpratConfig#POSITION_IN
 	 * @see ngat.phase2.SpratConfig#POSITION_OUT
 	 * @see ngat.phase2.SpratConfig#positionToString
-	 * @see ngat.sprat.mechansim.command.MirrorCommand
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism#setCommand
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism#setSleepTime
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism#setTimeoutTime
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism#moveInOutMechanism
+	 * @see ngat.sprat.mechanism.command.MirrorCommand
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setCommand
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setSleepTime
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setTimeoutTime
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#moveInOutMechanism
 	 */
 	protected void moveMirror(int position) throws Exception
 	{

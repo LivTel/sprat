@@ -108,6 +108,8 @@ extern int Sprat_Global_Log_Filter_Level_Bitwise(char *sub_system,char *source_f
 extern int Sprat_Global_Add_String(char **string,char *add);
 extern int Sprat_Global_Int_List_Add(int add,int **list,int *count);
 extern int Sprat_Global_Int_List_Sort(const void *f,const void *s);
+extern int Sprat_Global_String_List_Add(char **string_list[],int *string_list_count,char *string);
+extern int Sprat_Global_String_List_Free(char **string_list[],int *string_list_count);
 
 extern int Sprat_Global_Set_Config_Filename(char *filename);
 extern char *Sprat_Global_Get_Config_Filename(void);

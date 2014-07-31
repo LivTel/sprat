@@ -2,9 +2,13 @@
 // $HeadURL$
 package ngat.sprat;
 
+import java.io.*;
 import java.lang.*;
+import java.util.List;
+
 import ngat.message.base.*;
 import ngat.message.ISS_INST.*;
+import ngat.phase2.SpratConfig;
 import ngat.sprat.ccd.command.*;
 import ngat.sprat.mechanism.command.*;
 import ngat.util.logging.*;
@@ -15,16 +19,16 @@ import ngat.util.logging.*;
  * @author Chris Motram
  * @version $Revision: 1.3 $
  */
-public class MULTRUNImplementation extends HardwareImplementation implements JMSCommandImplementation
+public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCommandImplementation
 {
 	/**
 	 * Revision Control System id string, showing the version of the Class.
 	 */
 	public final static String RCSID = new String("$Id$");
 	/**
-	 * The last FITS filename returned by the multrun command.
+	 * The list of FITS filenames returned by the multrun command.
 	 */
-	protected String lastFilename = null;
+	protected List<String> filenameList = null;
 	/**
 	 * The multrun number used for FITS filenames for this command.
 	 */
@@ -121,9 +125,11 @@ public class MULTRUNImplementation extends HardwareImplementation implements JMS
 	{
 		MULTRUN multRunCommand = (MULTRUN)command;
 		MULTRUN_ACK multRunAck = null;
+		MULTRUN_DP_ACK multRunDpAck = null;
 		MULTRUN_DONE multRunDone = new MULTRUN_DONE(command.getId());
-		int exposureLength,exposureCount;
-		boolean standard;
+		String filename = null;
+		int exposureLength,exposureCount,index;
+		boolean standard,retval;
 
 		sprat.log(Logging.VERBOSITY_TERSE,this.getClass().getName()+":processCommand:Started.");
 		if(testAbort(multRunCommand,multRunDone) == true)
@@ -138,10 +144,10 @@ public class MULTRUNImplementation extends HardwareImplementation implements JMS
 		{
 			sprat.error(this.getClass().getName()+":processCommand:Moving Calibration Mirror failed:"+
 				    command,e);
-			configDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1201);
-			configDone.setErrorString(e.toString());
-			configDone.setSuccessful(false);
-			return configDone;
+			multRunDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1201);
+			multRunDone.setErrorString(e.toString());
+			multRunDone.setSuccessful(false);
+			return multRunDone;
 		}
 		// move the fold mirror to the correct location
 		sprat.log(Logging.VERBOSITY_TERSE,this.getClass().getName()+":processCommand:Moving fold mirror.");
@@ -157,7 +163,19 @@ public class MULTRUNImplementation extends HardwareImplementation implements JMS
 			 ":processCommand:exposureLength = "+exposureLength+
 			 " :exposureCount = "+exposureCount+" :standard = "+standard+".");
 		// get fits headers
-		clearFitsHeaders();
+		try
+		{
+			clearFitsHeaders();
+		}
+		catch(Exception e)
+		{
+			sprat.error(this.getClass().getName()+":processCommand:clearFitsHeaders failed:",e);
+			multRunDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1202);
+			multRunDone.setErrorString(this.getClass().getName()+
+						   ":processCommand:clearFitsHeaders failed:"+e);
+			multRunDone.setSuccessful(false);
+			return multRunDone;
+		}
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
 			 ":processCommand:getting FITS headers from properties.");
 		if(setFitsHeaders(multRunCommand,multRunDone) == false)
@@ -184,20 +202,68 @@ public class MULTRUNImplementation extends HardwareImplementation implements JMS
 			multRunDone.setSuccessful(false);
 			return multRunDone;
 		}
-		// diddly real time data pipeline?
+	// call pipeline to process data and get results
+		retval = true;
+		if(multRunCommand.getPipelineProcess())
+		{
+			index = 0;
+			while(retval&&(index < filenameList.size()))
+			{
+				filename = (String)filenameList.get(index);
+			// do reduction.
+				retval = reduceExpose(multRunCommand,multRunDone,filename);
+			// send acknowledge to say frame has been reduced.
+				multRunDpAck = new MULTRUN_DP_ACK(command.getId());
+				multRunDpAck.setTimeToComplete(serverConnectionThread.getDefaultAcknowledgeTime());
+			// copy Data Pipeline results from DONE to ACK
+				multRunDpAck.setFilename(multRunDone.getFilename());
+				multRunDpAck.setCounts(multRunDone.getCounts());
+				multRunDpAck.setSeeing(multRunDone.getSeeing());
+				multRunDpAck.setXpix(multRunDone.getXpix());
+				multRunDpAck.setYpix(multRunDone.getYpix());
+				multRunDpAck.setPhotometricity(multRunDone.getPhotometricity());
+				multRunDpAck.setSkyBrightness(multRunDone.getSkyBrightness());
+				multRunDpAck.setSaturation(multRunDone.getSaturation());
+				try
+				{
+					serverConnectionThread.sendAcknowledge(multRunDpAck);
+				}
+				catch(IOException e)
+				{
+					retval = false;
+					sprat.error(this.getClass().getName()+
+						":processCommand:sendAcknowledge(DP):"+command+":"+e.toString());
+					multRunDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1203);
+					multRunDone.setErrorString(e.toString());
+					multRunDone.setSuccessful(false);
+					return multRunDone;
+				}
+				if(testAbort(multRunCommand,multRunDone) == true)
+				{
+					retval = false;
+				}
+				index++;
+			}// end while on MULTRUN exposures
+		}// end if Data Pipeline is to be called
+		else
+		{
+		// no pipeline processing occured, set return value to something bland.
+		// set filename to last filename exposed.
+			multRunDone.setFilename(filename);
+			multRunDone.setCounts(0.0f);
+			multRunDone.setSeeing(0.0f);
+			multRunDone.setXpix(0.0f);
+			multRunDone.setYpix(0.0f);
+			multRunDone.setPhotometricity(0.0f);
+			multRunDone.setSkyBrightness(0.0f);
+			multRunDone.setSaturation(false);
+		}
+	// if a failure occurs, return now
+		if(!retval)
+			return multRunDone;
 	// setup return values.
-	// Only the filename (setFilename) is set to something useful.
-	// setCounts,setSeeing,setXpix,setYpix 
-	// setPhotometricity, setSkyBrightness, setSaturation are set to some nominal value.
-		multRunDone.setFilename(lastFilename);
-		// set to some blank value
-		multRunDone.setSeeing(0.0f);
-		multRunDone.setCounts(0.0f);
-		multRunDone.setXpix(0.0f);
-		multRunDone.setYpix(0.0f);
-		multRunDone.setPhotometricity(0.0f);
-		multRunDone.setSkyBrightness(0.0f);
-		multRunDone.setSaturation(false);
+	// setCounts,setFilename,setSeeing,setXpix,setYpix 
+	// setPhotometricity, setSkyBrightness, setSaturation set by reduceExpose for last image reduced.
 		// standard success values
 		multRunDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_NO_ERROR);
 		multRunDone.setErrorString("");
@@ -214,17 +280,17 @@ public class MULTRUNImplementation extends HardwareImplementation implements JMS
 	 * @param standard If true this is a standard frame.
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #multrunNumber
-	 * @see #lastFilename
-	 * @see ngat.sprat.command.MultrunCommand
-	 * @see ngat.sprat.command.MultrunCommand#setAddress
-	 * @see ngat.sprat.command.MultrunCommand#setPortNumber
-	 * @see ngat.sprat.command.MultrunCommand#setCommand
-	 * @see ngat.sprat.command.MultrunCommand#sendCommand
-	 * @see ngat.sprat.command.MultrunCommand#getParsedReplyOK
-	 * @see ngat.sprat.command.MultrunCommand#getReturnCode
-	 * @see ngat.sprat.command.MultrunCommand#getParsedReply
-	 * @see ngat.sprat.command.MultrunCommand#getMultrunNumber
-	 * @see ngat.sprat.command.MultrunCommand#getFilename
+	 * @see #filenameList
+	 * @see ngat.sprat.ccd.command.MultrunCommand
+	 * @see ngat.sprat.ccd.command.MultrunCommand#setAddress
+	 * @see ngat.sprat.ccd.command.MultrunCommand#setPortNumber
+	 * @see ngat.sprat.ccd.command.MultrunCommand#setCommand
+	 * @see ngat.sprat.ccd.command.MultrunCommand#sendCommand
+	 * @see ngat.sprat.ccd.command.MultrunCommand#getParsedReplyOK
+	 * @see ngat.sprat.ccd.command.MultrunCommand#getReturnCode
+	 * @see ngat.sprat.ccd.command.MultrunCommand#getParsedReply
+	 * @see ngat.sprat.ccd.command.MultrunCommand#getMultrunNumber
+	 * @see ngat.sprat.ccd.command.MultrunCommand#getFilenameList
 	 */
 	protected void sendMultrunCommand(int exposureLength, int exposureCount,boolean standard) throws Exception
 	{
@@ -262,7 +328,7 @@ public class MULTRUNImplementation extends HardwareImplementation implements JMS
 		}
 		// extract data from successful reply.
 		multrunNumber = command.getMultrunNumber();
-		lastFilename = command.getFilename();
+		filenameList = command.getFilenameList();
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendMultrunCommand:finished.");
 	}
 }

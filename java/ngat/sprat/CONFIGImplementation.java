@@ -299,14 +299,14 @@ public class CONFIGImplementation extends CommandImplementation implements JMSCo
 	 * @param window The subwindow, if specified.
 	 * @exception Exception Thrown if an error occurs.
 	 * @see ngat.phase2.Window
-	 * @see ngat.sprat.command.ConfigCommand
-	 * @see ngat.sprat.command.ConfigCommand#setAddress
-	 * @see ngat.sprat.command.ConfigCommand#setPortNumber
-	 * @see ngat.sprat.command.ConfigCommand#setCommand
-	 * @see ngat.sprat.command.ConfigCommand#sendCommand
-	 * @see ngat.sprat.command.ConfigCommand#getParsedReplyOK
-	 * @see ngat.sprat.command.ConfigCommand#getReturnCode
-	 * @see ngat.sprat.command.ConfigCommand#getParsedReply
+	 * @see ngat.sprat.ccd.command.ConfigCommand
+	 * @see ngat.sprat.ccd.command.ConfigCommand#setAddress
+	 * @see ngat.sprat.ccd.command.ConfigCommand#setPortNumber
+	 * @see ngat.sprat.ccd.command.ConfigCommand#setCommand
+	 * @see ngat.sprat.ccd.command.ConfigCommand#sendCommand
+	 * @see ngat.sprat.ccd.command.ConfigCommand#getParsedReplyOK
+	 * @see ngat.sprat.ccd.command.ConfigCommand#getReturnCode
+	 * @see ngat.sprat.ccd.command.ConfigCommand#getParsedReply
 	 */
 	protected void sendConfigCommand(int xBin,int yBin,boolean useWindow,Window window) throws Exception
 	{
@@ -380,12 +380,12 @@ public class CONFIGImplementation extends CommandImplementation implements JMSCo
 	 * @see ngat.phase2.SpratConfig#POSITION_IN
 	 * @see ngat.phase2.SpratConfig#POSITION_OUT
 	 * @see ngat.phase2.SpratConfig#positionToString
-	 * @see ngat.sprat.mechansim.command.GrismCommand
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism#setCommand
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism#setSleepTime
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism#setTimeoutTime
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism#moveInOutMechanism
+	 * @see ngat.sprat.mechanism.command.GrismCommand
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setCommand
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setSleepTime
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setTimeoutTime
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#moveInOutMechanism
 	 */
 	protected void moveGrism(int position) throws Exception
 	{
@@ -435,12 +435,12 @@ public class CONFIGImplementation extends CommandImplementation implements JMSCo
 	 * @see SpratStatus#getPropertyInteger
 	 * @see ngat.phase2.SpratConfig#POSITION_IN
 	 * @see ngat.phase2.SpratConfig#POSITION_OUT
-	 * @see ngat.sprat.mechansim.command.RotationCommand
-	 * @see ngat.sprat.mechansim.MoveRotationMechanism
-	 * @see ngat.sprat.mechansim.MoveRotationMechanism#setCommand
-	 * @see ngat.sprat.mechansim.MoveRotationMechanism#setSleepTime
-	 * @see ngat.sprat.mechansim.MoveRotationMechanism#setTimeoutTime
-	 * @see ngat.sprat.mechansim.MoveRotationMechanism#moveRotationMechanism
+	 * @see ngat.sprat.mechanism.command.RotationCommand
+	 * @see ngat.sprat.mechanism.MoveRotationMechanism
+	 * @see ngat.sprat.mechanism.MoveRotationMechanism#setCommand
+	 * @see ngat.sprat.mechanism.MoveRotationMechanism#setSleepTime
+	 * @see ngat.sprat.mechanism.MoveRotationMechanism#setTimeoutTime
+	 * @see ngat.sprat.mechanism.MoveRotationMechanism#moveRotationMechanism
 	 */
 	protected void rotateGrism(int position) throws Exception
 	{
@@ -490,12 +490,12 @@ public class CONFIGImplementation extends CommandImplementation implements JMSCo
 	 * @see ngat.phase2.SpratConfig#POSITION_IN
 	 * @see ngat.phase2.SpratConfig#POSITION_OUT
 	 * @see ngat.phase2.SpratConfig#positionToString
-	 * @see ngat.sprat.mechansim.command.SlitCommand
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism#setCommand
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism#setSleepTime
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism#setTimeoutTime
-	 * @see ngat.sprat.mechansim.MoveInOutMechanism#moveInOutMechanism
+	 * @see ngat.sprat.mechanism.command.SlitCommand
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setCommand
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setSleepTime
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setTimeoutTime
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#moveInOutMechanism
 	 */
 	protected void moveSlit(int position) throws Exception
 	{
@@ -536,8 +536,6 @@ public class CONFIGImplementation extends CommandImplementation implements JMSCo
 	 * This method sends a OFFSET_FOCUS command to
 	 * the ISS. 
 	 * @param id The Id is used as the OFFSET_FOCUS command's id.
-	 * @return The method returns true if the telescope attained the focus offset, otherwise false is
-	 * 	returned an telFocusDone is filled in with an error message.
 	 * @exception Exception Thrown if the return value of the OFFSET_FOCUS ISS command is false.
 	 */
 	private void setFocusOffset(String id) throws Exception
