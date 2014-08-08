@@ -186,8 +186,6 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 			return multRunDone;
 		if(testAbort(multRunCommand,multRunDone) == true)
 			return multRunDone;
-		if(testAbort(multRunCommand,multRunDone) == true)
-			return multRunDone;
 		// call multrun command
 		try
 		{
@@ -296,6 +294,7 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 	{
 		MultrunCommand command = null;
 		int portNumber,returnCode;
+		String exposureTypeString = null;
 		String hostname = null;
 		String errorString = null;
 
@@ -303,6 +302,10 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 			 "\n\t:exposureLength = "+exposureLength+
 			 "\n\t:exposureCount = "+exposureCount+
 			 "\n\t:standard = "+standard+".");
+		if(standard)
+			exposureTypeString = MultrunCommand.EXPOSURE_TYPE_STANDARD;
+		else
+			exposureTypeString = MultrunCommand.EXPOSURE_TYPE_EXPOSURE;
 		command = new MultrunCommand();
 		// configure C comms
 		hostname = status.getProperty("sprat.ccd.c.hostname");
@@ -311,7 +314,7 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 		command.setPortNumber(portNumber);
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendMultrunCommand:hostname = "+hostname+
 			   " :port number = "+portNumber+".");
-		command.setCommand(exposureLength,exposureCount,standard);
+		command.setCommand(exposureLength,exposureCount,exposureTypeString);
 		// actually send the command to the C layer
 		command.sendCommand();
 		// check the parsed reply

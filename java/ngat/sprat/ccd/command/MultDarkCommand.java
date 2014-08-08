@@ -98,7 +98,8 @@ public class MultDarkCommand extends MultrunFilenameReplyCommand implements Runn
 			System.out.println("Return Code:"+command.getReturnCode());
 			System.out.println("Reply String:"+command.getParsedReply());
 			System.out.println("Return Multrun Number:"+command.getMultrunNumber());
-			System.out.println("Return Filename:"+command.getFilename());
+			for(int i = 0; i < command.getFilenameListCount(); i++)
+				System.out.println("Return Filename "+i+":"+command.getFilename(i));
 		}
 		catch(Exception e)
 		{

@@ -19,6 +19,41 @@ public class MultrunCommand extends MultrunFilenameReplyCommand implements Runna
 	 * Revision Control System id string, showing the version of the Class.
 	 */
 	public final static String RCSID = new String("$Id$");
+	/**
+	 * A string describing a type of exposure that the multrun command can perform. This affects
+	 * the FITS image filename that the acquired data is saved into.
+	 */
+	public final static String EXPOSURE_TYPE_ARC = new String("arc");
+	/**
+	 * A string describing a type of exposure that the multrun command can perform. This affects
+	 * the FITS image filename that the acquired data is saved into.
+	 */
+	public final static String EXPOSURE_TYPE_EXPOSURE = new String("exposure");
+	/**
+	 * A string describing a type of exposure that the multrun command can perform. This affects
+	 * the FITS image filename that the acquired data is saved into.
+	 */
+	public final static String EXPOSURE_TYPE_SKYFLAT = new String("skyflat");
+	/**
+	 * A string describing a type of exposure that the multrun command can perform. This affects
+	 * the FITS image filename that the acquired data is saved into.
+	 */
+	public final static String EXPOSURE_TYPE_STANDARD = new String("standard");
+	/**
+	 * A string describing a type of exposure that the multrun command can perform. This affects
+	 * the FITS image filename that the acquired data is saved into.
+	 */
+	public final static String EXPOSURE_TYPE_LAMPFLAT = new String("lampflat");
+	/**
+	 * A string describing a type of exposure that the multrun command can perform. This affects
+	 * the FITS image filename that the acquired data is saved into.
+	 */
+	public final static String EXPOSURE_TYPE_BIAS = new String("bias");
+	/**
+	 * A string describing a type of exposure that the multrun command can perform. This affects
+	 * the FITS image filename that the acquired data is saved into.
+	 */
+	public final static String EXPOSURE_TYPE_DARK = new String("dark");
 
 	/**
 	 * Default constructor.
@@ -52,12 +87,13 @@ public class MultrunCommand extends MultrunFilenameReplyCommand implements Runna
 	 * Setup the Multrun command. 
 	 * @param exposureLength Set the length of the exposure (or exposures) in milliseconds
 	 * @param exposureCount Set the number of frames to take in the Multrun. 
-	 * @param standard A boolean. If true the multrun is of a standard, otherwise it is of a exposure.
+	 * @param exposureType A string, describing the exposure type. One of:
+	 *       arc|exposure|skyflat|standard|lampflat|bias|dark
 	 * @see #commandString
 	 */
-	public void setCommand(int exposureLength,int exposureCount,boolean standard)
+	public void setCommand(int exposureLength,int exposureCount,String exposureType)
 	{
-		commandString = new String("multrun "+exposureLength+" "+exposureCount+" "+standard);
+		commandString = new String("multrun "+exposureLength+" "+exposureCount+" "+exposureType);
 	}
 
 	/**
@@ -68,13 +104,14 @@ public class MultrunCommand extends MultrunFilenameReplyCommand implements Runna
 	{
 		MultrunCommand command = null;
 		String hostname = null;
+		String exposureTypeString = null;
 		int portNumber = 8367;
 		int exposureLength,exposureCount;
 		boolean standard;
 
 		if(args.length != 5)
 		{
-			System.out.println("java ngat.sprat.ccd.command.MultrunCommand <hostname> <port number> <exposure length> <exposure count> <standard>");
+			System.out.println("java ngat.sprat.ccd.command.MultrunCommand <hostname> <port number> <exposure length> <exposure count> <exposure type>");
 			System.exit(1);
 		}
 		try
@@ -86,15 +123,9 @@ public class MultrunCommand extends MultrunFilenameReplyCommand implements Runna
 			portNumber = Integer.parseInt(args[1]);
 			exposureLength = Integer.parseInt(args[2]);
 			exposureCount = Integer.parseInt(args[3]);
-			if(args[4].equals("true"))
-				standard = true;
-			else if(args[4].equals("false"))
-				standard = false;
-			else
-				throw new IllegalArgumentException("MultrunCommand:standard must be true or false,"+
-								   " actual value found:"+args[4]);
+			exposureTypeString = args[4];
 			command = new MultrunCommand(hostname,portNumber);
-			command.setCommand(exposureLength,exposureCount,standard);
+			command.setCommand(exposureLength,exposureCount,exposureTypeString);
 			command.run();
 			if(command.getRunException() != null)
 			{
@@ -107,7 +138,8 @@ public class MultrunCommand extends MultrunFilenameReplyCommand implements Runna
 			System.out.println("Return Code:"+command.getReturnCode());
 			System.out.println("Reply String:"+command.getParsedReply());
 			System.out.println("Return Multrun Number:"+command.getMultrunNumber());
-			System.out.println("Return Filename:"+command.getFilename());
+			for(int i = 0; i < command.getFilenameListCount(); i++)
+				System.out.println("Return Filename "+i+":"+command.getFilename(i));
 		}
 		catch(Exception e)
 		{
@@ -115,6 +147,5 @@ public class MultrunCommand extends MultrunFilenameReplyCommand implements Runna
 			System.exit(1);
 		}
 		System.exit(0);
-
 	}
 }

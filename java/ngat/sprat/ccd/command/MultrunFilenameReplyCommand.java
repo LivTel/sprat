@@ -13,9 +13,10 @@ import ngat.util.logging.*;
 
 /**
  * The MultrunFilenameReplyCommand class is an extension of the base Command class for sending a command and getting a 
- * reply from the Sprat C layer. This is a telnet - type socket interaction. IntegerReplyCommand expects the reply
- * to be '&lt;n&gt; &lt;multrun number&gt; &lt;filename&gt;' where &lt;n&gt; is the reply status, 
- * &lt;multrun number&gt; is an integer value and &lt;filename&gt; a string. 
+ * reply from the Sprat C layer. This is a telnet - type socket interaction. 
+ * MultrunFilenameReplyCommand expects the reply
+ * to be '&lt;n&gt; &lt;multrun number&gt; &lt;filename&gt; [&lt;filename&gt;...]' where &lt;n&gt; is the reply status,
+ * &lt;multrun number&gt; is an integer value and one or more &lt;filename&gt; strings are returned. 
  * @author Chris Mottram
  * @version $Revision$
  */
@@ -153,7 +154,7 @@ public class MultrunFilenameReplyCommand extends Command implements Runnable, Te
 
 	/**
 	 * Get the number of filenames in the list.
-	 * @return An integer, the number of filename in the list.#
+	 * @return An integer, the number of filename in the list.
 	 * @see #filenameList
 	 */
 	public int getFilenameListCount()

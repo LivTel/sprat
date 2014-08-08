@@ -56,6 +56,7 @@ static char Command_Error_String[COMMAND_ERROR_STRING_LENGTH];
 static int Command_Status_Exposure(char *request_string,char **reply_string);
 static int Command_Status_Multrun(char *request_string,char **reply_string);
 static int Command_Parse_Date(char *time_string,int *time_secs);
+static int Command_Exposure_Type_Parse(char *exposure_type_string,enum CCD_FITS_FILENAME_EXPOSURE_TYPE *exposure_type);
 
 /* ----------------------------------------------------------------------------
 ** 		external functions 
@@ -343,12 +344,14 @@ int Sprat_Command_Dark(char *command_string,char **reply_string)
 }
 
 /**
- * Handle a CCD exposure command of the form: expose &lt;ms&gt;.
+ * Handle a CCD exposure command of the form: expose &lt;exposure type&gt; &lt;ms&gt;.
+ * &lt;exposure type&gt; is one of: arc|exposure|skyflat|standard|lampflat.
  * @param command_string The command. This is not changed during this routine.
  * @param reply_string The address of a pointer to allocate and set the reply string.
  * @return The routine returns TRUE on success and FALSE on failure.
  * @see #COMMAND_ERROR_STRING_LENGTH
  * @see #Command_Error_String
+ * @see #Command_Exposure_Type_Parse
  * @see sprat_multrun.html#Sprat_Multrun_Multrun
  * @see sprat_global.html#Sprat_Global_Add_String
  * @see sprat_global.html#Sprat_Global_Error_And_String
@@ -359,15 +362,17 @@ int Sprat_Command_Dark(char *command_string,char **reply_string)
  */
 int Sprat_Command_Expose(char *command_string,char **reply_string)
 {
+	enum CCD_FITS_FILENAME_EXPOSURE_TYPE exposure_type;
 	char **filename_list = NULL;
 	char multrun_number_string[16];
+	char exposure_type_string[16];
 	int retval,exposure_length,multrun_number,filename_count;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Expose",LOG_VERBOSITY_TERSE,"COMMAND","started.");
 #endif
 	/* parse command */
-	retval = sscanf(command_string,"expose %d",&exposure_length);
+	retval = sscanf(command_string,"expose %16s %d",exposure_type_string,&exposure_length);
 	if(retval != 1)
 	{
 #if SPRAT_DEBUG > 1
@@ -386,8 +391,22 @@ int Sprat_Command_Expose(char *command_string,char **reply_string)
 			return FALSE;
 		return FALSE;
 	}
+	/* convert exposure_type_string to exposure_type */
+	if(!Command_Exposure_Type_Parse(exposure_type_string,&exposure_type))
+	{
+		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Expose",
+					      LOG_VERBOSITY_TERSE,"COMMAND",Command_Error_String,
+					      COMMAND_ERROR_STRING_LENGTH);
+		if(!Sprat_Global_Add_String(reply_string,"1 Illegal exposure type string:"))
+			return FALSE;
+		if(!Sprat_Global_Add_String(reply_string,exposure_type_string))
+			return FALSE;
+		if(!Sprat_Global_Add_String(reply_string,"."))
+			return FALSE;
+		return TRUE;
+	}
 	/* do exposure */
-	retval = Sprat_Multrun_Multrun(exposure_length,1,FALSE,&multrun_number,&filename_list,&filename_count);
+	retval = Sprat_Multrun_Multrun(exposure_length,1,exposure_type,&multrun_number,&filename_list,&filename_count);
 	if(retval == FALSE)
 	{
 		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Expose",
@@ -819,7 +838,7 @@ int Sprat_Command_MultBias(char *command_string,char **reply_string)
 		Sprat_Global_Log("command","sprat_command.c","Sprat_Command_MultBias",
 				    LOG_VERBOSITY_TERSE,"COMMAND","finished (command parse failed).");
 #endif
-		Sprat_Global_Error_Number = 114;
+		Sprat_Global_Error_Number = 628;
 		sprintf(Sprat_Global_Error_String,"Sprat_Command_MultBias:"
 			"Failed to parse command %s (%d).",command_string,retval);
 		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_MultBias",
@@ -945,12 +964,13 @@ int Sprat_Command_MultDark(char *command_string,char **reply_string)
 }
 
 /**
- * Handle a CCD exposure command of the form: multrun &lt;length ms&gt; &lt;count&gt; &lt;standard (true|false)&gt;.
+ * Handle a CCD exposure command of the form: multrun &lt;length ms&gt; &lt;count&gt; &lt;exposure type&gt;.
  * @param command_string The command. This is not changed during this routine.
  * @param reply_string The address of a pointer to allocate and set the reply string.
  * @return The routine returns TRUE on success and FALSE on failure.
  * @see #COMMAND_ERROR_STRING_LENGTH
  * @see #Command_Error_String
+ * @see #Command_Exposure_Type_Parse
  * @see sprat_multrun.html#Sprat_Multrun_Multrun
  * @see sprat_global.html#Sprat_Global_Add_String
  * @see sprat_global.html#Sprat_Global_Error_And_String
@@ -961,16 +981,17 @@ int Sprat_Command_MultDark(char *command_string,char **reply_string)
  */
 int Sprat_Command_Multrun(char *command_string,char **reply_string)
 {
+	enum CCD_FITS_FILENAME_EXPOSURE_TYPE exposure_type;
 	char **filename_list = NULL;
-	char standard_string[8];
+	char exposure_type_string[16];
 	char multrun_number_string[16];
-	int retval,exposure_length,exposure_count,multrun_number,standard,filename_count,i;
+	int retval,exposure_length,exposure_count,multrun_number,filename_count,i;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Multrun",LOG_VERBOSITY_TERSE,"COMMAND","started.");
 #endif
 	/* parse command */
-	retval = sscanf(command_string,"multrun %d %d %8s",&exposure_length,&exposure_count,standard_string);
+	retval = sscanf(command_string,"multrun %d %d %16s",&exposure_length,&exposure_count,exposure_type_string);
 	if(retval != 3)
 	{
 #if SPRAT_DEBUG > 1
@@ -989,26 +1010,22 @@ int Sprat_Command_Multrun(char *command_string,char **reply_string)
 			return FALSE;
 		return FALSE;
 	}
-	if(strcmp(standard_string,"true") == 0)
+	/* convert exposure_type_string to exposure_type */
+	if(!Command_Exposure_Type_Parse(exposure_type_string,&exposure_type))
 	{
-		standard = TRUE;
-	}
-	else if(strcmp(standard_string,"false") == 0)
-	{
-		standard = FALSE;
-	}
-	else
-	{
-		if(!Sprat_Global_Add_String(reply_string,"1 Illegal Standard string:"))
+		Sprat_Global_Error_And_String("command","sprat_command.c","Sprat_Command_Multrun",
+					      LOG_VERBOSITY_TERSE,"COMMAND",Command_Error_String,
+					      COMMAND_ERROR_STRING_LENGTH);
+		if(!Sprat_Global_Add_String(reply_string,"1 Illegal exposure type string:"))
 			return FALSE;
-		if(!Sprat_Global_Add_String(reply_string,standard_string))
+		if(!Sprat_Global_Add_String(reply_string,exposure_type_string))
 			return FALSE;
 		if(!Sprat_Global_Add_String(reply_string,"."))
 			return FALSE;
 		return TRUE;
 	}
 	/* do exposure */
-	retval = Sprat_Multrun_Multrun(exposure_length,exposure_count,standard,&multrun_number,
+	retval = Sprat_Multrun_Multrun(exposure_length,exposure_count,exposure_type,&multrun_number,
 				       &filename_list,&filename_count);
 	if(retval == FALSE)
 	{
@@ -1710,3 +1727,51 @@ static int Command_Parse_Date(char *time_string,int *time_secs)
 	return TRUE;
 }
 
+/**
+ * Parse a string containing an exposure type into an instance of CCD_FITS_FILENAME_EXPOSURE_TYPE containing
+ * the parsed value.
+ * @param exposure_type_string A string containing a valid exposure type. One of:
+ *                            arc|exposure|skyflat|standard|lampflat|bias|dark.
+ * @param exposure_type The address of an instance of enum CCD_FITS_FILENAME_EXPOSURE_TYPE to fill in with the parsed
+ *        exposure type.
+ * @see sprat_global.html#Sprat_Global_Error_Number
+ * @see sprat_global.html#Sprat_Global_Error_String
+ * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_FITS_FILENAME_EXPOSURE_TYPE
+ */
+static int Command_Exposure_Type_Parse(char *exposure_type_string,enum CCD_FITS_FILENAME_EXPOSURE_TYPE *exposure_type)
+{
+	if(exposure_type_string == NULL)
+	{
+		Sprat_Global_Error_Number = 629;
+		sprintf(Sprat_Global_Error_String,"Command_Exposure_Type_Parse:exposure_type_string was NULL.");
+		return FALSE;
+	}
+	if(exposure_type == NULL)
+	{
+		Sprat_Global_Error_Number = 630;
+		sprintf(Sprat_Global_Error_String,"Command_Exposure_Type_Parse:exposure_type was NULL.");
+		return FALSE;
+	}
+	if(strcmp(exposure_type_string,"arc") == 0)
+		(*exposure_type) = CCD_FITS_FILENAME_EXPOSURE_TYPE_ARC;
+	else if(strcmp(exposure_type_string,"bias") == 0)
+		(*exposure_type) = CCD_FITS_FILENAME_EXPOSURE_TYPE_BIAS;
+	else if(strcmp(exposure_type_string,"dark") == 0)
+		(*exposure_type) = CCD_FITS_FILENAME_EXPOSURE_TYPE_DARK;
+	else if(strcmp(exposure_type_string,"exposure") == 0)
+		(*exposure_type) = CCD_FITS_FILENAME_EXPOSURE_TYPE_EXPOSURE;
+	else if(strcmp(exposure_type_string,"skyflat") == 0)
+		(*exposure_type) = CCD_FITS_FILENAME_EXPOSURE_TYPE_SKYFLAT;
+	else if(strcmp(exposure_type_string,"standard") == 0)
+		(*exposure_type) = CCD_FITS_FILENAME_EXPOSURE_TYPE_STANDARD;
+	else if(strcmp(exposure_type_string,"lampflat") == 0)
+		(*exposure_type) = CCD_FITS_FILENAME_EXPOSURE_TYPE_LAMPFLAT;
+	else
+	{
+		Sprat_Global_Error_Number = 631;
+		sprintf(Sprat_Global_Error_String,"Command_Exposure_Type_Parse:Unknown exposure type string:%s.",
+			exposure_type_string);
+		return FALSE;
+	}
+	return TRUE;
+}

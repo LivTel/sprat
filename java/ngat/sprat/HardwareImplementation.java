@@ -2,6 +2,7 @@
 // $HeadURL$
 package ngat.sprat;
 
+import java.io.*;
 import java.lang.*;
 import java.net.*;
 import java.text.*;
@@ -28,6 +29,12 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * Revision Control System id string, showing the version of the Class.
 	 */
 	public final static String RCSID = new String("$Id$");
+	/**
+	 * This is a copy of the "OBJECT" FITS Header value retrieved from the RCS by getFitsHeadersFromISS.
+	 * This is used to modify the "OBJECT" FITS Header value for ARCs etc....
+	 * @see #getFitsHeadersFromISS
+	 */
+	protected String objectName = null;
 
 	/**
 	 * This method calls the super-classes method. It then tries to fill in the reference to the hardware
@@ -162,6 +169,32 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 		sprat.log(Logging.VERBOSITY_TERSE,"moveMirror:Starting move.");
 		mechanismMover.moveInOutMechanism();
 		sprat.log(Logging.VERBOSITY_TERSE,"moveMirror:Finished move.");
+	}
+
+	/**
+	 * Get the configured exposure length for the specified lamp from the configuration file.
+	 * @param lampString Which lamp to use.
+	 * @param slitPosition The position of the slit, one of POSITION_IN | POSITION_OUT.
+	 * @param grismPosition The position of the grism, one of POSITION_IN | POSITION_OUT.
+	 * @param rotationPosition The rotation position of the grism, one of 0 | 1.
+	 * @return The exposure length in milliseconds.
+	 * @see #status
+	 * @see SpratStatus#getPropertyInteger
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_IN
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_OUT
+	 */
+	protected int getArcExposureLength(String lampString,int slitPosition,int grismPosition,int rotationPosition)
+	{
+		int exposureLength;
+		String keywordString = null;
+
+		// sprat.arc.slit position[in|out].grism position[in|out].rotation position[0|1].
+		// lamp name.exposure_length
+		keywordString = new String("sprat.arc."+InOutReplyCommand.positionToLowerCaseString(slitPosition)+"."+
+					   InOutReplyCommand.positionToLowerCaseString(grismPosition)+"."+
+					   rotationPosition+"."+lampString+".exposure_length");
+		exposureLength = status.getPropertyInteger(keywordString);
+		return exposureLength;
 	}
 
 	/**
@@ -320,6 +353,8 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * to the ISS. The results from this command are put into the C layers list of FITS headers by calling
 	 * addISSFitsHeaderList.
 	 * If an error occurs the done objects field's can be set to record the error.
+	 * The value of the OBJECT keyword is saved in the objectName, to be used when modifying the object name
+	 * later (i.e. for ARC frames).
 	 * @param command The command being implemented that made this call to the ISS. This is used
 	 * 	for error logging.
 	 * @param done A COMMAND_DONE subclass specific to the command being implemented. If an
@@ -327,6 +362,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * @return The routine returns a boolean to indicate whether the operation was completed
 	 *  	successfully.
 	 * @see #addISSFitsHeaderList
+	 * @see #getObjectName
 	 * @see Sprat#sendISSCommand
 	 * @see Sprat#getStatus
 	 * @see SpratStatus#getPropertyInteger
@@ -336,10 +372,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 		INST_TO_ISS_DONE instToISSDone = null;
 		ngat.message.ISS_INST.GET_FITS getFits = null;
 		ngat.message.ISS_INST.GET_FITS_DONE getFitsDone = null;
-		FitsHeaderCardImage cardImage = null;
-		Object value = null;
 		Vector list = null;
-		int orderNumberOffset;
 
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
 			  ":getFitsHeadersFromISS:Started.");
@@ -372,6 +405,11 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 			done.setSuccessful(false);
 			return false;
 		}
+		// retrieve the OBJECT FITS header card image
+		// we will need to modify this in odd ways for ARC obs/calBefore/calAfter
+		sprat.log(Logging.VERBOSITY_VERBOSE,this.getClass().getName()+
+			  ":getFitsHeadersFromISS:retrieving OBJECT value.");
+		getObjectName(list);
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
 			  ":getFitsHeadersFromISS:finished.");
 		return true;
@@ -507,6 +545,35 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	}
 
 	/**
+	 * Retrieve the value of the "OBJECT" keyword from a List (Vector) instance containing
+	 * FitsHeaderCardImage instances.
+	 * @param list A list/vector containing instances of FitsHeaderCardImage.
+	 * @see #objectName
+	 */
+	protected void getObjectName(List list)
+	{
+		FitsHeaderCardImage cardImage = null;
+		boolean found;
+		int index;
+
+		index = 0;
+		found = false;
+		while((index < list.size())&&(found == false))
+		{
+			cardImage = (FitsHeaderCardImage)(list.get(index));
+			if(cardImage != null)
+			{
+				if(cardImage.getKeyword().equals("OBJECT"))
+				{
+					objectName = (String)(cardImage.getValue());
+					found = true;
+				}
+			}
+			index++;
+		}
+	}
+
+	/**
 	 * This routine takes a Date, and formats a string to the correct FITS format for that date and returns it.
 	 * The format should be 'CCYY-MM-DDThh:mm:ss[.sss...]'.
 	 * @param date The date to return a string for.
@@ -532,5 +599,42 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 			numberFormat.format(calendar.get(Calendar.SECOND))+"."+
 			calendar.get(Calendar.MILLISECOND));
 	}
+
+	/**
+	 * Method to send an instance of ACK back to the client. This stops the client timing out, whilst we
+	 * work out what to attempt next.
+	 * @param command The instance of COMMAND we are currently running.
+	 * @param done The instance of COMMAND_DONE to fill in with errors we receive.
+	 * @param timeToComplete The time it will take to complete the next set of operations
+	 *	before the next ACK or DONE is sent to the client. The time is in milliseconds. 
+	 * 	The server connection thread's default acknowledge time is added to the value before it
+	 * 	is sent to the client, to allow for network delay etc.
+	 * @return The method returns true if the ACK was sent successfully, false if an error occured.
+	 * @see #serverConnectionThread
+	 * @see ngat.message.base.ACK
+	 * @see SpratTCPServerConnectionThread#sendAcknowledge
+	 */
+	protected boolean sendBasicAck(COMMAND command,COMMAND_DONE done,int timeToComplete)
+	{
+		ACK acknowledge = null;
+
+		acknowledge = new ACK(command.getId());
+		acknowledge.setTimeToComplete(timeToComplete+serverConnectionThread.getDefaultAcknowledgeTime());
+		try
+		{
+			serverConnectionThread.sendAcknowledge(acknowledge,true);
+		}
+		catch(IOException e)
+		{
+			String errorString = new String(command.getId()+":sendBasicAck:Sending ACK failed:");
+			sprat.error(this.getClass().getName()+":"+errorString,e);
+			done.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+318);
+			done.setErrorString(errorString+e);
+			done.setSuccessful(false);
+			return false;
+		}
+		return true;
+	}
+
 }
 

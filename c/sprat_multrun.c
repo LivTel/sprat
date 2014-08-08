@@ -470,7 +470,8 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,int *multrun_numbe
  * Perform a multiple exposure. Uses the multrun configuration. The raw image is saved.
  * @param exposure_length The length of the dark, in milliseconds.
  * @param exposure_count The number of exposures to do.
- * @param standard A boolean, if TRUE the MULTRUN is a standard otherwise it is a science exposure.
+ * @param exposure_type An enumeration type CCD_FITS_FILENAME_EXPOSURE_TYPE, containing which type of exposure
+ *        this is, which affects the filename it is saved in.
  * @param multrun_number The address of an integer to store the multrun number for this multrun.
  * @param filename_list The address of an array of strings to hold a created filenames. These are the FITS images
  *        created as part of this process.
@@ -485,6 +486,7 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,int *multrun_numbe
  * @see sprat_global.html#Sprat_Global_Error_Number
  * @see sprat_global.html#Sprat_Global_Error_String
  * @see sprat_global.html#Sprat_Global_String_List_Add
+ * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_FITS_FILENAME_EXPOSURE_TYPE
  * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_Fits_Filename_Next_Multrun
  * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_Fits_Filename_Next_Run
  * @see ../ccd/cdocs/ccd_fits_filename.html#CCD_Fits_Filename_Get_Filename
@@ -494,14 +496,14 @@ int Sprat_Multrun_Dark(int exposure_length,int exposure_count,int *multrun_numbe
  * @see ../ccd/cdocs/ccd_temperature.html#CCD_Temperature_Get
  * @see ../ccd/cdocs/ccd_temperature.html#CCD_TEMPERATURE_STATUS
  */
-int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,int standard,int *multrun_number,
-			  char **filename_list[],int *filename_count)
+int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,enum CCD_FITS_FILENAME_EXPOSURE_TYPE exposure_type,
+			  int *multrun_number,char **filename_list[],int *filename_count)
 {
 	struct CCD_Setup_Window_Struct window;
 	struct timespec start_time;
 	char filename[256];
 	unsigned short *buffer_ptr = NULL;
-	int retval,i,exposure_type;
+	int retval,i;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("multrun","sprat_multrun.c","Sprat_Multrun_Multrun",LOG_VERBOSITY_TERSE,"MULTRUN",
@@ -559,20 +561,22 @@ int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,int standard,in
 	Sprat_Global_Log_Format("multrun","sprat_multrun.c","Sprat_Multrun_Multrun",LOG_VERBOSITY_VERBOSE,"MULTRUN",
 				"Using current Exposure Length:%d ms.",Multrun_Data.Exposure_Length);
 #endif
-	/* standard flag / exposure type */
-	if(!SPRAT_GLOBAL_IS_BOOLEAN(standard))
+	/* check exposure type is legal
+	** We don't use CCD_FITS_FILENAME_IS_EXPOSURE_TYPE here, as BIAS and DARK are illegal for this function
+	** (which opens the shutter). */
+	if(!(((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_ARC)||
+	    ((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_EXPOSURE)||
+	    ((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_SKYFLAT)||
+	    ((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_STANDARD)|| 
+	    ((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_LAMPFLAT)))
 	{
 		/* reset active flag */
 		Multrun_Data.Is_Active = FALSE;
 		Sprat_Global_Error_Number = 413;
-		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:Standard flag has illegal value %d.",
-			standard);
+		sprintf(Sprat_Global_Error_String,"Sprat_Multrun_Multrun:Illegal exposure type value %d.",
+			exposure_type);
 		return FALSE;
 	}
-	if(standard)
-		exposure_type = CCD_FITS_FILENAME_EXPOSURE_TYPE_STANDARD;
-	else
-		exposure_type = CCD_FITS_FILENAME_EXPOSURE_TYPE_EXPOSURE;
 	/* increment filename */
 	if(!CCD_Fits_Filename_Next_Multrun())
 	{

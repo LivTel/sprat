@@ -803,7 +803,6 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 					    ":getSlitPosition:Slit command returned an error:"+
 					    command.getErrorString());
 		}
-
 		hashTable.put("Slit.Position",new Integer(command.getCurrentPosition()));
 		hashTable.put("Slit.Position.String",SlitCommand.positionToString(
 						     command.getCurrentPosition()));
