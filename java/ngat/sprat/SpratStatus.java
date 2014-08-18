@@ -77,23 +77,6 @@ public class SpratStatus
 	 * we get an error about setup not being complete, rather than an error about NULL FITS values.
 	 */
 	private String configName = "UNKNOWN";
-	/**
-	 * The count of the number of exposures needed for the current command to be implemented.
-	 */
-	private int exposureCount = 0;
-	/**
-	 * The number of the current exposure being taken.
-	 */
-	private int exposureNumber = 0;
-	/**
-	 * The exposure start time, in milliseconds since the epoch.
-	 */
-	private long exposureStartTime = 0;
-	/**
-	 * The exposure length in milliseconds.
-	 */
-	private int exposureLength = 0;
-	private Date getConfigCommandCacheTimestamp = null;
 
 	/**
 	 * Default constructor. Initialises the properties.
@@ -232,86 +215,6 @@ public class SpratStatus
 	public synchronized Thread getCurrentThread()
 	{
 		return currentThread;
-	}
-
-	/**
-	 * Set the number of exposures needed to complete the current command implementation.
-	 * @param c The total number of exposures needed.
-	 * @see #exposureCount
-	 */
-	public synchronized void setExposureCount(int c)
-	{
-		exposureCount = c;
-	}
-
-	/**
-	 * Get the number of exposures needed to complete the current command implementation.
-	 * @return Returns the number of exposures needed.
-	 * @see #exposureCount
-	 */
-	public synchronized int getExposureCount()
-	{
-		return exposureCount;
-	}
-
-	/**
-	 * Set the current exposure number the current command implementation is on.
-	 * @param n The current exposure number.
-	 * @see #exposureNumber
-	 */
-	public synchronized void setExposureNumber(int n)
-	{
-		exposureNumber = n;
-	}
-
-	/**
-	 * Get the current exposure number the current command implementation is on.
-	 * @return Returns the current exposure number.
-	 * @see #exposureNumber
-	 */
-	public synchronized int getExposureNumber()
-	{
-		return exposureNumber;
-	}
-
-	/**
-	 * Set the exposure start time.
-	 * @param est The exposure starttime, in milliseconds since the epoch.
-	 * @see #exposureStartTime
-	 */
-	public synchronized void setExposureStartTime(long est)
-	{
-		exposureStartTime = est;
-	}
-
-	/**
-	 * Get the exposure start time.
-	 * @return The exposure start time, in milliseconds since the epoch.
-	 * @see #exposureStartTime
-	 */
-	public synchronized long getExposureStartTime()
-	{
-		return exposureStartTime;
-	}
-
-	/**
-	 * Set the exposure length.
-	 * @param ms The exposure length, in milliseconds.
-	 * @see #exposureLength
-	 */
-	public synchronized void setExposureLength(int ms)
-	{
-		exposureLength = ms;
-	}
-
-	/**
-	 * Get the exposure length.
-	 * @return The exposure length, in milliseconds.
-	 * @see #exposureLength
-	 */
-	public synchronized int getExposureLength()
-	{
-		return exposureLength;
 	}
 
 	/**

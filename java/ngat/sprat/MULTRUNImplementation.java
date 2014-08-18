@@ -17,7 +17,7 @@ import ngat.util.logging.*;
  * This class provides the implementation for the MULTRUN command sent to a server using the
  * Java Message System.
  * @author Chris Motram
- * @version $Revision: 1.3 $
+ * @version $Revision$
  */
 public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCommandImplementation
 {
@@ -110,15 +110,18 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 	 * <li>getFitsHeadersFromISS is called to gets some FITS headers from the ISS (RCS). A filtered subset
 	 *     is sent on to the C layer.
 	 * <li>sendMultrunCommand is called to actually send the multrun command to the C layer.
+	 * <li>For each filename returned we call reduceExpose to reduce the exposure. A MULTRUN_DP_ACK is sent back
+	 *     to the client after each reduction.
 	 * <li>The done object is setup.
 	 * </ul>
 	 * @see #testAbort
-	 * @see ngat.sprat.HardwareImplementation#moveFold
-	 * @see ngat.sprat.HardwareImplementation#clearFitsHeaders
-	 * @see ngat.sprat.HardwareImplementation#setFitsHeaders
-	 * @see ngat.sprat.HardwareImplementation#getFitsHeadersFromISS
 	 * @see #sendMultrunCommand
-	 * @see ngat.sprat.HardwareImplementation#moveMirror
+	 * @see HardwareImplementation#moveFold
+	 * @see HardwareImplementation#moveMirror
+	 * @see FITSImplementation#clearFitsHeaders
+	 * @see FITSImplementation#setFitsHeaders
+	 * @see FITSImplementation#getFitsHeadersFromISS
+	 * @see EXPOSEImplementation#reduceExpose
 	 * @see ngat.phase2.SpratConfig#POSITION_OUT
 	 */
 	public COMMAND_DONE processCommand(COMMAND command)
@@ -135,9 +138,13 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 		if(testAbort(multRunCommand,multRunDone) == true)
 			return multRunDone;
 		// move the sprat calibration mirror out of the beam
-		sprat.log(Logging.VERBOSITY_TERSE,this.getClass().getName()+":processCommand:Moving calibration mirror.");
+		sprat.log(Logging.VERBOSITY_TERSE,this.getClass().getName()+
+			  ":processCommand:Moving calibration mirror.");
 		try
 		{
+			// get mechanism arduino connection details
+			// Now called in HardwareImplementation.init
+			// getMechanismConfig();
 			moveMirror(SpratConfig.POSITION_OUT);
 		}
 		catch(Exception e)
@@ -209,7 +216,8 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 			{
 				filename = (String)filenameList.get(index);
 			// do reduction.
-				retval = reduceExpose(multRunCommand,multRunDone,filename);
+				if(reduceExpose(multRunCommand,multRunDone,filename) == false)
+					retval = false;
 			// send acknowledge to say frame has been reduced.
 				multRunDpAck = new MULTRUN_DP_ACK(command.getId());
 				multRunDpAck.setTimeToComplete(serverConnectionThread.getDefaultAcknowledgeTime());

@@ -18,7 +18,7 @@ import ngat.util.ExecuteCommand;
  * This class provides the implementation for the GET_STATUS command sent to a server using the
  * Java Message System.
  * @author Chris Mottram
- * @version $Revision: 1.4 $
+ * @version $Revision$
  */
 public class GET_STATUSImplementation extends HardwareImplementation implements JMSCommandImplementation
 {
@@ -643,12 +643,12 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * @see #COMMS_INSTRUMENT_STATUS_CCD
 	 * @see #COMMS_INSTRUMENT_STATUS_MECHANISM
 	 * @see #getCCDTemperature
-	 * @see #getSlitPosition
-	 * @see #getGrismPosition
+	 * @see HardwareImplementation#getSlitPosition
+	 * @see HardwareImplementation#getGrismPosition
 	 * @see #getMirrorPosition
 	 * @see #getArcLampState
 	 * @see #getWLampState
-	 * @see #getRotationPosition
+	 * @see HardwareImplementation#getRotationPosition
 	 * @see #getMechanismTemperature
 	 * @see #getHumidity
 	 * @see #getGyroPosition
@@ -659,7 +659,9 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 */
 	private void getIntermediateStatus()
 	{
+		int currentPosition;
 		int temperatureSensorCount,humiditySensorCount;
+
 		try
 		{
 			getCCDTemperature();
@@ -675,12 +677,20 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 		}
 		try
 		{
-			getSlitPosition();
-			getGrismPosition();
+			// slit position
+			currentPosition = getSlitPosition();
+			hashTable.put("Slit.Position",new Integer(currentPosition));
+			hashTable.put("Slit.Position.String",SlitCommand.positionToString(currentPosition));
+			// grism position
+			currentPosition = getGrismPosition();
+			hashTable.put("Grism.Position",new Integer(currentPosition));
+			hashTable.put("Grism.Position.String",GrismCommand.positionToString(currentPosition));
+			// rotation position
+			currentPosition = getRotationPosition();
+			hashTable.put("Rotation.Position",new Integer(currentPosition));
 			getMirrorPosition();
 			getArcLampState();
 			getWLampState();
-			getRotationPosition();
 			temperatureSensorCount = status.getPropertyInteger(
 							 "sprat.mechanism.temperature.sensor.count");
 			for(int i = 0; i < temperatureSensorCount; i++)
@@ -766,91 +776,6 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 		setDetectorTemperatureInstrumentStatus(temperature);
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getCCDTemperature:finished with temperature:"+
 			   temperature+" measured at "+timestamp);
-	}
-
-	/**
-	 * Get the current slit position.
-	 * An instance of SlitCommand is "run". If a run exception occurs this is thrown.
-	 * If an error is returned this is thrown as an exception.
-	 * The current position is stored in the GET_STATUS hashtable as an integer and a string.
-	 * @see #mechanismHostname
-	 * @see #mechanismPortNumber
-	 * @see #hashTable
-	 * @see ngat.sprat.mechanism.command.SlitCommand
-	 * @see ngat.sprat.mechanism.command.SlitCommand#run
-	 * @see ngat.sprat.mechanism.command.SlitCommand#getRunException
-	 * @see ngat.sprat.mechanism.command.SlitCommand#getIsError
-	 * @see ngat.sprat.mechanism.command.SlitCommand#getErrorString
-	 * @see ngat.sprat.mechanism.command.SlitCommand#getCurrentPosition
-	 * @see ngat.sprat.mechanism.command.SlitCommand#positionToString
-	 */
-	protected void getSlitPosition() throws Exception
-	{
-		SlitCommand command = null;
-
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getSlitPosition:started.");
-		command = new SlitCommand(mechanismHostname,mechanismPortNumber);
-		command.run();
-		if(command.getRunException() != null)
-		{
-			throw new Exception(this.getClass().getName()+
-					    ":getSlitPosition:Slit command threw exception.",
-					    command.getRunException());
-		}
-		if(command.getIsError())
-		{
-			throw new Exception(this.getClass().getName()+
-					    ":getSlitPosition:Slit command returned an error:"+
-					    command.getErrorString());
-		}
-		hashTable.put("Slit.Position",new Integer(command.getCurrentPosition()));
-		hashTable.put("Slit.Position.String",SlitCommand.positionToString(
-						     command.getCurrentPosition()));
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getSlitPosition:finished with position:"+
-			  SlitCommand.positionToString(command.getCurrentPosition()));
-	}
-
-	/**
-	 * Get the current grism position.
-	 * An instance of GrismCommand is "run". If a run exception occurs this is thrown.
-	 * If an error is returned this is thrown as an exception.
-	 * The current position is stored in the GET_STATUS hashtable as an integer and a string.
-	 * @see #mechanismHostname
-	 * @see #mechanismPortNumber
-	 * @see #hashTable
-	 * @see ngat.sprat.mechanism.command.GrismCommand
-	 * @see ngat.sprat.mechanism.command.GrismCommand#run
-	 * @see ngat.sprat.mechanism.command.GrismCommand#getRunException
-	 * @see ngat.sprat.mechanism.command.GrismCommand#getIsError
-	 * @see ngat.sprat.mechanism.command.GrismCommand#getErrorString
-	 * @see ngat.sprat.mechanism.command.GrismCommand#getCurrentPosition
-	 * @see ngat.sprat.mechanism.command.GrismCommand#positionToString
-	 */
- 	protected void getGrismPosition() throws Exception
-	{
-		GrismCommand command = null;
-
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getGrismPosition:started.");
-		command = new GrismCommand(mechanismHostname,mechanismPortNumber);
-		command.run();
-		if(command.getRunException() != null)
-		{
-			throw new Exception(this.getClass().getName()+
-					    ":getGrismPosition:Grism command threw exception.",
-					    command.getRunException());
-		}
-		if(command.getIsError())
-		{
-			throw new Exception(this.getClass().getName()+
-					    ":getGrismPosition:Grism command returned an error:"+
-					    command.getErrorString());
-		}
-
-		hashTable.put("Grism.Position",new Integer(command.getCurrentPosition()));
-		hashTable.put("Grism.Position.String",
-			      GrismCommand.positionToString(command.getCurrentPosition()));
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getGrismPosition:finished with position:"+
-			  GrismCommand.positionToString(command.getCurrentPosition()));
 	}
 
 	/**
@@ -977,45 +902,6 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 			      WLampCommand.stateToString(command.getCurrentState()));
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getWLampPosition:finished with state:"+
 			  WLampCommand.stateToString(command.getCurrentState()));
-	}
-
-	/**
-	 * Get the current grism rotation position.
-	 * An instance of RotationCommand is "run". If a run exception occurs this is thrown.
-	 * If an error is returned this is thrown as an exception.
-	 * The current position is stored in the GET_STATUS hashtable as an integer and a string.
-	 * @see #mechanismHostname
-	 * @see #mechanismPortNumber
-	 * @see #hashTable
-	 * @see ngat.sprat.mechanism.command.RotationCommand
-	 * @see ngat.sprat.mechanism.command.RotationCommand#run
-	 * @see ngat.sprat.mechanism.command.RotationCommand#getRunException
-	 * @see ngat.sprat.mechanism.command.RotationCommand#getIsError
-	 * @see ngat.sprat.mechanism.command.RotationCommand#getErrorString
-	 * @see ngat.sprat.mechanism.command.RotationCommand#getCurrentPosition
-	 */
-	protected void getRotationPosition() throws Exception
-	{
-		RotationCommand command = null;
-
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getRotationPosition:started.");
-		command = new RotationCommand(mechanismHostname,mechanismPortNumber);
-		command.run();
-		if(command.getRunException() != null)
-		{
-			throw new Exception(this.getClass().getName()+
-					    ":getRotationPosition:Rotation command threw exception.",
-					    command.getRunException());
-		}
-		if(command.getIsError())
-		{
-			throw new Exception(this.getClass().getName()+
-					    ":getRotationPosition:Rotation command returned an error:"+
-					    command.getErrorString());
-		}
-		hashTable.put("Rotation.Position",new Integer(command.getCurrentPosition()));
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getRotationPosition:finished with position:"+
-			  command.getCurrentPosition());
 	}
 
 	/**

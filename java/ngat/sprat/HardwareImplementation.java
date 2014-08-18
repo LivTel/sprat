@@ -21,7 +21,7 @@ import ngat.util.logging.*;
  * This class provides the implementation for the MULTRUN command sent to a server using the
  * Java Message System.
  * @author Chris Motram
- * @version $Revision: 1.3 $
+ * @version $Revision$
  */
 public class HardwareImplementation extends CommandImplementation implements JMSCommandImplementation
 {
@@ -30,20 +30,36 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 */
 	public final static String RCSID = new String("$Id$");
 	/**
-	 * This is a copy of the "OBJECT" FITS Header value retrieved from the RCS by getFitsHeadersFromISS.
-	 * This is used to modify the "OBJECT" FITS Header value for ARCs etc....
-	 * @see #getFitsHeadersFromISS
+	 * The hostname to send Sprat mechanism Arduino commands to.
 	 */
-	protected String objectName = null;
+	protected String mechanismHostname = null;
+	/**
+	 * The port number to send Sprat mechanism Arduino commands to.
+	 */
+	protected int mechanismPortNumber;
 
 	/**
-	 * This method calls the super-classes method. It then tries to fill in the reference to the hardware
-	 * objects.
+	 * This method calls the super-classes method. It then calls getMechanismConfig to retrieve
+	 * the hostname/port number of the Arduino controlling the mechanisms.
 	 * @param command The command to be implemented.
 	 */
 	public void init(COMMAND command)
 	{
 		super.init(command);
+		if(status != null)
+		{
+			try
+			{
+				sprat.log(Logging.VERBOSITY_VERBOSE,this.getClass().getName()+
+					  ":init:Trying to retrieve mechanism config.");
+				getMechanismConfig();
+			}
+			catch(Exception e)
+			{
+				sprat.error(this.getClass().getName()+":init:getMechanismConfig failed:"+
+					    command.getClass().getName()+":"+e,e);
+			}
+		}
 	}
 
 	/**
@@ -116,18 +132,71 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	}
 
 	/**
-	 * Move the Sprat calibration mirror to the desired position.
-	 * The following status is used to configure the move parameters:
+	 * Get the configured exposure length for the specified lamp from the configuration file.
+	 * @param lampString Which lamp to use.
+	 * @param slitPosition The position of the slit, one of POSITION_IN | POSITION_OUT.
+	 * @param grismPosition The position of the grism, one of POSITION_IN | POSITION_OUT.
+	 * @param rotationPosition The rotation position of the grism, one of 0 | 1.
+	 * @return The exposure length in milliseconds.
+	 * @see #status
+	 * @see SpratStatus#getPropertyInteger
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_IN
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_OUT
+	 */
+	protected int getLampExposureLength(String lampString,int slitPosition,int grismPosition,int rotationPosition)
+	{
+		int exposureLength;
+		String keywordString = null;
+
+		// sprat.lamp.slit position[in|out].grism position[in|out].rotation position[0|1].
+		// lamp name.exposure_length
+		keywordString = new String("sprat.lamp."+InOutReplyCommand.positionToLowerCaseString(slitPosition)+"."+
+					   InOutReplyCommand.positionToLowerCaseString(grismPosition)+"."+
+					   rotationPosition+"."+lampString+".exposure_length");
+		sprat.log(Logging.VERBOSITY_VERBOSE,this.getClass().getName()+
+			  ":getLampExposureLength:Trying to retrieve exposure length from property keyword:"+
+			  keywordString);
+		exposureLength = status.getPropertyInteger(keywordString);
+		return exposureLength;
+	}
+
+	/**
+	 * Get the Sprat mechanism Arduino hostname and port number from the properties into some 
+	 * internal variables.
 	 * <ul>
 	 * <li><b>sprat.mechanism.hostname</b>
 	 * <li><b>sprat.mechanism.port_number</b>
+	 * </ul>
+	 * @see #status
+	 * @see #mechanismHostname
+	 * @see #mechanismPortNumber
+	 * @see SpratStatus#getProperty
+	 * @see SpratStatus#getPropertyInteger
+	 */
+	protected void getMechanismConfig() throws Exception
+	{
+		sprat.log(Logging.VERBOSITY_VERBOSE,"getMechanismConfig:started.");
+		mechanismHostname = status.getProperty("sprat.mechanism.hostname");
+		mechanismPortNumber = status.getPropertyInteger("sprat.mechanism.port_number");
+		sprat.log(Logging.VERBOSITY_VERBOSE,"getMechanismConfig:finished with hostname: "+mechanismHostname+
+			  " port number: "+mechanismPortNumber+".");
+	}
+
+	/**
+	 * Move the Sprat calibration mirror to the desired position.
+	 * The following status is used to configure the move parameters:
+	 * <ul>
 	 * <li><b>sprat.config.mirror.move.sleep_time</b>
 	 * <li><b>sprat.config.mirror.move.timeout_time</b>
 	 * </ul>
+	 * getMechanismConfig must have been called before this method to set the mechanismHostname/mechanismPortNumber
+	 * up correctly.
 	 * @param position The position to attain, one of POSITION_IN, POSITION_OUT.
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #sprat
 	 * @see #status
+	 * @see #mechanismHostname
+	 * @see #mechanismPortNumber
 	 * @see Sprat#log
 	 * @see SpratStatus#getProperty
 	 * @see SpratStatus#getPropertyInteger
@@ -145,432 +214,171 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	{
 		MoveInOutMechanism mechanismMover = null;
 		MirrorCommand command = null;
-		int portNumber,sleepTime,timeoutTime;
-		String hostname = null;
+		int sleepTime,timeoutTime;
 		String errorString = null;
 
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"moveMirror:"+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":moveMirror:"+
 			  "Position = "+SpratConfig.positionToString(position)+" ("+position+").");
 		// retrieve config
-		hostname = status.getProperty("sprat.mechanism.hostname");
-		portNumber = status.getPropertyInteger("sprat.mechanism.port_number");
 		sleepTime = status.getPropertyInteger("sprat.config.mirror.move.sleep_time");
 		timeoutTime = status.getPropertyInteger("sprat.config.mirror.move.timeout_time");
 		// setup command and mover objects
-		sprat.log(Logging.VERBOSITY_VERBOSE,"moveMirror:Creating MirrorCommand to send to "+
-			  hostname+":"+portNumber+".");
-		command = new MirrorCommand(hostname,portNumber);
+		sprat.log(Logging.VERBOSITY_VERBOSE,this.getClass().getName()+
+			  ":moveMirror:Creating MirrorCommand to send to "+
+			  mechanismHostname+":"+mechanismPortNumber+".");
+		command = new MirrorCommand(mechanismHostname,mechanismPortNumber);
 		mechanismMover = new MoveInOutMechanism();
 		mechanismMover.setCommand(command,position);
-		sprat.log(Logging.VERBOSITY_VERBOSE,"moveMirror:Setting mover sleep time to "+sleepTime+
+		sprat.log(Logging.VERBOSITY_VERBOSE,this.getClass().getName()+
+			  ":moveMirror:Setting mover sleep time to "+sleepTime+
 			  " and timeout time to "+timeoutTime+".");
 		mechanismMover.setSleepTime(sleepTime);
 		mechanismMover.setTimeoutTime(timeoutTime);
-		sprat.log(Logging.VERBOSITY_TERSE,"moveMirror:Starting move.");
+		sprat.log(Logging.VERBOSITY_TERSE,this.getClass().getName()+":moveMirror:Starting move.");
 		mechanismMover.moveInOutMechanism();
-		sprat.log(Logging.VERBOSITY_TERSE,"moveMirror:Finished move.");
+		sprat.log(Logging.VERBOSITY_TERSE,this.getClass().getName()+":moveMirror:Finished move.");
 	}
 
 	/**
-	 * Get the configured exposure length for the specified lamp from the configuration file.
-	 * @param lampString Which lamp to use.
-	 * @param slitPosition The position of the slit, one of POSITION_IN | POSITION_OUT.
-	 * @param grismPosition The position of the grism, one of POSITION_IN | POSITION_OUT.
-	 * @param rotationPosition The rotation position of the grism, one of 0 | 1.
-	 * @return The exposure length in milliseconds.
-	 * @see #status
-	 * @see SpratStatus#getPropertyInteger
+	 * Get the current slit position.
+	 * An instance of SlitCommand is "run". If a run exception occurs this is thrown.
+	 * getMechanismConfig must have been called before this method to set the mechanismHostname/mechanismPortNumber
+	 * up correctly.
+	 * If an error is returned this is thrown as an exception.
+	 * @return The current position is returned as an integer, one of:POSITION_ERROR, POSITION_UNKNOWN, 
+	 *         POSITION_IN, POSITION_OUT.
+	 * @exception Exception Thrown if an error occurs.
+	 * @see #mechanismHostname
+	 * @see #mechanismPortNumber
+	 * @see #getMechanismConfig
+	 * @see ngat.sprat.mechanism.command.SlitCommand
+	 * @see ngat.sprat.mechanism.command.SlitCommand#run
+	 * @see ngat.sprat.mechanism.command.SlitCommand#getRunException
+	 * @see ngat.sprat.mechanism.command.SlitCommand#getIsError
+	 * @see ngat.sprat.mechanism.command.SlitCommand#getErrorString
+	 * @see ngat.sprat.mechanism.command.SlitCommand#getCurrentPosition
+	 * @see ngat.sprat.mechanism.command.SlitCommand#positionToString
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_ERROR
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_UNKNOWN
 	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_IN
 	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_OUT
 	 */
-	protected int getArcExposureLength(String lampString,int slitPosition,int grismPosition,int rotationPosition)
+	protected int getSlitPosition() throws Exception
 	{
-		int exposureLength;
-		String keywordString = null;
+		SlitCommand command = null;
 
-		// sprat.arc.slit position[in|out].grism position[in|out].rotation position[0|1].
-		// lamp name.exposure_length
-		keywordString = new String("sprat.arc."+InOutReplyCommand.positionToLowerCaseString(slitPosition)+"."+
-					   InOutReplyCommand.positionToLowerCaseString(grismPosition)+"."+
-					   rotationPosition+"."+lampString+".exposure_length");
-		exposureLength = status.getPropertyInteger(keywordString);
-		return exposureLength;
-	}
-
-	/**
-	 * This routine clears the current set of FITS headers. 
-	 * @exception UnknownHostException Thrown if the C layer hostname address it not known.
-	 * @exception Exception Thrown if sending the command fails.
-	 * @see ngat.sprat.SpratStatus#getProperty
-	 * @see ngat.sprat.SpratStatus#getPropertyInteger
-	 * @see ngat.sprat.ccd.command.FitsHeaderClearCommand
-	 * @see ngat.sprat.ccd.command.FitsHeaderClearCommand#setAddress
-	 * @see ngat.sprat.ccd.command.FitsHeaderClearCommand#setPortNumber
-	 * @see ngat.sprat.ccd.command.FitsHeaderClearCommand#getParsedReplyOK
-	 * @see ngat.sprat.ccd.command.FitsHeaderClearCommand#getReturnCode
-	 * @see ngat.sprat.ccd.command.FitsHeaderClearCommand#getParsedReply
-	 */
-	public void clearFitsHeaders() throws UnknownHostException, Exception
-	{
-		FitsHeaderClearCommand clearCommand = null;
-		int portNumber,returnCode;
-		String hostname = null;
-		String errorString = null;
-
-		clearCommand = new FitsHeaderClearCommand();
-		// configure C comms
-		hostname = status.getProperty("sprat.ccd.c.hostname");
-		portNumber = status.getPropertyInteger("sprat.ccd.c.port_number");
-		clearCommand.setAddress(hostname);
-		clearCommand.setPortNumber(portNumber);
-		// actually send the command to the C layer
-		clearCommand.sendCommand();
-		// check the parsed reply
-		if(clearCommand.getParsedReplyOK() == false)
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":getSlitPosition:started.");
+		command = new SlitCommand(mechanismHostname,mechanismPortNumber);
+		command.run();
+		if(command.getRunException() != null)
 		{
-			returnCode = clearCommand.getReturnCode();
-			errorString = clearCommand.getParsedReply();
-			sprat.log(Logging.VERBOSITY_TERSE,"clearFitsHeaders:Command failed with return code "+
-				  returnCode+" and error string:"+errorString);
 			throw new Exception(this.getClass().getName()+
-					    ":clearFitsHeaders:Command failed with return code "+returnCode+
-					    " and error string:"+errorString);
+					    ":getSlitPosition:Slit command threw exception.",
+					    command.getRunException());
 		}
-	}
-
-	/**
-	 * This routine gets a set of FITS header from a config file. The retrieved FITS headers are added to the 
-	 * C layer. The "sprat.fits.keyword.<n>" properties is queried in ascending order of <n> to find keywords.
-	 * The "sprat.fits.value.<keyword>" property contains the value of the keyword.
-	 * The value's type is retrieved from the property "sprat.fits.value.type.<keyword>", 
-	 * which should comtain one of the following values: boolean|float|integer|string.
-	 * The addFitsHeader method is then called to actually add the FITS header to the C layer.
-	 * @param command The command being implemented that made this call to the ISS. This is used
-	 * 	for error logging.
-	 * @param commandDone A COMMAND_DONE subclass specific to the command being implemented. If an
-	 * 	error occurs the relevant fields are filled in with the error.
-	 * @return The routine returns a boolean to indicate whether the operation was completed
-	 *  	successfully.
-	 * @see #addFitsHeader
-	 */
-	public boolean setFitsHeaders(COMMAND command,COMMAND_DONE commandDone)
-	{
-		String keyword = null;
-		String typeString = null;
-		String valueString = null;
-		boolean done;
-		double dvalue;
-		int index,ivalue;
-		boolean bvalue;
-
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":setFitsHeaders:Started.");
-		index = 0;
-		done = false;
-		while(done == false)
+		if(command.getIsError())
 		{
-			sprat.log(Logging.VERBOSITY_VERBOSE,this.getClass().getName()+
-				   ":setFitsHeaders:Looking for keyword index "+index+" in list.");
-			keyword = status.getProperty("sprat.fits.keyword."+index);
-			if(keyword != null)
-			{
-				typeString = status.getProperty("sprat.fits.value.type."+keyword);
-				if(typeString == null)
-				{
-					sprat.error(this.getClass().getName()+
-						    ":setFitsHeaders:Failed to get value type for keyword:"+keyword);
-					commandDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1203);
-					commandDone.setErrorString(this.getClass().getName()+
-						     ":setFitsHeaders:Failed to get value type for keyword:"+keyword);
-					commandDone.setSuccessful(false);
-					return false;
-				}
-				try
-				{
-					if(typeString.equals("string"))
-					{
-						valueString = status.getProperty("sprat.fits.value."+keyword);
-						addFitsHeader(keyword,valueString);
-					}
-					else if(typeString.equals("integer"))
-					{
-						Integer iov = null;
-
-						ivalue = status.getPropertyInteger("sprat.fits.value."+keyword);
-						iov = new Integer(ivalue);
-						addFitsHeader(keyword,iov);
-					}
-					else if(typeString.equals("float"))
-					{
-						Float fov = null;
-
-						dvalue = status.getPropertyDouble("sprat.fits.value."+keyword);
-						fov = new Float(dvalue);
-						addFitsHeader(keyword,fov);
-					}
-					else if(typeString.equals("boolean"))
-					{
-						Boolean bov = null;
-
-						bvalue = status.getPropertyBoolean("sprat.fits.value."+keyword);
-						bov = new Boolean(bvalue);
-						addFitsHeader(keyword,bov);
-					}
-					else
-					{
-						sprat.error(this.getClass().getName()+
-							    ":setFitsHeaders:Unknown value type "+typeString+
-							    " for keyword:"+keyword);
-						commandDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1204);
-						commandDone.setErrorString(this.getClass().getName()+
-								    ":setFitsHeaders:Unknown value type "+typeString+
-							     " for keyword:"+keyword);
-						commandDone.setSuccessful(false);
-						return false;
-					}
-				}
-				catch(Exception e)
-				{
-					sprat.error(this.getClass().getName()+
-						    ":setFitsHeaders:Failed to add value for keyword:"+keyword,e);
-					commandDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1206);
-					commandDone.setErrorString(this.getClass().getName()+
-						     ":setFitsHeaders:Failed to add value for keyword:"+keyword+":"+e);
-					commandDone.setSuccessful(false);
-					return false;
-				}
-				// increment index
-				index++;
-			}
-			else
-				done = true;
-		}// end while
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":setFitsHeaders:Finished.");
-		return true;
-	}
-
-	/**
-	 * This routine tries to get a set of FITS headers for an exposure, by issuing a GET_FITS command
-	 * to the ISS. The results from this command are put into the C layers list of FITS headers by calling
-	 * addISSFitsHeaderList.
-	 * If an error occurs the done objects field's can be set to record the error.
-	 * The value of the OBJECT keyword is saved in the objectName, to be used when modifying the object name
-	 * later (i.e. for ARC frames).
-	 * @param command The command being implemented that made this call to the ISS. This is used
-	 * 	for error logging.
-	 * @param done A COMMAND_DONE subclass specific to the command being implemented. If an
-	 * 	error occurs the relevant fields are filled in with the error.
-	 * @return The routine returns a boolean to indicate whether the operation was completed
-	 *  	successfully.
-	 * @see #addISSFitsHeaderList
-	 * @see #getObjectName
-	 * @see Sprat#sendISSCommand
-	 * @see Sprat#getStatus
-	 * @see SpratStatus#getPropertyInteger
-	 */
-	public boolean getFitsHeadersFromISS(COMMAND command,COMMAND_DONE done)
-	{
-		INST_TO_ISS_DONE instToISSDone = null;
-		ngat.message.ISS_INST.GET_FITS getFits = null;
-		ngat.message.ISS_INST.GET_FITS_DONE getFitsDone = null;
-		Vector list = null;
-
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
-			  ":getFitsHeadersFromISS:Started.");
-		getFits = new ngat.message.ISS_INST.GET_FITS(command.getId());
-		instToISSDone = sprat.sendISSCommand(getFits,serverConnectionThread);
-		if(instToISSDone.getSuccessful() == false)
-		{
-			sprat.error(this.getClass().getName()+":getFitsHeadersFromISS:"+
-				    command.getClass().getName()+":"+instToISSDone.getErrorString());
-			done.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1205);
-			done.setErrorString(instToISSDone.getErrorString());
-			done.setSuccessful(false);
-			return false;
-		}
-	// Get the returned FITS header information into the FitsHeader object.
-		getFitsDone = (ngat.message.ISS_INST.GET_FITS_DONE)instToISSDone;
-	// extract specific FITS headers and add them to the C layers list
-		list = getFitsDone.getFitsHeader();
-		try
-		{
-			addISSFitsHeaderList(list);
-		}
-		catch(Exception e)
-		{
-			sprat.error(this.getClass().getName()+
-				    ":getFitsHeadersFromISS:addISSFitsHeaderList failed.",e);
-			done.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1207);
-			done.setErrorString(this.getClass().getName()+
-					    ":getFitsHeadersFromISS:addISSFitsHeaderList failed:"+e);
-			done.setSuccessful(false);
-			return false;
-		}
-		// retrieve the OBJECT FITS header card image
-		// we will need to modify this in odd ways for ARC obs/calBefore/calAfter
-		sprat.log(Logging.VERBOSITY_VERBOSE,this.getClass().getName()+
-			  ":getFitsHeadersFromISS:retrieving OBJECT value.");
-		getObjectName(list);
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
-			  ":getFitsHeadersFromISS:finished.");
-		return true;
-	}
-
-	/**
-	 * Pass the GET_FITS headers returned from the ISS to the C layer.
-	 * @param list A Vector of FitsHeaderCardImage instances to pass into the C layer.
-	 * @exception Exception Thrown if addFitsHeader fails.
-	 * @see #addFitsHeader
-	 * @see ngat.fits.FitsHeaderCardImageKeywordComparator
-	 * @see ngat.fits.FitsHeaderCardImage
-	 */
-	protected void addISSFitsHeaderList(List list) throws Exception
-	{
-		FitsHeaderCardImage cardImage = null;
-
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":addISSFitsHeaderList:started.");
-		// iterate over keywords to copy
-		for(int index = 0; index < list.size(); index ++)
-		{
-			cardImage = (FitsHeaderCardImage)(list.get(index));
-			sprat.log(Logging.VERBOSITY_VERBOSE,this.getClass().getName()+
-				  ":addISSFitsHeaderList:Adding "+cardImage.getKeyword()+" to C layer.");
-			addFitsHeader(cardImage.getKeyword(),cardImage.getValue());
-		}
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":addISSFitsHeaderList:finished.");
-	}
-
-	/**
-	 * Method to add the specified FITS header to the C layers list of
-	 * FITS headers. The C layer machine/port specification is retrieved from the "sprat.ccd.c.hostname"
-	 * and "sprat.ccd.c.port_number" properties. An instance of FitsHeaderAddCommand is used to transmit the data.
-	 * @param keyword The FITS headers keyword.
-	 * @param value The FITS headers value - an object of class String,Integer,Float,Double,Boolean,Date.
-	 * @exception Exception Thrown if the FitsHeaderAddCommand internally errors, or the return code indicates a
-	 *            failure.
-	 * @see #status
-	 * @see #dateFitsFieldToString
-	 * @see ngat.sprat.SpratStatus#getProperty
-	 * @see ngat.sprat.SpratStatus#getPropertyInteger
-	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand
-	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#setAddress
-	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#setPortNumber
-	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#setCommand
-	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#getParsedReplyOK
-	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#getReturnCode
-	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#getParsedReply
-	 */
-	protected void addFitsHeader(String keyword,Object value) throws Exception
-	{
-		FitsHeaderAddCommand addCommand = null;
-		int portNumber,returnCode;
-		String hostname = null;
-		String errorString = null;
-
-		if(keyword == null)
-		{
-			throw new NullPointerException(this.getClass().getName()+":addFitsHeader:keyword was null.");
-		}
-		if(value == null)
-		{
-			throw new NullPointerException(this.getClass().getName()+
-						       ":addFitsHeader:value was null for keyword:"+keyword);
-		}
-		addCommand = new FitsHeaderAddCommand();
-		// configure C comms
-		hostname = status.getProperty("sprat.ccd.c.hostname");
-		portNumber = status.getPropertyInteger("sprat.ccd.c.port_number");
-		addCommand.setAddress(hostname);
-		addCommand.setPortNumber(portNumber);
-		// set command parameters
-		if(value instanceof String)
-		{
-			sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
-				  ":addFitsHeader:Adding keyword "+keyword+" with String value "+value+".");
-			addCommand.setCommand(keyword,(String)value);
-		}
-		else if(value instanceof Integer)
-		{
-			sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
-				  ":addFitsHeader:Adding keyword "+keyword+" with integer value "+
-				  ((Integer)value).intValue()+".");
-			addCommand.setCommand(keyword,((Integer)value).intValue());
-		}
-		else if(value instanceof Float)
-		{
-			sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
-				  ":addFitsHeader:Adding keyword "+keyword+" with float value "+
-				  ((Float)value).doubleValue()+".");
-			addCommand.setCommand(keyword,((Float)value).doubleValue());
-		}
-		else if(value instanceof Double)
-		{
-			sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
-				  ":addFitsHeader:Adding keyword "+keyword+" with double value "+
-				  ((Double)value).doubleValue()+".");
-		        addCommand.setCommand(keyword,((Double)value).doubleValue());
-		}
-		else if(value instanceof Boolean)
-		{
-			sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
-				  ":addFitsHeader:Adding keyword "+keyword+" with boolean value "+
-				  ((Boolean)value).booleanValue()+".");
-			addCommand.setCommand(keyword,((Boolean)value).booleanValue());
-		}
-		else if(value instanceof Date)
-		{
-			sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
-				  ":addFitsHeader:Adding keyword "+keyword+" with date value "+
-				  dateFitsFieldToString((Date)value)+".");
-			addCommand.setCommand(keyword,dateFitsFieldToString((Date)value));
-		}
-		else
-		{
-			throw new IllegalArgumentException(this.getClass().getName()+
-							   ":addFitsHeader:value had illegal class:"+
-							   value.getClass().getName());
-		}
-		// actually send the command to the C layer
-		addCommand.sendCommand();
-		// check the parsed reply
-		if(addCommand.getParsedReplyOK() == false)
-		{
-			returnCode = addCommand.getReturnCode();
-			errorString = addCommand.getParsedReply();
-			sprat.log(Logging.VERBOSITY_TERSE,"addFitsHeader:Command failed with return code "+
-				  returnCode+" and error string:"+errorString);
 			throw new Exception(this.getClass().getName()+
-					    ":addFitsHeader:Command failed with return code "+returnCode+
-					    " and error string:"+errorString);
+					    ":getSlitPosition:Slit command returned an error:"+
+					    command.getErrorString());
 		}
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			  ":getSlitPosition:finished with position:"+
+			  SlitCommand.positionToString(command.getCurrentPosition()));
+		return command.getCurrentPosition();
 	}
 
 	/**
-	 * Retrieve the value of the "OBJECT" keyword from a List (Vector) instance containing
-	 * FitsHeaderCardImage instances.
-	 * @param list A list/vector containing instances of FitsHeaderCardImage.
-	 * @see #objectName
+	 * Get the current grism position.
+	 * An instance of GrismCommand is "run". If a run exception occurs this is thrown.
+	 * getMechanismConfig must have been called before this method to set the mechanismHostname/mechanismPortNumber
+	 * up correctly.
+	 * If an error is returned this is thrown as an exception.
+	 * @return The current position is returned as an integer, one of:POSITION_ERROR, POSITION_UNKNOWN, 
+	 *         POSITION_IN, POSITION_OUT.
+	 * @exception Exception Thrown if an error occurs.
+	 * @see #mechanismHostname
+	 * @see #mechanismPortNumber
+	 * @see ngat.sprat.mechanism.command.GrismCommand
+	 * @see ngat.sprat.mechanism.command.GrismCommand#run
+	 * @see ngat.sprat.mechanism.command.GrismCommand#getRunException
+	 * @see ngat.sprat.mechanism.command.GrismCommand#getIsError
+	 * @see ngat.sprat.mechanism.command.GrismCommand#getErrorString
+	 * @see ngat.sprat.mechanism.command.GrismCommand#getCurrentPosition
+	 * @see ngat.sprat.mechanism.command.GrismCommand#positionToString
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_ERROR
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_UNKNOWN
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_IN
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_OUT
 	 */
-	protected void getObjectName(List list)
+	protected int getGrismPosition() throws Exception
 	{
-		FitsHeaderCardImage cardImage = null;
-		boolean found;
-		int index;
+		GrismCommand command = null;
 
-		index = 0;
-		found = false;
-		while((index < list.size())&&(found == false))
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":getGrismPosition:started.");
+		command = new GrismCommand(mechanismHostname,mechanismPortNumber);
+		command.run();
+		if(command.getRunException() != null)
 		{
-			cardImage = (FitsHeaderCardImage)(list.get(index));
-			if(cardImage != null)
-			{
-				if(cardImage.getKeyword().equals("OBJECT"))
-				{
-					objectName = (String)(cardImage.getValue());
-					found = true;
-				}
-			}
-			index++;
+			throw new Exception(this.getClass().getName()+
+					    ":getGrismPosition:Grism command threw exception.",
+					    command.getRunException());
 		}
+		if(command.getIsError())
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getGrismPosition:Grism command returned an error:"+
+					    command.getErrorString());
+		}
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			  ":getGrismPosition:finished with position:"+
+			  GrismCommand.positionToString(command.getCurrentPosition()));
+		return command.getCurrentPosition();
+	}
+
+	/**
+	 * Get the current rotation position.
+	 * An instance of RotationCommand is "run". If a run exception occurs this is thrown.
+	 * getMechanismConfig must have been called before this method to set the mechanismHostname/mechanismPortNumber
+	 * up correctly.
+	 * If an error is returned this is thrown as an exception.
+	 * @return The current position is returned as an integer, one of:POSITION_ERROR, POSITION_UNKNOWN, 
+	 *         0 or 1.
+	 * @exception Exception Thrown if an error occurs.
+	 * @see #mechanismHostname
+	 * @see #mechanismPortNumber
+	 * @see ngat.sprat.mechanism.command.RotationCommand
+	 * @see ngat.sprat.mechanism.command.RotationCommand#run
+	 * @see ngat.sprat.mechanism.command.RotationCommand#getRunException
+	 * @see ngat.sprat.mechanism.command.RotationCommand#getIsError
+	 * @see ngat.sprat.mechanism.command.RotationCommand#getErrorString
+	 * @see ngat.sprat.mechanism.command.RotationCommand#getCurrentPosition
+	 * @see ngat.sprat.mechanism.command.RotationCommand#POSITION_ERROR
+	 * @see ngat.sprat.mechanism.command.RotationCommand#POSITION_UNKNOWN
+	 */
+	protected int getRotationPosition() throws Exception
+	{
+		RotationCommand command = null;
+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":getRotationPosition:started.");
+		command = new RotationCommand(mechanismHostname,mechanismPortNumber);
+		command.run();
+		if(command.getRunException() != null)
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getRotationPosition:Rotation command threw exception.",
+					    command.getRunException());
+		}
+		if(command.getIsError())
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getRotationPosition:Rotation command returned an error:"+
+					    command.getErrorString());
+		}
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			  ":getRotationPosition:finished with position:"+
+			  command.getCurrentPosition());
+		return command.getCurrentPosition();
 	}
 
 	/**
@@ -584,7 +392,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 // DATE 'CCYY-MM-DD'
 // UTSTART 'HH:MM:SS.s'
 // others?
-	private String dateFitsFieldToString(Date date)
+	protected String dateFitsFieldToString(Date date)
 	{
 		Calendar calendar = Calendar.getInstance();
 		NumberFormat numberFormat = NumberFormat.getInstance();
@@ -628,13 +436,12 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 		{
 			String errorString = new String(command.getId()+":sendBasicAck:Sending ACK failed:");
 			sprat.error(this.getClass().getName()+":"+errorString,e);
-			done.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+318);
+			done.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1203);
 			done.setErrorString(errorString+e);
 			done.setSuccessful(false);
 			return false;
 		}
 		return true;
 	}
-
 }
 

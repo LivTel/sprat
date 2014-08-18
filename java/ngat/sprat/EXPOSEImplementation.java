@@ -12,13 +12,13 @@ import ngat.message.INST_DP.*;
 
 /**
  * This class provides the generic implementation for EXPOSE commands sent to a server using the
- * Java Message System. It extends HardwareImplementation, as EXPOSE commands needs access to
- * resources to move mechanisms.
- * @see HardwareImplementation
+ * Java Message System. It extends FITSImplementation, as EXPOSE commands needs access to
+ * resources to move mechanisms and write FITS images.
+ * @see FITSImplementation
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
-public class EXPOSEImplementation extends HardwareImplementation implements JMSCommandImplementation
+public class EXPOSEImplementation extends FITSImplementation implements JMSCommandImplementation
 {
 	/**
 	 * Revision Control System id string, showing the version of the Class.
