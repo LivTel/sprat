@@ -656,8 +656,7 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 			for(int i = 0; i < temperatureSensorCount; i++)
 			{
 				temperature = getMechanismTemperature(i);
-				hashTable.put("Mechanism.Temperature."+i,
-					      new Double(temperature+Sprat.CENTIGRADE_TO_KELVIN));
+				hashTable.put("Mechanism.Temperature."+i,new Double(temperature));
 
 			}
 			humiditySensorCount = status.getPropertyInteger(
