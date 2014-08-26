@@ -102,8 +102,6 @@ public class LAMPFLATImplementation extends CALIBRATEImplementation implements J
 	 * @see #getLampExposureLength
 	 * @see #setWLamp
 	 * @see #lampFlatFilename
-	 * @see SpratStatus#setExposureCount
-	 * @see SpratStatus#setExposureNumber
 	 * @see CommandImplementation#testAbort
 	 * @see FITSImplementation#objectName
 	 * @see FITSImplementation#addFitsHeader

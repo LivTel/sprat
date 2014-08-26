@@ -233,6 +233,8 @@ public class MULTBIASImplementation extends CALIBRATEImplementation implements J
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #filenameList
 	 * @see #multrunNumber
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
 	 * @see ngat.sprat.ccd.command.MultBiasCommand
 	 * @see ngat.sprat.ccd.command.MultBiasCommand#setAddress
 	 * @see ngat.sprat.ccd.command.MultBiasCommand#setPortNumber
@@ -247,19 +249,16 @@ public class MULTBIASImplementation extends CALIBRATEImplementation implements J
 	protected void sendMultBiasCommand(int exposureCount) throws Exception
 	{
 		MultBiasCommand command = null;
-		int portNumber,returnCode;
-		String hostname = null;
+		int returnCode;
 		String errorString = null;
 
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendBiasCommand:Started.");
 		command = new MultBiasCommand();
 		// configure C comms
-		hostname = status.getProperty("sprat.ccd.c.hostname");
-		portNumber = status.getPropertyInteger("sprat.ccd.c.port_number");
-		command.setAddress(hostname);
-		command.setPortNumber(portNumber);
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendBiasCommand:hostname = "+hostname+
-			   " :port number = "+portNumber+".");
+		command.setAddress(ccdCLayerHostname);
+		command.setPortNumber(ccdCLayerPortNumber);
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendBiasCommand:hostname = "+ccdCLayerHostname+
+			   " :port number = "+ccdCLayerPortNumber+".");
 		command.setCommand(exposureCount);
 		// actually send the command to the C layer
 		command.sendCommand();

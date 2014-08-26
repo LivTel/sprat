@@ -207,6 +207,13 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 			multRunDone.setSuccessful(false);
 			return multRunDone;
 		}
+		// send filename ACKs
+		for(int i = 0; i < filenameList.size(); i++ )
+		{
+			filename = (String)filenameList.get(i);
+			if(!sendMultrunAck(multRunCommand,multRunDone,filename))
+				return multRunDone;
+		}
 	// call pipeline to process data and get results
 		retval = true;
 		if(multRunCommand.getPipelineProcess())
@@ -287,6 +294,8 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #multrunNumber
 	 * @see #filenameList
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
 	 * @see ngat.sprat.ccd.command.MultrunCommand
 	 * @see ngat.sprat.ccd.command.MultrunCommand#setAddress
 	 * @see ngat.sprat.ccd.command.MultrunCommand#setPortNumber
@@ -301,9 +310,8 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 	protected void sendMultrunCommand(int exposureLength, int exposureCount,boolean standard) throws Exception
 	{
 		MultrunCommand command = null;
-		int portNumber,returnCode;
+		int returnCode;
 		String exposureTypeString = null;
-		String hostname = null;
 		String errorString = null;
 
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendMultrunCommand:"+
@@ -316,12 +324,10 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 			exposureTypeString = MultrunCommand.EXPOSURE_TYPE_EXPOSURE;
 		command = new MultrunCommand();
 		// configure C comms
-		hostname = status.getProperty("sprat.ccd.c.hostname");
-		portNumber = status.getPropertyInteger("sprat.ccd.c.port_number");
-		command.setAddress(hostname);
-		command.setPortNumber(portNumber);
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendMultrunCommand:hostname = "+hostname+
-			   " :port number = "+portNumber+".");
+		command.setAddress(ccdCLayerHostname);
+		command.setPortNumber(ccdCLayerPortNumber);
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendMultrunCommand:hostname = "+ccdCLayerHostname+
+			   " :port number = "+ccdCLayerPortNumber+".");
 		command.setCommand(exposureLength,exposureCount,exposureTypeString);
 		// actually send the command to the C layer
 		command.sendCommand();
@@ -340,7 +346,44 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 		// extract data from successful reply.
 		multrunNumber = command.getMultrunNumber();
 		filenameList = command.getFilenameList();
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendMultrunCommand:finished.");
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendMultrunCommand:finished with multrun number "+
+			  multrunNumber+" and "+filenameList.size()+" filnames.");
+	}
+
+
+	/**
+	 * Send a MULTRUN_ACK back to the client with the specified filename.
+	 * An Ack time retrieved from the config: "sprat.multrun.acknowledge_time.data_pipeline"
+	 * plus the default ACK time is returned.
+	 * @param multRunCommand The MULTRUN command.
+	 * @param multRunDone The MULTRUN_DONE, the error fields are filled in if sending the ACK fails.
+	 * @param filename The FITS filename to send.
+	 * @return The routine returns true on success and false on failure.
+	 */
+	protected boolean sendMultrunAck(MULTRUN multRunCommand,MULTRUN_DONE multRunDone,String filename)
+	{
+		MULTRUN_ACK multRunAck = null;
+		int dataPipelineAckTime;
+
+		multRunAck = new MULTRUN_ACK(multRunCommand.getId());
+		dataPipelineAckTime = status.
+			getPropertyInteger("sprat.multrun.acknowledge_time.data_pipeline");
+		multRunAck.setTimeToComplete(dataPipelineAckTime+serverConnectionThread.getDefaultAcknowledgeTime());
+		multRunAck.setFilename(filename);
+		try
+		{
+			serverConnectionThread.sendAcknowledge(multRunAck);
+		}
+		catch(IOException e)
+		{
+			sprat.error(this.getClass().getName()+
+				    ":sendMultrunAck:sendAcknowledge:"+multRunCommand+":"+e.toString(),e);
+			multRunDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1204);
+			multRunDone.setErrorString(":sendMultrunAck:sendAcknowledge:"+e.toString());
+			multRunDone.setSuccessful(false);
+			return false;
+		}
+		return true;
 	}
 }
 

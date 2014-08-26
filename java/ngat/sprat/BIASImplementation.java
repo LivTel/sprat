@@ -85,9 +85,9 @@ public class BIASImplementation extends CALIBRATEImplementation implements JMSCo
 	 * <li>The done object is setup.
 	 * </ul>
 	 * @see #testAbort
-	 * @see HardwareImplementation#clearFitsHeaders
-	 * @see HardwareImplementation#setFitsHeaders
-	 * @see HardwareImplementation#getFitsHeadersFromISS
+	 * @see FITSImplementation#clearFitsHeaders
+	 * @see FITSImplementation#setFitsHeaders
+	 * @see FITSImplementation#getFitsHeadersFromISS
 	 * @see #sendBiasCommand
 	 * @see #filename
 	 */
@@ -172,6 +172,8 @@ public class BIASImplementation extends CALIBRATEImplementation implements JMSCo
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #filename
 	 * @see #multrunNumber
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
 	 * @see ngat.sprat.ccd.command.BiasCommand
 	 * @see ngat.sprat.ccd.command.BiasCommand#setAddress
 	 * @see ngat.sprat.ccd.command.BiasCommand#setPortNumber
@@ -187,19 +189,16 @@ public class BIASImplementation extends CALIBRATEImplementation implements JMSCo
 	{
 		BiasCommand command = null;
 		List filenameList = null;
-		int portNumber,returnCode;
-		String hostname = null;
+		int returnCode;
 		String errorString = null;
 
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendBiasCommand:Started.");
 		command = new BiasCommand();
 		// configure C comms
-		hostname = status.getProperty("sprat.ccd.c.hostname");
-		portNumber = status.getPropertyInteger("sprat.ccd.c.port_number");
-		command.setAddress(hostname);
-		command.setPortNumber(portNumber);
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendBiasCommand:hostname = "+hostname+
-			   " :port number = "+portNumber+".");
+		command.setAddress(ccdCLayerHostname);
+		command.setPortNumber(ccdCLayerPortNumber);
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendBiasCommand:hostname = "+ccdCLayerHostname+
+			   " :port number = "+ccdCLayerPortNumber+".");
 		// actually send the command to the C layer
 		command.sendCommand();
 		// check the parsed reply

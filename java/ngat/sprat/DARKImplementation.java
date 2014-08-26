@@ -65,7 +65,7 @@ public class DARKImplementation extends CALIBRATEImplementation implements JMSCo
 	 * @see #status
 	 * @see #serverConnectionThread
 	 * @see ngat.sprat.SpratStatus#getPropertyInteger
-	 * @see ngat.message.DARK#getExposureTime
+	 * @see ngat.message.ISS_INST.DARK#getExposureTime
 	 */
 	public ACK calculateAcknowledgeTime(COMMAND command)
 	{
@@ -108,9 +108,9 @@ public class DARKImplementation extends CALIBRATEImplementation implements JMSCo
 	 * <li>The done object is setup.
 	 * </ul>
 	 * @see #testAbort
-	 * @see HardwareImplementation#clearFitsHeaders
-	 * @see HardwareImplementation#setFitsHeaders
-	 * @see HardwareImplementation#getFitsHeadersFromISS
+	 * @see FITSImplementation#clearFitsHeaders
+	 * @see FITSImplementation#setFitsHeaders
+	 * @see FITSImplementation#getFitsHeadersFromISS
 	 * @see #sendDarkCommand
 	 * @see #filename
 	 */
@@ -195,6 +195,8 @@ public class DARKImplementation extends CALIBRATEImplementation implements JMSCo
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #filename
 	 * @see #multrunNumber
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
 	 * @see ngat.sprat.ccd.command.DarkCommand
 	 * @see ngat.sprat.ccd.command.DarkCommand#setAddress
 	 * @see ngat.sprat.ccd.command.DarkCommand#setPortNumber
@@ -218,12 +220,10 @@ public class DARKImplementation extends CALIBRATEImplementation implements JMSCo
 			  " ms):Started.");
 		command = new DarkCommand();
 		// configure C comms
-		hostname = status.getProperty("sprat.ccd.c.hostname");
-		portNumber = status.getPropertyInteger("sprat.ccd.c.port_number");
-		command.setAddress(hostname);
-		command.setPortNumber(portNumber);
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendDarkCommand:hostname = "+hostname+
-			  " :port number = "+portNumber+".");
+		command.setAddress(ccdCLayerHostname);
+		command.setPortNumber(ccdCLayerPortNumber);
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendDarkCommand:hostname = "+ccdCLayerHostname+
+			  " :port number = "+ccdCLayerPortNumber+".");
 		command.setCommand(exposureLength);
 		// actually send the command to the C layer
 		command.sendCommand();

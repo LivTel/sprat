@@ -76,6 +76,7 @@ public class StatusExposureStartTimeCommand extends Command implements Runnable
 	 */
 	public void parseReplyString() throws Exception
 	{
+		TimeZone timeZone = null;
 		Calendar calendar = null;
 		StringTokenizer st = null;
 		String timeStampString = null;
@@ -129,8 +130,9 @@ public class StatusExposureStartTimeCommand extends Command implements Runnable
 				st.nextToken();
 			tokenIndex++;
 		}// end while
-		// create calendar
-		calendar = Calendar.getInstance();
+		// create calendar - ensure we get a UTC/GMT one
+		timeZone = TimeZone.getTimeZone("GMT+00");
+		calendar = Calendar.getInstance(timeZone);
 		// set calendar
 		calendar.set(year,month-1,day,hour,minute,(int)second);// month is zero-based.
 		// get timestamp from calendar 

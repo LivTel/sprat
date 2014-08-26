@@ -102,8 +102,6 @@ public class ARCImplementation extends CALIBRATEImplementation implements JMSCom
 	 * @see #getLampExposureLength
 	 * @see #setArcLamp
 	 * @see #arcFilename
-	 * @see SpratStatus#setExposureCount
-	 * @see SpratStatus#setExposureNumber
 	 * @see CommandImplementation#testAbort
 	 * @see FITSImplementation#clearFitsHeaders
 	 * @see FITSImplementation#setFitsHeaders
@@ -348,8 +346,8 @@ public class ARCImplementation extends CALIBRATEImplementation implements JMSCom
 	 * Method to turn the ARC lamp on or off.
 	 * @param on A boolean, if true turn the lamp on, otherwise turn it off.
 	 * @exception Exception Thrown if an error occurs.
-	 * @see #mechanismHostname
-	 * @see #mechanismPortNumber
+	 * @see HardwareImplementation#mechanismHostname
+	 * @see HardwareImplementation#mechanismPortNumber
 	 * @see ngat.sprat.mechanism.command.ArcLampCommand
 	 * @see ngat.sprat.mechanism.command.ArcLampCommand#run
 	 * @see ngat.sprat.mechanism.command.ArcLampCommand#getRunException
@@ -389,6 +387,8 @@ public class ARCImplementation extends CALIBRATEImplementation implements JMSCom
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #multrunNumber
 	 * @see #arcFilename
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
 	 * @see ngat.sprat.ccd.command.MultrunCommand
 	 * @see ngat.sprat.ccd.command.MultrunCommand#setAddress
 	 * @see ngat.sprat.ccd.command.MultrunCommand#setPortNumber
@@ -404,20 +404,17 @@ public class ARCImplementation extends CALIBRATEImplementation implements JMSCom
 	{
 		MultrunCommand command = null;
 		List filenameList = null;
-		int portNumber,returnCode;
-		String hostname = null;
+		int returnCode;
 		String errorString = null;
 
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendMultrunCommand:"+
 			 "\n\t:exposureLength = "+exposureLength+".");
 		command = new MultrunCommand();
 		// configure C comms
-		hostname = status.getProperty("sprat.ccd.c.hostname");
-		portNumber = status.getPropertyInteger("sprat.ccd.c.port_number");
-		command.setAddress(hostname);
-		command.setPortNumber(portNumber);
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendMultrunCommand:hostname = "+hostname+
-			   " :port number = "+portNumber+".");
+		command.setAddress(ccdCLayerHostname);
+		command.setPortNumber(ccdCLayerPortNumber);
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendMultrunCommand:hostname = "+ccdCLayerHostname+
+			   " :port number = "+ccdCLayerPortNumber+".");
 		command.setCommand(exposureLength,1,MultrunCommand.EXPOSURE_TYPE_ARC);
 		// actually send the command to the C layer
 		command.sendCommand();

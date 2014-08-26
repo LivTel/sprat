@@ -23,6 +23,8 @@ extern int Sprat_Multrun_Get_Unbinned_NCols(void);
 extern int Sprat_Multrun_Get_Unbinned_NRows(void);
 extern int Sprat_Multrun_Get_Bin_X(void);
 extern int Sprat_Multrun_Get_Bin_Y(void);
+extern int Sprat_Multrun_Bin_X_Get(void);
+extern int Sprat_Multrun_Bin_Y_Get(void);
 extern int Sprat_Multrun_Exposure_Index_Get(void);
 extern int Sprat_Multrun_Exposure_Count_Get(void);
 #endif

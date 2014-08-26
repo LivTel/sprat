@@ -114,7 +114,7 @@ int Sprat_Command_Bias(char *command_string,char **reply_string)
 {
 	char **filename_list = NULL;
 	char multrun_number_string[16];
-	int retval,multrun_number,filename_count,i;
+	int retval,multrun_number,filename_count=0,i;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Bias",LOG_VERBOSITY_TERSE,
@@ -287,7 +287,7 @@ int Sprat_Command_Dark(char *command_string,char **reply_string)
 {
 	char **filename_list = NULL;
 	char multrun_number_string[16];
-	int retval,exposure_length,multrun_number,filename_count,i;
+	int retval,exposure_length,multrun_number,filename_count=0,i;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Dark",LOG_VERBOSITY_TERSE,"COMMAND","started.");
@@ -366,7 +366,7 @@ int Sprat_Command_Expose(char *command_string,char **reply_string)
 	char **filename_list = NULL;
 	char multrun_number_string[16];
 	char exposure_type_string[16];
-	int retval,exposure_length,multrun_number,filename_count;
+	int retval,exposure_length,multrun_number,filename_count=0;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Expose",LOG_VERBOSITY_TERSE,"COMMAND","started.");
@@ -824,7 +824,7 @@ int Sprat_Command_MultBias(char *command_string,char **reply_string)
 {
 	char **filename_list = NULL;
 	char multrun_number_string[16];
-	int retval,exposure_count,multrun_number,filename_count,i;
+	int retval,exposure_count,multrun_number,filename_count=0,i;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_MultBias",LOG_VERBOSITY_TERSE,
@@ -903,7 +903,7 @@ int Sprat_Command_MultDark(char *command_string,char **reply_string)
 {
 	char **filename_list = NULL;
 	char multrun_number_string[16];
-	int retval,exposure_length,exposure_count,multrun_number,standard,filename_count,i;
+	int retval,exposure_length,exposure_count,multrun_number,standard,filename_count=0,i;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_MultDark",LOG_VERBOSITY_TERSE,
@@ -985,7 +985,7 @@ int Sprat_Command_Multrun(char *command_string,char **reply_string)
 	char **filename_list = NULL;
 	char exposure_type_string[16];
 	char multrun_number_string[16];
-	int retval,exposure_length,exposure_count,multrun_number,filename_count,i;
+	int retval,exposure_length,exposure_count,multrun_number,filename_count=0,i;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("command","sprat_command.c","Sprat_Command_Multrun",LOG_VERBOSITY_TERSE,"COMMAND","started.");
@@ -1038,7 +1038,7 @@ int Sprat_Command_Multrun(char *command_string,char **reply_string)
 			return FALSE;
 		return TRUE;
 	}
-	if(!Sprat_Global_Add_String(reply_string,"0"))
+	if(!Sprat_Global_Add_String(reply_string,"0 "))
 		return FALSE;
 	sprintf(multrun_number_string,"%d ",multrun_number);
 	if(!Sprat_Global_Add_String(reply_string,multrun_number_string))
@@ -1587,15 +1587,26 @@ static int Command_Status_Exposure(char *request_string,char **reply_string)
  * @see sprat_global.html#Sprat_Global_Add_String
  * @see sprat_multrun.html#Sprat_Multrun_Exposure_Index_Get
  * @see sprat_multrun.html#Sprat_Multrun_Exposure_Count_Get
+ * @see sprat_multrun.html#Sprat_Multrun_Bin_X_Get
+ * @see sprat_multrun.html#Sprat_Multrun_Bin_Y_Get
  */
 static int Command_Status_Multrun(char *request_string,char **reply_string)
 {
 	char value_string[32];
 	int ivalue,retval;
 
-	if(strncmp(request_string,"index",5)==0)
+	if(strncmp(request_string,"binx",4)==0)
 	{
-		ivalue = Sprat_Multrun_Exposure_Index_Get();
+		ivalue = Sprat_Multrun_Bin_X_Get();
+		if(!Sprat_Global_Add_String(reply_string,"0 "))
+			return FALSE;
+		sprintf(value_string,"%d",ivalue);
+		if(!Sprat_Global_Add_String(reply_string,value_string))
+			return FALSE;
+	}
+	else if(strncmp(request_string,"biny",4)==0)
+	{
+		ivalue = Sprat_Multrun_Bin_Y_Get();
 		if(!Sprat_Global_Add_String(reply_string,"0 "))
 			return FALSE;
 		sprintf(value_string,"%d",ivalue);
@@ -1605,6 +1616,15 @@ static int Command_Status_Multrun(char *request_string,char **reply_string)
 	else if(strncmp(request_string,"count",5)==0)
 	{
 		ivalue = Sprat_Multrun_Exposure_Count_Get();
+		if(!Sprat_Global_Add_String(reply_string,"0 "))
+			return FALSE;
+		sprintf(value_string,"%d",ivalue);
+		if(!Sprat_Global_Add_String(reply_string,value_string))
+			return FALSE;
+	}
+	else if(strncmp(request_string,"index",5)==0)
+	{
+		ivalue = Sprat_Multrun_Exposure_Index_Get();
 		if(!Sprat_Global_Add_String(reply_string,"0 "))
 			return FALSE;
 		sprintf(value_string,"%d",ivalue);

@@ -64,22 +64,6 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 */
 	private String commsInstrumentStatus[] = new String[COMMS_INSTRUMENT_STATUS_COUNT];
 	/**
-	 * The hostname to send CCD C layer commands to.
-	 */
-	protected String ccdCLayerHostname = null;
-	/**
-	 * The port number to send CCD C layer commands to.
-	 */
-	protected int ccdCLayerPortNumber;
-	/**
-	 * The hostname to send Sprat mechanism Arduino commands to.
-	 */
-	protected String mechanismHostname = null;
-	/**
-	 * The port number to send Sprat mechanism Arduino commands to.
-	 */
-	protected int mechanismPortNumber;
-	/**
 	 * Exposure status retrieved by the StatusExposureStatusCommand command.
 	 * @see ngat.sprat.ccd.command.StatusExposureStatusCommand#CCD_EXPOSURE_STATUS_NONE
 	 * @see ngat.sprat.ccd.command.StatusExposureStatusCommand#CCD_EXPOSURE_STATUS_WAIT_START
@@ -264,43 +248,14 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	}
 
 	/**
-	 * Get the CCD C layer hostname and port number from the properties into some internal variables.
-	 * @see #status
-	 * @see #ccdCLayerHostname
-	 * @see #ccdCLayerPortNumber
-	 * @see SpratStatus#getProperty
-	 * @see SpratStatus#getPropertyInteger
-	 */
-	protected void getCCDCLayerConfig() throws Exception
-	{
-		ccdCLayerHostname = status.getProperty("sprat.ccd.c.hostname");
-		ccdCLayerPortNumber = status.getPropertyInteger("sprat.ccd.c.port_number");
-	}
-
-	/**
-	 * Get the Sprat mechanism Arduino hostname and port number from the properties into some 
-	 * internal variables.
-	 * @see #status
-	 * @see #mechanismHostname
-	 * @see #mechanismPortNumber
-	 * @see SpratStatus#getProperty
-	 * @see SpratStatus#getPropertyInteger
-	 */
-	protected void getMechanismConfig() throws Exception
-	{
-		mechanismHostname = status.getProperty("sprat.mechanism.hostname");
-		mechanismPortNumber = status.getPropertyInteger("sprat.mechanism.port_number");
-	}
-
-	/**
 	 * Get the exposure status. An instance of StatusExposureStatusCommand is used to send the command
 	 * to the CCD C layer, using ccdCLayerHostname and ccdCLayerPortNumber. 
 	 * The returned values are stored in exposureStatus and exposureStatusString.
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #exposureStatus
 	 * @see #exposureStatusString
-	 * @see #ccdCLayerHostname
-	 * @see #ccdCLayerPortNumber
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
 	 * @see ngat.sprat.ccd.command.StatusExposureStatusCommand
 	 * @see ngat.sprat.ccd.command.StatusExposureStatusCommand#CCD_EXPOSURE_STATUS_NONE
 	 * @see ngat.sprat.ccd.command.StatusExposureStatusCommand#CCD_EXPOSURE_STATUS_WAIT_START
@@ -397,8 +352,8 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * The returned value is stored in the hashTable, under the "Exposure Index" key.
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #hashTable
-	 * @see #ccdCLayerHostname
-	 * @see #ccdCLayerPortNumber
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
 	 * @see ngat.sprat.ccd.command.StatusMultrunIndexCommand
 	 */
 	protected void getStatusExposureIndex() throws Exception
@@ -439,8 +394,8 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * The returned value is stored in the hashTable, under the "Exposure Count" key.
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #hashTable
-	 * @see #ccdCLayerHostname
-	 * @see #ccdCLayerPortNumber
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
 	 * @see ngat.sprat.ccd.command.StatusMultrunCountCommand
 	 */
 	protected void getStatusExposureCount() throws Exception
@@ -479,8 +434,8 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * The returned value is stored in the hashTable, under the "Exposure Multrun" key.
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #hashTable
-	 * @see #ccdCLayerHostname
-	 * @see #ccdCLayerPortNumber
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
 	 * @see ngat.sprat.ccd.command.StatusExposureMultrunCommand
 	 */
 	protected void getStatusExposureMultrun() throws Exception
@@ -519,8 +474,8 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * The returned value is stored in the hashTable, under the "Exposure Run" key.
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #hashTable
-	 * @see #ccdCLayerHostname
-	 * @see #ccdCLayerPortNumber
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
 	 * @see ngat.sprat.ccd.command.StatusExposureRunCommand
 	 */
 	protected void getStatusExposureRun() throws Exception
@@ -559,8 +514,8 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * The returned value is stored in the hashTable, under the "Exposure Length" key.
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #hashTable
-	 * @see #ccdCLayerHostname
-	 * @see #ccdCLayerPortNumber
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
 	 * @see ngat.sprat.ccd.command.StatusExposureLengthCommand
 	 */
 	protected void getStatusExposureLength() throws Exception
@@ -601,8 +556,8 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * the hashTable, under the "Exposure Start Time" and "Exposure Start Time Date" key.
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #hashTable
-	 * @see #ccdCLayerHostname
-	 * @see #ccdCLayerPortNumber
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
 	 * @see ngat.sprat.ccd.command.StatusExposureStartTimeCommand
 	 */
 	protected void getStatusExposureStartTime() throws Exception
@@ -645,12 +600,12 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * @see #getCCDTemperature
 	 * @see HardwareImplementation#getSlitPosition
 	 * @see HardwareImplementation#getGrismPosition
-	 * @see #getMirrorPosition
+	 * @see HardwareImplementation#getMirrorPosition
 	 * @see #getArcLampState
 	 * @see #getWLampState
 	 * @see HardwareImplementation#getRotationPosition
-	 * @see #getMechanismTemperature
-	 * @see #getHumidity
+	 * @see HardwareImplementation#getMechanismTemperature
+	 * @see HardwareImplementation#getHumidity
 	 * @see #getGyroPosition
 	 * @see #setInstrumentStatus
 	 * @see #commsInstrumentStatus
@@ -659,6 +614,7 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 */
 	private void getIntermediateStatus()
 	{
+		double temperature,humidity;
 		int currentPosition;
 		int temperatureSensorCount,humiditySensorCount;
 
@@ -688,20 +644,28 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 			// rotation position
 			currentPosition = getRotationPosition();
 			hashTable.put("Rotation.Position",new Integer(currentPosition));
-			getMirrorPosition();
+			// mirror position
+			currentPosition = getMirrorPosition();
+			hashTable.put("Mirror.Position",new Integer(currentPosition));
+			hashTable.put("Mirror.Position.String",
+				      MirrorCommand.positionToString(currentPosition));
 			getArcLampState();
 			getWLampState();
 			temperatureSensorCount = status.getPropertyInteger(
 							 "sprat.mechanism.temperature.sensor.count");
 			for(int i = 0; i < temperatureSensorCount; i++)
 			{
-				getMechanismTemperature(i);
+				temperature = getMechanismTemperature(i);
+				hashTable.put("Mechanism.Temperature."+i,
+					      new Double(temperature+Sprat.CENTIGRADE_TO_KELVIN));
+
 			}
 			humiditySensorCount = status.getPropertyInteger(
 							"sprat.mechanism.humidity.sensor.count");
 			for(int i = 0; i < humiditySensorCount; i++)
 			{
-				getHumidity(i);
+				humidity = getHumidity(i);
+				hashTable.put("Mechanism.Humidity."+i,new Double(humidity));
 			}
 			getGyroPosition();
 			commsInstrumentStatus[COMMS_INSTRUMENT_STATUS_MECHANISM] = GET_STATUS_DONE.
@@ -728,9 +692,10 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * the hashTable, under the "Temperature" key (converted to Kelvin). A timestamp is also
 	 * retrieved (when the temperature was actually measured, it may be a cached value), and this
 	 * is stored in the "Temperature Timestamp" key.
+	 * @return A double representing the CCD temperature in Kelvin.
 	 * @exception Exception Thrown if an error occurs.
-	 * @see #ccdCLayerHostname
-	 * @see #ccdCLayerPortNumber
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
 	 * @see #hashTable
 	 * @see #setDetectorTemperatureInstrumentStatus
 	 * @see ngat.sprat.Sprat#CENTIGRADE_TO_KELVIN
@@ -743,7 +708,7 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * @see ngat.sprat.ccd.command.StatusTemperatureGetCommand#getTemperature
 	 * @see ngat.sprat.ccd.command.StatusTemperatureGetCommand#getTimestamp
 	 */
-	protected void getCCDTemperature() throws Exception
+	protected double getCCDTemperature() throws Exception
 	{
 		StatusTemperatureGetCommand statusCommand = null;
 		int returnCode;
@@ -773,51 +738,10 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 		timestamp = statusCommand.getTimestamp();
 		hashTable.put("Temperature",new Double(temperature+Sprat.CENTIGRADE_TO_KELVIN));
 		hashTable.put("Temperature Timestamp",timestamp);
-		setDetectorTemperatureInstrumentStatus(temperature);
+		setDetectorTemperatureInstrumentStatus(temperature+Sprat.CENTIGRADE_TO_KELVIN);
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getCCDTemperature:finished with temperature:"+
 			   temperature+" measured at "+timestamp);
-	}
-
-	/**
-	 * Get the current mirror position.
-	 * An instance of MirrorCommand is "run". If a run exception occurs this is thrown.
-	 * If an error is returned this is thrown as an exception.
-	 * The current position is stored in the GET_STATUS hashtable as an integer and a string.
-	 * @see #mechanismHostname
-	 * @see #mechanismPortNumber
-	 * @see #hashTable
-	 * @see ngat.sprat.mechanism.command.MirrorCommand
-	 * @see ngat.sprat.mechanism.command.MirrorCommand#run
-	 * @see ngat.sprat.mechanism.command.MirrorCommand#getRunException
-	 * @see ngat.sprat.mechanism.command.MirrorCommand#getIsError
-	 * @see ngat.sprat.mechanism.command.MirrorCommand#getErrorString
-	 * @see ngat.sprat.mechanism.command.MirrorCommand#getCurrentPosition
-	 * @see ngat.sprat.mechanism.command.MirrorCommand#positionToString
-	 */
-	protected void getMirrorPosition() throws Exception
-	{
-		MirrorCommand command = null;
-
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getMirrorPosition:started.");
-		command = new MirrorCommand(mechanismHostname,mechanismPortNumber);
-		command.run();
-		if(command.getRunException() != null)
-		{
-			throw new Exception(this.getClass().getName()+
-					    ":getMirrorPosition:Mirror command threw exception.",
-					    command.getRunException());
-		}
-		if(command.getIsError())
-		{
-			throw new Exception(this.getClass().getName()+
-					    ":getMirrorPosition:Mirror command returned an error:"+
-					    command.getErrorString());
-		}
-		hashTable.put("Mirror.Position",new Integer(command.getCurrentPosition()));
-		hashTable.put("Mirror.Position.String",
-			      MirrorCommand.positionToString(command.getCurrentPosition()));
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getMirrorPosition:finished with position:"+
-			  MirrorCommand.positionToString(command.getCurrentPosition()));
+		return temperature+Sprat.CENTIGRADE_TO_KELVIN;
 	}
 
  	/**
@@ -825,8 +749,8 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * An instance of ArcLampCommand is "run". If a run exception occurs this is thrown.
 	 * If an error is returned this is thrown as an exception.
 	 * The current state is stored in the GET_STATUS hashtable as an integer and a string.
-	 * @see #mechanismHostname
-	 * @see #mechanismPortNumber
+	 * @see HardwareImplementation#mechanismHostname
+	 * @see HardwareImplementation#mechanismPortNumber
 	 * @see #hashTable
 	 * @see ngat.sprat.mechanism.command.ArcLampCommand
 	 * @see ngat.sprat.mechanism.command.ArcLampCommand#run
@@ -867,8 +791,8 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * An instance of WLampCommand is "run". If a run exception occurs this is thrown.
 	 * If an error is returned this is thrown as an exception.
 	 * The current state is stored in the GET_STATUS hashtable as an integer and a string.
-	 * @see #mechanismHostname
-	 * @see #mechanismPortNumber
+	 * @see HardwareImplementation#mechanismHostname
+	 * @see HardwareImplementation#mechanismPortNumber
 	 * @see #hashTable
 	 * @see ngat.sprat.mechanism.command.WLampCommand
 	 * @see ngat.sprat.mechanism.command.WLampCommand#run
@@ -904,98 +828,14 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 			  WLampCommand.stateToString(command.getCurrentState()));
 	}
 
-	/**
-	 * Get a mechanism temperature.
-	 * An instance of TemperatureCommand is "run". If a run exception occurs this is thrown.
-	 * If an error is returned this is thrown as an exception.
-	 * The current temeprature is stored in the GET_STATUS hashtable as a double, in Kelvin.
-	 * @param sensorNumber Which number temperature sensor to query.
-	 * @see #mechanismHostname
-	 * @see #mechanismPortNumber
-	 * @see #hashTable
-	 * @see ngat.sprat.mechanism.command.TemperatureCommand
-	 * @see ngat.sprat.mechanism.command.TemperatureCommand#run
-	 * @see ngat.sprat.mechanism.command.TemperatureCommand#getRunException
-	 * @see ngat.sprat.mechanism.command.TemperatureCommand#getIsError
-	 * @see ngat.sprat.mechanism.command.TemperatureCommand#getErrorString
-	 * @see ngat.sprat.mechanism.command.TemperatureCommand#getTemperature
-	 */
- 	protected void getMechanismTemperature(int sensorNumber) throws Exception
-	{
-		TemperatureCommand command = null;
-
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,
-			  "getMechanismTemperature(sensorNumber="+sensorNumber+"):started.");
-		command = new TemperatureCommand(mechanismHostname,mechanismPortNumber,sensorNumber);
-		command.run();
-		if(command.getRunException() != null)
-		{
-			throw new Exception(this.getClass().getName()+
-					    ":getMechanismTemperature(sensorNumber="+sensorNumber+
-					    "):command threw exception.",command.getRunException());
-		}
-		if(command.getIsError())
-		{
-			throw new Exception(this.getClass().getName()+
-					    ":getMechanismTemperature(sensorNumber="+sensorNumber+
-					    "):command returned an error:"+command.getErrorString());
-		}
-		hashTable.put("Mechanism.Temperature."+sensorNumber,
-			      new Double(command.getTemperature()+Sprat.CENTIGRADE_TO_KELVIN));
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getMechanismTemperature(sensorNumber="+
-			  sensorNumber+"):finished with temperature:"+
-			  (command.getTemperature()+Sprat.CENTIGRADE_TO_KELVIN)+" K.");
-	}
-
- 	/**
-	 * Get a mechanism humidity measurement.
-	 * An instance of HumidityCommand is "run". If a run exception occurs this is thrown.
-	 * If an error is returned this is thrown as an exception.
-	 * The current humidity is stored in the GET_STATUS hashtable as a double.
-	 * @param sensorNumber Which number humidity sensor to query.
-	 * @see #mechanismHostname
-	 * @see #mechanismPortNumber
-	 * @see #hashTable
-	 * @see ngat.sprat.mechanism.command.HumidityCommand
-	 * @see ngat.sprat.mechanism.command.HumidityCommand#run
-	 * @see ngat.sprat.mechanism.command.HumidityCommand#getRunException
-	 * @see ngat.sprat.mechanism.command.HumidityCommand#getIsError
-	 * @see ngat.sprat.mechanism.command.HumidityCommand#getErrorString
-	 * @see ngat.sprat.mechanism.command.HumidityCommand#getHumidity
-	 */
- 	protected void getHumidity(int sensorNumber) throws Exception
-	{
-		HumidityCommand command = null;
-
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,
-			  "getHumidity(sensorNumber="+sensorNumber+"):started.");
-		command = new HumidityCommand(mechanismHostname,mechanismPortNumber,sensorNumber);
-		command.run();
-		if(command.getRunException() != null)
-		{
-			throw new Exception(this.getClass().getName()+
-					    ":getHumidity(sensorNumber="+sensorNumber+
-					    "):command threw exception.",command.getRunException());
-		}
-		if(command.getIsError())
-		{
-			throw new Exception(this.getClass().getName()+
-					    ":getHumidity(sensorNumber="+sensorNumber+
-					    "):command returned an error:"+command.getErrorString());
-		}
-		hashTable.put("Mechanism.Humidity."+sensorNumber,new Double(command.getHumidity()));
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getHumidity(sensorNumber="+
-			  sensorNumber+"):finished with humidity:"+command.getHumidity()+" %.");
-	}
-
    	/**
 	 * Get the mechanism gyro position.
 	 * An instance of GyroCommand is "run". If a run exception occurs this is thrown.
 	 * If an error is returned this is thrown as an exception.
 	 * The current gyro orientation position is stored in the GET_STATUS hashtable as a series of 
 	 * doubles, each axis represented by an ADU number.
-	 * @see #mechanismHostname
-	 * @see #mechanismPortNumber
+	 * @see HardwareImplementation#mechanismHostname
+	 * @see HardwareImplementation#mechanismPortNumber
 	 * @see #hashTable
 	 * @see ngat.sprat.mechanism.command.GyroCommand
 	 * @see ngat.sprat.mechanism.command.GyroCommand#run
@@ -1078,6 +918,10 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 		// set hashtable entry
 		hashTable.put(GET_STATUS_DONE.KEYWORD_DETECTOR_TEMPERATURE_INSTRUMENT_STATUS,
 			      detectorTemperatureInstrumentStatus);
+		sprat.log(Logging.VERBOSITY_VERY_VERBOSE,"setDetectorTemperatureInstrumentStatus:temperature:"+
+			  currentTemperature+" produced keyword "+
+			  GET_STATUS_DONE.KEYWORD_DETECTOR_TEMPERATURE_INSTRUMENT_STATUS+" with value "+
+			  detectorTemperatureInstrumentStatus);
 	}
 
 	/**

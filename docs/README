@@ -6,3 +6,26 @@ Jul 2012
 
 NOT EMCCD.
 Has custamizable vertical clock speeds.
+Using Andor library: ~dev/src/andor/andor-2.85.30000
+Here is a some suitable documentation for andor-2.85.30000:
+/home/dev/src/ringo2/docs/SoftwareDevelopmentKit.pdf
+
+Gain:
+Deprecated SetGain for SetMCPGain
+Gain starts on P65
+
+GetNumberADChannels
+GetNumberAmp
+GetNumberPreAmpGains
+IsPreAmpGainAvailable (for a particular horizontal shift speed.
+GetPreAmpGain
+SetPreAmpGain (available on iDus) P205
+P67 has example
+
+SetGain deprecated : Use SetMCPGain (only available on iStar).
+
+SetMCPGain(int gain) P196
+Description Allows the user to control the voltage across the microchannel plate. Increasing the gain
+increases the voltage and so amplifies the signal. The gain range can be returned using
+GetMCPGainRange.
+Parameters int gain: amount of gain applied?1

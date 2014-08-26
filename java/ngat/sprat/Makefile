@@ -15,7 +15,7 @@ MAIN_SRCS 	= SpratConstants.java SpratStatus.java Sprat.java \
 
 IMPL_SRCS = $(BASE_IMPL_SRCS) $(CALIBRATE_IMPL_SRCS) $(EXPOSE_IMPL_SRCS) $(INTERRUPT_IMPL_SRCS) $(SETUP_IMPL_SRCS)
 BASE_IMPL_SRCS		= JMSCommandImplementation.java CommandImplementation.java UnknownCommandImplementation.java \
-			HardwareImplementation.java FITSImplementation.java 
+			HardwareImplementation.java FITSImplementation.java ACQUIREImplementation.java
 CALIBRATE_IMPL_SRCS 	= CALIBRATEImplementation.java ARCImplementation.java \
 			BIASImplementation.java DARKImplementation.java \
 			LAMPFLATImplementation.java MULTBIASImplementation.java MULTDARKImplementation.java 
@@ -29,8 +29,7 @@ CONFIG_SRCS	= sprat1.sprat.properties sprat1.sprat.net.properties sprat1.fits.pr
 CONFIG_OBJS	= $(CONFIG_SRCS:%.properties=$(CONFIG_BINDIR)/%.properties)
 SCRIPT_SRCS	= 
 SCRIPT_OBJS	= 
-DIRS 		= ccd mechanism
-#test
+DIRS 		= ccd mechanism test
 
 top: dirs $(OBJS) config scripts dirs
 

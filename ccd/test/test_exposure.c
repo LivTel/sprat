@@ -113,6 +113,14 @@ static int Use_Recommended_VS = TRUE;
  */
 static int VS_Speed_Index = 0;
 /**
+ * The horizontal shift speed index to use. In conjunction with the preamp gain can be used to set the gain.
+ */
+static int HS_Speed_Index = 0;
+/**
+ * The preamp gain index to use. In conjunction with the horizontal speed index can be used to set the gain.
+ */
+static int Preamp_Gain_Index = 0;
+/**
  * Filename to store resultant fits image in. 
  */
 static char *Fits_Filename = NULL;
@@ -158,6 +166,8 @@ static void Test_Fits_Header_Error(int status);
  * @see #Config_Dir
  * @see #Use_Recommended_VS
  * @see #VS_Speed_Index
+ * @see #HS_Speed_Index
+ * @see #Preamp_Gain_Index
  * @see #DEFAULT_CONFIG_DIR
  * @see ../cdocs/ccd_setup.html#CCD_Setup_Config_Directory_Set
  */
@@ -182,9 +192,10 @@ int main(int argc, char *argv[])
 	CCD_Global_Set_Log_Handler_Function(CCD_Global_Log_Handler_Stdout);
 	if(Call_Setup_Startup)
 	{
-		fprintf(stdout,"Calling CCD_Setup_Startup:Use_Recommended_VS = %d, VS_Speed_Index = %d\n",
-			Use_Recommended_VS,VS_Speed_Index);
-		retval = CCD_Setup_Startup(Use_Recommended_VS,VS_Speed_Index);
+		fprintf(stdout,"Calling CCD_Setup_Startup:Use_Recommended_VS = %d, VS_Speed_Index = %d, "
+			"HS_Speed_Index = %d, Preamp_Gain_Index = %d\n",
+			Use_Recommended_VS,VS_Speed_Index,HS_Speed_Index,Preamp_Gain_Index);
+		retval = CCD_Setup_Startup(Use_Recommended_VS,VS_Speed_Index,HS_Speed_Index,Preamp_Gain_Index);
 		if(retval == FALSE)
 		{
 			CCD_Global_Error();
@@ -298,6 +309,8 @@ static void Help(void)
 	fprintf(stdout,"\t[-f[its_filename] <filename>]\n");
 	fprintf(stdout,"\t[-b[ias]][-d[ark] <exposure length>][-e[xpose] <exposure length>]\n");
 	fprintf(stdout,"\t[-vs_speed_index|-vsi <vs speed index>]\n");
+	fprintf(stdout,"\t[-hs_speed_index|-hsi <hs speed index>]\n");
+	fprintf(stdout,"\t[-preamp_gain_index|-gain <gain index>]\n");
 	fprintf(stdout,"\t[-nostartup][-noshutdown]\n");
 	fprintf(stdout,"\n");
 	fprintf(stdout,"\t-help prints out this message and stops the program.\n");
@@ -307,6 +320,10 @@ static void Help(void)
 	fprintf(stdout,"\t<exposure length> is a positive integer in milliseconds.\n");
 	fprintf(stdout,"\t<no. of pixels> and <binning factor> is a positive integer.\n");
 	fprintf(stdout,"\t<vs speed index> is a index into the list of vertical shift speeds.\n");
+	fprintf(stdout,"\t<hs speed index> is a index into the list of horizontal shift speeds."
+		"For the iDus DU420a: 0 = 0.10 MHz,1 = 0.05 MHz,2 = 0.03 MHz.\n");
+	fprintf(stdout,"\t<gain index> is a index into the list of preamp gains."
+		"For the iDus DU420a:0 = Gain 1.000,1 = Gain 1.500 .\n");
 	fprintf(stdout,"\t-noshutdown stops this invocation calling Andor_Setup_Shutdown,\n"
 		"\t\twhich may close down the temperature control sub-system..\n");
 }
@@ -332,6 +349,8 @@ static void Help(void)
  * @see #Config_Dir
  * @see #Use_Recommended_VS
  * @see #VS_Speed_Index
+ * @see #HS_Speed_Index
+ * @see #Preamp_Gain_Index
  * @see ../cdocs/ccd_global.html#CCD_Global_Set_Log_Filter_Function
  * @see ../cdocs/ccd_global.html#CCD_Global_Set_Log_Filter_Level
  * @see ../cdocs/ccd_setup.html#CCD_Setup_Config_Directory_Set
@@ -422,6 +441,26 @@ static int Parse_Arguments(int argc, char *argv[])
 			Help();
 			exit(0);
 		}
+		else if((strcmp(argv[i],"-hs_speed_index")==0)||(strcmp(argv[i],"-hsi")==0))
+		{
+			if((i+1)<argc)
+			{
+				retval = sscanf(argv[i+1],"%d",&HS_Speed_Index);
+				if(retval != 1)
+				{
+					fprintf(stderr,"Parse_Arguments:Parsing horizontal speed index %s failed.\n",
+						argv[i+1]);
+					return FALSE;
+				}
+				i++;
+				
+			}
+			else
+			{
+				fprintf(stderr,"Parse_Arguments:horizontal speed index requires a positive number.\n");
+				return FALSE;
+			}
+		}
 		else if((strcmp(argv[i],"-noshutdown")==0))
 		{
 			Call_Setup_Shutdown = FALSE;
@@ -429,6 +468,26 @@ static int Parse_Arguments(int argc, char *argv[])
 		else if((strcmp(argv[i],"-nostartup")==0))
 		{
 			Call_Setup_Startup = FALSE;
+		}
+		else if((strcmp(argv[i],"-preamp_gain_index")==0)||(strcmp(argv[i],"-gain")==0))
+		{
+			if((i+1)<argc)
+			{
+				retval = sscanf(argv[i+1],"%d",&Preamp_Gain_Index);
+				if(retval != 1)
+				{
+					fprintf(stderr,"Parse_Arguments:Parsing preamp gain index %s failed.\n",
+						argv[i+1]);
+					return FALSE;
+				}
+				i++;
+				
+			}
+			else
+			{
+				fprintf(stderr,"Parse_Arguments:preamp gain index requires a positive number.\n");
+				return FALSE;
+			}
 		}
 		else if(strcmp(argv[i],"-temperature")==0)
 		{

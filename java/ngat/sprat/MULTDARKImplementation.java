@@ -112,7 +112,7 @@ public class MULTDARKImplementation extends CALIBRATEImplementation implements J
 	 * </ul>
 	 * @see #filenameList
 	 * @see #testAbort
-	 * @see #sendMultBiasCommand
+	 * @see #sendMultDarkCommand
 	 * @see FITSImplementation#clearFitsHeaders
 	 * @see FITSImplementation#setFitsHeaders
 	 * @see FITSImplementation#getFitsHeadersFromISS
@@ -219,6 +219,8 @@ public class MULTDARKImplementation extends CALIBRATEImplementation implements J
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #filenameList
 	 * @see #multrunNumber
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
 	 * @see ngat.sprat.ccd.command.MultDarkCommand
 	 * @see ngat.sprat.ccd.command.MultDarkCommand#setAddress
 	 * @see ngat.sprat.ccd.command.MultDarkCommand#setPortNumber
@@ -233,19 +235,16 @@ public class MULTDARKImplementation extends CALIBRATEImplementation implements J
 	protected void sendMultDarkCommand(int exposureLength,int exposureCount) throws Exception
 	{
 		MultDarkCommand command = null;
-		int portNumber,returnCode;
-		String hostname = null;
+		int returnCode;
 		String errorString = null;
 
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendDarkCommand:Started.");
 		command = new MultDarkCommand();
 		// configure C comms
-		hostname = status.getProperty("sprat.ccd.c.hostname");
-		portNumber = status.getPropertyInteger("sprat.ccd.c.port_number");
-		command.setAddress(hostname);
-		command.setPortNumber(portNumber);
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendDarkCommand:hostname = "+hostname+
-			   " :port number = "+portNumber+".");
+		command.setAddress(ccdCLayerHostname);
+		command.setPortNumber(ccdCLayerPortNumber);
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendDarkCommand:hostname = "+ccdCLayerHostname+
+			   " :port number = "+ccdCLayerPortNumber+".");
 		command.setCommand(exposureLength,exposureCount);
 		// actually send the command to the C layer
 		command.sendCommand();

@@ -27,7 +27,7 @@ public class Command implements Runnable, TelnetConnectionListener
 	 * The base command string to be sent to the Arduino. The value of this string is set in the constructor
 	 * of the subclasses implementing a concrete command.
 	 */
-	public static String BASE_COMMAND_STRING = null;
+	public String BASE_COMMAND_STRING = null;
 	/**
 	 * ngat.net.TelnetConnection instance.
 	 */

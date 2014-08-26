@@ -192,7 +192,8 @@ int Sprat_Multrun_Bias(int exposure_count,int *multrun_number,char **filename_li
 	int retval,i;
 
 #if SPRAT_DEBUG > 1
-	Sprat_Global_Log("multrun","sprat_multrun.c","Sprat_Multrun_Bias",LOG_VERBOSITY_TERSE,"MULTRUN","started.");
+	Sprat_Global_Log_Format("multrun","sprat_multrun.c","Sprat_Multrun_Bias",LOG_VERBOSITY_TERSE,"MULTRUN",
+				"Sprat_Multrun_Bias(exposure_count=%d) started.",exposure_count);
 #endif
 	if(Multrun_Data.Is_Active)
 	{
@@ -667,6 +668,26 @@ int Sprat_Multrun_Fits_Header_Get(struct Fits_Header_Struct **fits_header)
 	}
 	(*fits_header) = &(Multrun_Data.Fits_Header);
 	return TRUE;
+}
+
+/**
+ * Retrieve the X binning factor the CCD is configured to use
+ * @return The current X binning factor in pixels.
+ * @see #Multrun_Data
+ */
+int Sprat_Multrun_Bin_X_Get(void)
+{
+	return Multrun_Data.Bin_X;
+}
+
+/**
+ * Retrieve the Y binning factor the CCD is configured to use
+ * @return The current Y binning factor in pixels.
+ * @see #Multrun_Data
+ */
+int Sprat_Multrun_Bin_Y_Get(void)
+{
+	return Multrun_Data.Bin_Y;
 }
 
 /**

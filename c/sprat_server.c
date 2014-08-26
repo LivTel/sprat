@@ -420,7 +420,7 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 			   "\tmultdark <exposurelength> <count>\n"
 			   "\tmultrun <length> <count> <exposure type>\n"
 			   "\tstatus exposure [status|length|start_time|multrun|run]\n"
-			   "\tstatus multrun [index|count]\n"
+			   "\tstatus multrun [binx|biny|count|index]\n"
 			   "\tstatus temperature [get|status]\n"
 			   "\tshutdown\n"
 			   "\ttemperature [set <C>|cooler [on|off]]\n"

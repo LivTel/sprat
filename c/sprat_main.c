@@ -16,9 +16,6 @@
 
 #include "command_server.h"
 
-/* diddly
-#include "ccd_fits_header.h"
-*/
 #include "ccd_fits_filename.h"
 #include "ccd_global.h"
 #include "ccd_setup.h"
@@ -329,7 +326,7 @@ static int Sprat_Startup_CCD(void)
 	char head_model_name[256];
 	char instrument_code;
 	double target_temperature;
-	int index,done,serial_number,cooler_on;
+	int index,done,serial_number,cooler_on,hs_speed_index,preamp_gain_index;
 
 	/* get config */
 	if(!Sprat_Config_Get_String("ccd.andor.setup.config_directory",&andor_dir))
@@ -344,6 +341,18 @@ static int Sprat_Startup_CCD(void)
 		sprintf(Sprat_Global_Error_String,"Sprat_Startup_CCD:Failed to get config for data directory.");
 		return FALSE;
 	}
+	if(!Sprat_Config_Get_Integer("ccd.andor.setup.hs_speed_index",&hs_speed_index))
+	{
+		Sprat_Global_Error_Number = 1;
+		sprintf(Sprat_Global_Error_String,"Sprat_Startup_CCD:Failed to get Andor horizontal speed index.");
+		return FALSE;
+	}
+	if(!Sprat_Config_Get_Integer("ccd.andor.setup.preamp_gain_index",&preamp_gain_index))
+	{
+		Sprat_Global_Error_Number = 11;
+		sprintf(Sprat_Global_Error_String,"Sprat_Startup_CCD:Failed to get Andor preamp gain index.");
+		return FALSE;
+	}
 	/* now actually configure the CCD and FITS library */
 	/* initialise ccd library/andor library/ccd camera connection */
 	if(!CCD_Setup_Config_Directory_Set(andor_dir))
@@ -353,7 +362,7 @@ static int Sprat_Startup_CCD(void)
 			andor_dir);
 		return FALSE;
 	}
-	if(!CCD_Setup_Startup(TRUE,0))
+	if(!CCD_Setup_Startup(TRUE,0,hs_speed_index,preamp_gain_index))
 	{
 		Sprat_Global_Error_Number = 9;
 		sprintf(Sprat_Global_Error_String,"Sprat_Startup_CCD:Failed to Initialise camera.");

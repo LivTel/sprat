@@ -1,0 +1,101 @@
+#!/bin/csh
+# $HeadURL$
+set address = sprat1
+set port = 8374
+set iss_port = 7383
+set done = 0
+set exit_on_error = 1
+set config_success = 0
+set config_failure = 0
+set multrun_success = 0
+set multrun_failure = 0
+set multrun_exposure_length_index = 0
+while(${done} == 0 )
+	foreach grism_pos ( "in" "out" )
+		foreach slit_pos ( "in" "out" )
+			foreach rotation_pos ( "0" "1" )
+				#
+				# Config
+				#
+				set date_string = `/bin/date`
+				echo "${date_string} : Sprat Config: Grism: ${grism_pos}, Slit: ${slit_pos}, Grism Rotation: ${rotation_pos}."
+				(java ngat.sprat.test.SendConfigCommand -ip ${address} -p ${port} -grism ${grism_pos} -slit ${slit_pos} -rotation ${rotation_pos} -x 1 -y 1 > /tmp/soak_test_output.txt) >& /tmp/soak_test_error.txt 
+				set success = `grep -c "successful:true" /tmp/soak_test_error.txt `
+				if( ${success} == 0 ) then
+					@ config_failure ++
+					set date_string = `/bin/date`
+					echo "${date_string} : Sprat Config FAILED: Grism: ${grism_pos}, Slit: ${slit_pos}, Grism Rotation: ${rotation_pos}."
+					cat /tmp/soak_test_error.txt 
+					if( ${exit_on_error} == 1 ) then
+						exit 1
+					endif
+				else
+					@ config_success ++
+				endif
+				#
+				# Exposure multrun index to length/count
+				#
+				switch(${multrun_exposure_length_index})
+					case 0:
+						set exposure_length = 1000
+						set exposure_count = 3
+						breaksw
+					case 1:
+						set exposure_length = 10000
+						set exposure_count = 6
+						breaksw
+					case 2:
+						set exposure_length = 30000
+						set exposure_count = 2
+						breaksw
+					case 3:
+						set exposure_length = 60000
+						set exposure_count = 2
+						breaksw
+					case 4:
+						set exposure_length = 300000
+						set exposure_count = 1
+						breaksw
+					case 5:
+						set exposure_length = 600000
+						set exposure_count = 1
+						breaksw
+					default:
+						set exposure_length = 60000
+						set exposure_count = 1
+						breaksw
+				endsw
+				#
+				# Do multrun
+				#
+				set date_string = `/bin/date`
+				echo "${date_string} : Sprat Multrun: Exposure Length: ${exposure_length}, Exposure Count: ${exposure_count}."
+				(java ngat.sprat.test.SendMultrunCommand -ip ${address} -port ${port} -exposureCount ${exposure_count} -exposureLength ${exposure_length} -pipelineProcess > /tmp/soak_test_output.txt) >& /tmp/soak_test_error.txt 
+				set success = `grep -c "successful:true" /tmp/soak_test_error.txt `
+				if( ${success} == 0 ) then
+					@ multrun_failure ++
+					set date_string = `/bin/date`
+					echo "${date_string} : Sprat Multrun failed: Exposure Length: ${exposure_length}, Exposure Count: ${exposure_count}."
+					cat /tmp/soak_test_error.txt 
+					if( ${exit_on_error} == 1 ) then
+						exit 1
+					endif
+				else
+					@ multrun_success ++
+				endif
+				#
+				# Setup multrun_exposure_length_index
+				#
+				@ multrun_exposure_length_index ++
+				if(${multrun_exposure_length_index} == 6 ) then
+					set multrun_exposure_length_index = 0
+				endif
+				#
+				# Print current results
+				#
+				set date_string = `/bin/date`
+				echo "${date_string} : Config success: ${config_success} Config failure: ${config_failure} Multrun success: ${multrun_success} Multrun failure: ${multrun_failure}"
+			end
+		end
+	end
+end

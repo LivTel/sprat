@@ -37,12 +37,14 @@ else
     echo "send_command not found:FAILED to stop running sprat."
 endif
 if ( -x /icc/bin/scripts/killhup.csh ) then
-    echo "Trying to kill sprat (if shutdown didn't already kill it)."
-    /icc/bin/scripts/killhup.csh sprat
     echo "Trying to kill Sprat."
     /icc/bin/scripts/killhup.csh Sprat
+    echo "Trying to kill DpRt."
+    /icc/bin/scripts/killhup.csh DpRt
     echo "Trying to kill icsd_inet."
     /icc/bin/scripts/killhup.csh icsd_inet
+    echo "Trying to kill sprat (if shutdown didn't already kill it)."
+    /icc/bin/scripts/killhup.csh sprat
 else
     echo "killhup not found:ENGINEERING mode FAILED."
 endif

@@ -42,8 +42,10 @@
 #define PIN_HUMIDITY_0                 (6)  // DHT22, also used for temperature 0 at the moment. 
                                             // Data pin should have a 10k pullup resistor connected to 5v VCC, however
                                             // the phenoptix unit has an inbuilt 5.5k resistor instead.
+#define PIN_HUMIDITY_1                 (7)  // DHT22, also used for temperature 1 at the moment. 
+                                            // Data pin should have a 10k pullup resistor connected to 5v VCC, however
+                                            // the unit we have has an inbuilt 5.5k resistor instead.
 #define PIN_ARC_LAMP_OUTPUT            (8)
-#define PIN_HUMIDITY_1                 (1)
 #define PIN_MIRROR_OUTPUT              (22) // IN = HIGH, OUT = LOW (RELAY1)
 #define PIN_MIRROR_OUT_INPUT           (23) // LOW when in position, HIGH when NOT in this position
 #define PIN_SLIT_OUTPUT                (24) // IN = HIGH, OUT = LOW (RELAY2)
@@ -98,6 +100,7 @@ int errorNumber = 0;
 
 // humidity sensor. Phenoptix DHT22 / AM2302
 DHT dht0(PIN_HUMIDITY_0,DHT22);
+DHT dht1(PIN_HUMIDITY_1,DHT22);
 
 // gyro variables
 // Use default address (0x68) for Sparkfun board
@@ -109,14 +112,15 @@ int gyroY = 0.0;
 int gyroZ = 0.0;
 
 // keep track of when sensors were last read
-#define LAST_TIME_READ_COUNT             (2)
+#define LAST_TIME_READ_COUNT             (3)
 #define LAST_TIME_READ_INDEX_HUMIDITY0   (0)
-//#define LAST_TIME_READ_INDEX_TEMPERATURE (1)
-#define LAST_TIME_READ_INDEX_GYRO        (1)
+#define LAST_TIME_READ_INDEX_HUMIDITY1   (1)
+#define LAST_TIME_READ_INDEX_GYRO        (2)
 unsigned long lastTimeRead[LAST_TIME_READ_COUNT];
 
 // setup
 // @see #dht0
+// @see #dht1
 // @see #setupMPU6050
 // @see #lastTimeRead
 // @see #LAST_TIME_READ_COUNT
@@ -128,6 +132,7 @@ void setup()
   //PIN_HUMIDITY_0
   dht0.begin();
   //PIN_HUMIDITY_1
+  dht1.begin();
   pinMode(PIN_ARC_LAMP_OUTPUT,OUTPUT);
   pinMode(PIN_MIRROR_OUTPUT,OUTPUT);
   pinMode(PIN_SLIT_OUTPUT,OUTPUT);
@@ -214,7 +219,10 @@ void loop()
 
 // Monitor humidity,temperature periodically
 // @see #dht0
+// @see #dht1
 // @see #LAST_TIME_READ_INDEX_HUMIDITY0
+// @see #LAST_TIME_READ_INDEX_HUMIDITY1
+// @see #LAST_TIME_READ_INDEX_GYRO
 // @see #LAST_TIME_READ_COUNT
 // @see #lastTimeRead
 // @see #mpu
@@ -263,6 +271,20 @@ void monitorSensors()
     else
     {
         printTime(); Serial.println("monitorSensors:Failed to read dht0.");
+    }
+  }
+  if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_HUMIDITY1]) > 3000)
+  {
+    printTime(); Serial.println("monitorSensors:Reading dht1.");
+    retval = dht1.read();
+    if(retval)
+    {
+        printTime(); Serial.println("monitorSensors:Read dht1 successfully.");
+        lastTimeRead[LAST_TIME_READ_INDEX_HUMIDITY1] = millis();
+    }
+    else
+    {
+        printTime(); Serial.println("monitorSensors:Failed to read dht1.");
     }
   }
   // MPU6050 gyroscope
@@ -902,10 +924,12 @@ int getGyroPosition()
 
 // Get the current humidity measured at the specified sensor.
 // Sensor 0 is currently humidity sensor 0 (dht0).
+// Sensor 1 is currently humidity sensor 1 (dht1).
 // @param sensorNumber The sensor to use, an integer between 0 and 1 less than the number of humidity sensors.
 // @return A double, respresenting the relative humidity measured at the specified sensor (0..100%). Note there
 //         is no way to return an error if the measurement failed at the moment.
 // @see #dht0
+// @see #dht1
 double getHumidity(int sensorNumber)
 {
   float fvalue;
@@ -917,6 +941,11 @@ double getHumidity(int sensorNumber)
   if(sensorNumber == 0)
   {
     fvalue = dht0.readHumidity();
+    dvalue = (double)fvalue;
+  }
+  else if(sensorNumber == 1)
+  {
+    fvalue = dht1.readHumidity();
     dvalue = (double)fvalue;
   }
   else
@@ -931,13 +960,12 @@ double getHumidity(int sensorNumber)
 
 // Get the current temperature measured at the specified sensor.
 // Sensor 0 is currently the temperature from humidity sensor 0 (dht0).
+// Sensor 1 is currently the temperature from humidity sensor 1 (dht1).
 // @param sensorNumber The sensor to use, an integer between 0 and 1 less than the number of temperature sensors.
 // @return A float, respresenting the temperature measured at the specified sensor. Note there
 //         is no way to return an error if the measurement failed at the moment.
 // @see #dht0
-// @see #dallasTemperature
-// @see #temperatureSensor1
-// @see #temperatureList
+// @see #dht1
 float getTemperature(int sensorNumber)
 {
   float fvalue;
@@ -948,6 +976,10 @@ float getTemperature(int sensorNumber)
   if(sensorNumber == 0)
   {
     fvalue = dht0.readTemperature();
+  }
+  else if(sensorNumber == 1)
+  {
+    fvalue = dht1.readTemperature();
   }
   else
     fvalue = 0.0;    

@@ -79,8 +79,7 @@ echo "${dir_count} directories created."
 # Copy jars
 #
 echo "Copying jars..."
-# ngat_sprat.jar
-set jar_list = "ngat_fits.jar ngat_message_base.jar ngat_message_inst_dp.jar ngat_message_iss_inst.jar ngat_message_inst_bss.jar ngat_net.jar ngat_phase2.jar ngat_util.jar ngat_util_logging.jar ngat_swing.jar ngat_sound.jar "
+set jar_list = "ngat_fits.jar ngat_message_base.jar ngat_message_inst_dp.jar ngat_message_iss_inst.jar ngat_message_inst_bss.jar ngat_net.jar ngat_phase2.jar ngat_util.jar ngat_util_logging.jar ngat_swing.jar ngat_sound.jar ngat_sprat.jar"
 set jar_count = 0
 foreach jar ( ${jar_list} )
 	echo "jar : ${jar}"
@@ -242,7 +241,7 @@ echo "${dir_count} C test program directories copied, containg ${file_count} C t
 # Scripts
 #
 echo "Copying scripts..."
-set file_list = "bin/scripts/configure_tai_data.csh bin/scripts/delete_log_files.csh bin/scripts/killhup.csh bin/scripts/fuser_check bin/sprat/c/${HOSTTYPE}/start_sprat_sprat1.csh bin/ccs_gui/java/icsgui bin/sprat/scripts/sprat_engineering_mode"
+set file_list = "bin/scripts/configure_tai_data.csh bin/scripts/delete_log_files.csh bin/scripts/killhup.csh bin/scripts/fuser_check bin/sprat/c/${HOSTTYPE}/start_sprat_sprat1.csh bin/ccs_gui/java/icsgui bin/sprat/scripts/sprat_engineering_mode bin/sprat/scripts/soak_test"
 set file_count = 0
 cd ${dev_dir}
 foreach file ( ${file_list} )

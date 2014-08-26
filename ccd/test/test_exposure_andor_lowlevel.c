@@ -159,6 +159,10 @@ static int VS_Speed_Index = 1;
  */
 static int HS_Speed_Index = 0;
 /**
+ * The preamp gain index to pass into SetPreAmpGain.
+ */
+static int Preamp_Gain_Index = 0;
+/**
  * Which amplifier to use.
  */
 static int Amplifier = 0;
@@ -221,8 +225,10 @@ int main(int argc, char *argv[])
 	long camera_handle,first_new_image_index,last_new_image_index;
 	unsigned int andor_retval;
 	int i,retval,speed_count,count,min_gain,max_gain,exposure_status;
-	int pixel_count,detector_size_x,detector_size_y;
-	float speed,temperature_float;
+	int pixel_count,detector_size_x,detector_size_y,amplifier_count,ad_channel_count;
+	int pre_amp_gain_count,ad_channel_index,amplifier_index,hs_speed_index,bit_depth,pre_amp_gain_index;
+	int pre_amp_gain_available;
+	float speed,temperature_float,pre_amp_gain;
 
 /* parse arguments */
 	fprintf(stdout,"Parsing Arguments.\n");
@@ -238,6 +244,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr,"You must select one only of -dark or -expose.\n");
 		return 1;
 	}
+	/* initialise camera */
 	fprintf(stdout,"Initialising Camera:\n");
 	fprintf(stdout,"Camera Index:%d\n",Camera_Index);
 	fprintf(stdout,"Andor Dir:%s\n",Andor_Dir);
@@ -265,6 +272,7 @@ int main(int argc, char *argv[])
 			Andor_Error_Code_To_String(andor_retval));
 		return 1;
 	}
+	/* set temperature */
 	if(Temperature_Set)
 	{
 		fprintf(stdout,"SetTemperature(%.2f).\n",Target_Temperature);
@@ -292,6 +300,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 	}
+	/* more camera initialisation */
 	fprintf(stdout,"SetReadMode(4):Setting read mode to full image.\n");
 	andor_retval = SetReadMode(4);
 	if(andor_retval != DRV_SUCCESS)
@@ -325,24 +334,24 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	fprintf(stdout,"GetNumberAmp().\n");
-	andor_retval = GetNumberAmp(&count);
+	andor_retval = GetNumberAmp(&amplifier_count);
 	if(andor_retval != DRV_SUCCESS)
 	{
 		fprintf(stderr,"GetNumberAmp failed : %u : %s.\n",andor_retval,
 			Andor_Error_Code_To_String(andor_retval));
 		return 1;
 	}
-	fprintf(stdout,"GetNumberAmp() returned %d amplifiers.\n",count);
+	fprintf(stdout,"GetNumberAmp() returned %d amplifiers.\n",amplifier_count);
 	fprintf(stdout,"GetNumberADChannels().\n");
-	andor_retval = GetNumberADChannels(&count);
+	andor_retval = GetNumberADChannels(&ad_channel_count);
 	if(andor_retval != DRV_SUCCESS)
 	{
 		fprintf(stderr,"GetNumberADChannels failed : %u : %s.\n",andor_retval,
 			Andor_Error_Code_To_String(andor_retval));
 		return 1;
 	}
-	fprintf(stdout,"GetNumberADChannels() returned %d A/D channels.\n",count);
-	fprintf(stdout,"SetADChannel(channel=%d).\n",AD_Channel);
+	fprintf(stdout,"GetNumberADChannels() returned %d A/D channels.\n",ad_channel_count);
+	/*fprintf(stdout,"SetADChannel(channel=%d).\n",AD_Channel);*/
 	/* log vertical speed data */
 	fprintf(stdout,"GetNumberVSSpeeds().\n");
 	andor_retval = GetNumberVSSpeeds(&speed_count);
@@ -415,6 +424,91 @@ int main(int argc, char *argv[])
 			Andor_Error_Code_To_String(andor_retval));
 		return 1;
 	}
+	/* gain */
+	andor_retval = GetNumberPreAmpGains(&pre_amp_gain_count);
+	if(andor_retval != DRV_SUCCESS)
+	{
+		fprintf(stderr,"GetNumberPreAmpGains failed : %u : %s.\n",andor_retval,
+			Andor_Error_Code_To_String(andor_retval));
+	}
+	fprintf(stdout,"A/D Channel Count=%d.\n",ad_channel_count);
+	fprintf(stdout,"Amplifier Count=%d.\n",amplifier_count);
+	fprintf(stdout,"Pre Amp Gain Count=%d.\n",pre_amp_gain_count);
+	for(ad_channel_index =0; ad_channel_index < ad_channel_count; ad_channel_index++)
+	{
+		andor_retval = GetBitDepth(ad_channel_index, &bit_depth);
+		if(andor_retval != DRV_SUCCESS)
+		{
+			fprintf(stderr,"GetBitDepth failed : %u : %s.\n",andor_retval,
+				Andor_Error_Code_To_String(andor_retval));
+		}
+		for(amplifier_index = 0; amplifier_index  < amplifier_count; amplifier_index++)
+		{
+			andor_retval = GetNumberHSSpeeds(ad_channel_index,amplifier_index,&speed_count);
+			if(andor_retval != DRV_SUCCESS)
+			{
+				fprintf(stderr,"GetNumberHSSpeeds failed : %u : %s.\n",andor_retval,
+					Andor_Error_Code_To_String(andor_retval));
+				return 1;
+			}
+			/*
+			fprintf(stdout,"Horizontal Speed Count=%d (for A/D channel index %d,Amplifier Index %d).\n",
+				speed_count,ad_channel_index,amplifier_index);
+			*/
+			for(hs_speed_index = 0; hs_speed_index < speed_count; hs_speed_index++)
+			{
+				/*
+				fprintf(stdout,"GetHSSpeed(channel=%d,amplifier=%d,index=%d).\n",ad_channel_index,
+					amplifier_index,hs_speed_index);
+				*/
+				andor_retval = GetHSSpeed(ad_channel_index,amplifier_index,hs_speed_index,&speed);
+				if(andor_retval != DRV_SUCCESS)
+				{
+					fprintf(stderr,"GetHSSpeed failed : %u : %s.\n",andor_retval,
+						Andor_Error_Code_To_String(andor_retval));
+					return 1;
+				}
+				for(pre_amp_gain_index = 0; pre_amp_gain_index < pre_amp_gain_count; 
+				    pre_amp_gain_index++)
+				{
+					andor_retval = GetPreAmpGain(pre_amp_gain_index,&pre_amp_gain);
+					if(andor_retval != DRV_SUCCESS)
+					{
+						fprintf(stderr,"GetPreAmpGain failed : %u : %s.\n",andor_retval,
+							Andor_Error_Code_To_String(andor_retval));
+						return 1;
+					}
+					andor_retval = IsPreAmpGainAvailable(ad_channel_index,amplifier_index,
+									     hs_speed_index,pre_amp_gain_index,
+									     &pre_amp_gain_available);
+					if(andor_retval != DRV_SUCCESS)
+					{
+						fprintf(stderr,"IsPreAmpGainAvailable failed : %u : %s.\n",
+							andor_retval,
+							Andor_Error_Code_To_String(andor_retval));
+						return 1;
+					}
+					if(pre_amp_gain_available == 1)
+					{
+						fprintf(stdout,"Pre Amp Gain %.3f available at 	A/D channel index %d,"
+							"Amplifier Index %d, Horizontal Speed Index %d,"
+							"Pre Amp Gain Index %d.\n",pre_amp_gain,ad_channel_index,
+							amplifier_index,hs_speed_index,pre_amp_gain_index);
+					}
+				}/* end for on pre amp gain index */
+			}/* end for on hs_speed_index */
+		}/* end for on amplifier_index */
+	}/* end for on ad_channel_index */
+	/* now set the preamp gain index */
+	fprintf(stdout,"SetPreAmpGain(index=%d).\n",Preamp_Gain_Index);
+	andor_retval = SetPreAmpGain(Preamp_Gain_Index);
+	if(andor_retval != DRV_SUCCESS)
+	{
+		fprintf(stderr,"SetPreAmpGain failed : %u : %s.\n",andor_retval,
+			Andor_Error_Code_To_String(andor_retval));
+		return 1;
+	}
+	/* baseline clamp */
 	fprintf(stdout,"SetBaselineClamp(active=%d).\n",Baseline_Clamp);
 	retval = SetBaselineClamp(Baseline_Clamp); 
 	if(andor_retval != DRV_SUCCESS)
@@ -423,6 +517,7 @@ int main(int argc, char *argv[])
 			Andor_Error_Code_To_String(andor_retval));
 		return 1;
 	}
+	/* cooler mode */
 	fprintf(stdout,"SetCoolerMode(1):Setting cooler to maintain temperature on shutdown.\n");
 	andor_retval = SetCoolerMode(1);
 	if(andor_retval != DRV_SUCCESS)
@@ -431,6 +526,7 @@ int main(int argc, char *argv[])
 			Andor_Error_Code_To_String(andor_retval));
 		return 1;
 	}
+	/* single scan */
 	fprintf(stdout,"SetAcquisitionMode(1):Single scan.\n");
 	andor_retval = SetAcquisitionMode(1);
 	if(andor_retval != DRV_SUCCESS)
@@ -439,6 +535,7 @@ int main(int argc, char *argv[])
 			Andor_Error_Code_To_String(andor_retval));
 		return 1;
 	}
+	/* exposure */
 	if(Do_Dark)
 	{
 		fprintf(stdout,"SetShutter(1,2,0,0) : shutter closed.\n");
@@ -461,6 +558,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 	}
+	/* configure array */
 	fprintf(stdout,"SetImage(binx=%d,biny=%d,xstart=%d,xend=%d,ystart=%d,yend=%d).\n",
 		Bin_X,Bin_Y,1,Size_X,1,Size_Y);
 	andor_retval = SetImage(Bin_X,Bin_Y,1,Size_X,1,Size_Y);
@@ -752,6 +850,14 @@ static int Save(int do_dark,int do_exposure,unsigned short *image_data,int pixel
 		fits_close_file(fp,&status);
 		return FALSE;
 	}
+	retval = fits_update_key(fp,TINT,"PREGAINI",&Preamp_Gain_Index,NULL,&status);
+	if(retval)
+	{
+		fits_get_errstatus(status,buff);
+		fits_report_error(stderr,status);
+		fits_close_file(fp,&status);
+		return FALSE;
+	}
 	retval = fits_update_key(fp,TINT,"ADCHANNE",&AD_Channel,NULL,&status);
 	if(retval)
 	{
@@ -821,6 +927,7 @@ static int Save(int do_dark,int do_exposure,unsigned short *image_data,int pixel
  * @see #Frame_Transfer
  * @see #Baseline_Clamp
  * @see #Filename
+ * @see #Preamp_Gain_Index
  */
 static int Parse_Arguments(int argc, char *argv[])
 {
@@ -1042,6 +1149,25 @@ static int Parse_Arguments(int argc, char *argv[])
 				return FALSE;
 			}
 		}
+		else if((strcmp(argv[i],"-preamp_gain_index")==0)||(strcmp(argv[i],"-gain")==0))
+		{
+			if((i+1)<argc)
+			{
+				retval = sscanf(argv[i+1],"%d",&Preamp_Gain_Index);
+				if(retval != 1)
+				{
+					fprintf(stderr,"Parse_Arguments:Parsing Preamp Gain Index %s failed.\n",
+						argv[i+1]);
+					return FALSE;
+				}
+				i++;
+			}
+			else
+			{
+				fprintf(stderr,"Parse_Arguments:Preamp Gain Index required.\n");
+				return FALSE;
+			}
+		}
 		else if(strcmp(argv[i],"-target_temperature")==0)
 		{
 			if((i+1)<argc)
@@ -1209,6 +1335,7 @@ static void Help(void)
 	fprintf(stdout,"\t[-vsa|-vertical_shift_amplitude <0..4>]\n");
 	fprintf(stdout,"\t[-vssi|-vertical_shift_speed_index <n>]\n");
 	fprintf(stdout,"\t[-hssi|-horizontal_shift_speed_index <n>]\n");
+	fprintf(stdout,"\t[-gain|-preamp_gain_index <n>]\n");
 	fprintf(stdout,"\t[-frame_transfer_mode|-ft <0|1>]\n");
 	fprintf(stdout,"\t[-baseline_clamp|-bc <0|1>]\n");
 }

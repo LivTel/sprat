@@ -176,18 +176,40 @@ int CCD_Setup_Config_Directory_Set(char *directory)
  *          Setup_Data.Camera_Handle.
  * <li>Uses <b>SetCurrentCamera</b> to set the Andor libraries current camera.
  * <li>Call <b>Initialize</b> to initialise the andor library using the selected config directory.
+ * <li>Calls <b>GetDetector</b> to get the detector dimensions and save then to <b>Setup_Data</b>.
  * <li>Calls <b>SetReadMode</b> to set the Andor library read mode to image.
  * <li>Calls <b>SetAcquisitionMode</b> to set the Andor library to acquire a single image at a time.
  * <li>We call <b>GetNumberVSSpeeds, GetVSSpeed, GetFastestRecommendedVSSpeed, SetVSSpeed</b>
  *     to examine vertical shift speed, and use the fastest possible speed.
- * <li>Calls <b>GetNumberHSSpeeds,GetHSSpeed, SetHSSpeed(0,0)</b> 
- *         to set the horzontal readout speed to the fastest (10 MHz).
- * <li>We call <b>GetNumberADChannels</b> to log the A/D channels available.
- * <li>Calls <b>GetDetector</b> to get the detector dimensions and save then to <b>Setup_Data</b>.
- * <li>Calls <b>SetShutter</b> to set the Andor library shutter settings to auto with no shutter delay.
- * <li>Calls <b>SetFrameTransferMode(1)</b> to use the frame transfer.
+ * <li>Calls <b>GetNumberHSSpeeds,GetHSSpeed, SetHSSpeed</b> 
+ *         to set the horzontal readout speed.
+ * <li>Calls <b>SetPreAmpGain</b> to set the gain.
+ * <li>We call <b>SetCoolerMode(1)</b> to set the camera head to maintain temperature on shutdown.
+ * </ul>
  * @param use_recommended_vs Whether to use the fastest recommended VS, or vs_speed_index.
  * @param vs_speed_index Vertical clock shift speed index to use, if use_recommended_vs is FALSE.
+ * @param hs_speed_index The horizontal shift speed index, used to set the horizontal clocksing speed.
+ *        Legal values for the iDus 420a are:
+ *        <ul>
+ *        <li>0 = 0.10 MHz.
+ *        <li>1 = 0.05 MHz.
+ *        <li>2 = 0.03 MHz.
+ *        </ul>
+ * @param preamp_gain_index The preamp gain index, used (in conjunction with the horizontal shift speed index)
+ *        to set the gain of the detector. Legal values for the iDus 420a are:
+ *        <ul>
+ *        <li>0 = Gain 1.000
+ *        <li>1 = Gain 1.500
+ *        </ul>
+ *        and when interated over via the software API the following legal combinations are allowed:
+ *        <table border="1">
+ *        <tr><th>hssi</th>     <th>preampgainindex</th>  <th>e/AD count</td></th>
+ *        <tr><td>0</td><td>	0</td><td>		  17.3</td></tr>
+ *        <tr><td>0</td><td>	1</td><td>		  11.5</td></tr>
+ *        <tr><td>1</td><td>	0</td><td>		  4.4</td></tr>
+ *        <tr><td>1</td><td>	1</td><td>		  2.8</td></tr>
+ *        <tr><td>2</td><td>	0</td><td>		  2.5</td></tr>
+ *        </table>
  * @return The routine returns TRUE on success, and FALSE if an error occurs.
  * @see #Setup_Data
  * @see #Setup_Error_Number
@@ -195,7 +217,7 @@ int CCD_Setup_Config_Directory_Set(char *directory)
  * @see ccd_global.html#CCD_Global_Andor_ErrorCode_To_String
  * @see ccd_global.html#CCD_Global_Log
  */
-int CCD_Setup_Startup(int use_recommended_vs,int vs_speed_index)
+int CCD_Setup_Startup(int use_recommended_vs,int vs_speed_index,int hs_speed_index,int preamp_gain_index)
 {
 	long camera_count;
 	unsigned int andor_retval;
@@ -418,7 +440,6 @@ int CCD_Setup_Startup(int use_recommended_vs,int vs_speed_index)
 			CCD_Global_Andor_ErrorCode_To_String(andor_retval),andor_retval);
 		return FALSE;
 	}
-	/* Setup_Data.VSSpeed = speed; */
 	/* log horizontal readout speed data */
 	andor_retval = GetNumberHSSpeeds(0,0,&speed_count);
 	if(andor_retval != DRV_SUCCESS)
@@ -430,7 +451,7 @@ int CCD_Setup_Startup(int use_recommended_vs,int vs_speed_index)
 	}
 #if LOGGING > 9
 	CCD_Global_Log_Format("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
-			"GetNumberHSSpeeds(channel=0,type=0 (electron multiplication)) returned %d speeds.",
+			"GetNumberHSSpeeds(channel=0,type=0) returned %d speeds.",
 			speed_count);
 #endif /* LOGGING */
 	for(i=0;i < speed_count; i++)
@@ -445,22 +466,35 @@ int CCD_Setup_Startup(int use_recommended_vs,int vs_speed_index)
 		}
 #if LOGGING > 9
 		CCD_Global_Log_Format("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
-				      "GetHSSpeed(channel=0,type=0 (electron multiplication),index=%d) returned %.2f.",
+				      "GetHSSpeed(channel=0,type=0,index=%d) returned %.2f.",
 				       i,speed);
 #endif /* LOGGING */
-		if(i == 0) /* see below, we select index 0 */
+		if(i == hs_speed_index) 
 			Setup_Data.HSSpeed = speed;
 	}
 	/* set horizontal readout speed */
 #if LOGGING > 3
-	CCD_Global_Log("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
-			"Calling SetHSSpeed(0,0).");
+	CCD_Global_Log_Format("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
+			"Calling SetHSSpeed(amplifier=0,hs_speed_index=%d).",hs_speed_index);
 #endif /* LOGGING */
-	andor_retval = SetHSSpeed(0,0); /* 10 MHz */
+	andor_retval = SetHSSpeed(0,hs_speed_index); 
 	if(andor_retval != DRV_SUCCESS)
 	{
 		Setup_Error_Number = 21;
-		sprintf(Setup_Error_String,"CCD_Setup_Startup: SetHSSpeed(0,0) failed %s(%u).",
+		sprintf(Setup_Error_String,"CCD_Setup_Startup: SetHSSpeed(0,%d) failed %s(%u).",hs_speed_index,
+			CCD_Global_Andor_ErrorCode_To_String(andor_retval),andor_retval);
+		return FALSE;
+	}
+	/* preamp gain */
+#if LOGGING > 3
+	CCD_Global_Log_Format("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
+			"Calling SetPreAmpGain(preamp_gain_index=%d).",preamp_gain_index);
+#endif /* LOGGING */
+	andor_retval = SetPreAmpGain(preamp_gain_index);
+	if(andor_retval != DRV_SUCCESS)
+	{
+		Setup_Error_Number = 16;
+		sprintf(Setup_Error_String,"CCD_Setup_Startup: SetPreAmpGain(%d) failed %s(%u).",preamp_gain_index,
 			CCD_Global_Andor_ErrorCode_To_String(andor_retval),andor_retval);
 		return FALSE;
 	}

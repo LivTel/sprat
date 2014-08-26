@@ -12,10 +12,8 @@ LIBDIR		= $(SPRAT_BIN_HOME)/java/
 DOCSDIR 	= $(SPRAT_DOC_HOME)/javadocs/
 DOCFLAGS 	= -version -author -private
 JAVASRCS 	= ngat/sprat/ccd/command/*.java ngat/sprat/mechanism/command/*.java ngat/sprat/mechanism/*.java \
-		  ngat/sprat/*.java 
-# ngat/sprat/test/*.java 
-JAVAPKGS	= ngat.sprat.ccd.command ngat.sprat.mechanism.command ngat.sprat.mechanism ngat.sprat 
-# ngat.sprat.test
+		  ngat/sprat/*.java ngat/sprat/test/*.java 
+JAVAPKGS	= ngat.sprat.ccd.command ngat.sprat.mechanism.command ngat.sprat.mechanism ngat.sprat ngat.sprat.test
 JAVADOCS 	= $(JAVASRCS:%.java=$(DOCSDIR)/%.html)
 OBJS 		= $(JAVASRCS:%.java=$(LIBDIR)/%.class)
 

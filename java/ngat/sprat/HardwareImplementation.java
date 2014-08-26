@@ -37,11 +37,26 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * The port number to send Sprat mechanism Arduino commands to.
 	 */
 	protected int mechanismPortNumber;
+	/**
+	 * The hostname to send CCD C layer commands to.
+	 */
+	protected String ccdCLayerHostname = null;
+	/**
+	 * The port number to send CCD C layer commands to.
+	 */
+	protected int ccdCLayerPortNumber;
 
 	/**
-	 * This method calls the super-classes method. It then calls getMechanismConfig to retrieve
-	 * the hostname/port number of the Arduino controlling the mechanisms.
+	 * <ul>
+	 * <li>This method calls the super-classes method. 
+	 * <li>It then calls getMechanismConfig to retrieve the hostname/port number of the Arduino 
+	 *     controlling the mechanisms. 
+	 * <li>It calls getCCDCLayerConfig to retrieve the hostname/port number of the 
+	 *     C layer controlling the CCD camera.
+	 * </ul>
 	 * @param command The command to be implemented.
+	 * @see #getMechanismConfig
+	 * @see #getCCDCLayerConfig
 	 */
 	public void init(COMMAND command)
 	{
@@ -53,10 +68,14 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 				sprat.log(Logging.VERBOSITY_VERBOSE,this.getClass().getName()+
 					  ":init:Trying to retrieve mechanism config.");
 				getMechanismConfig();
+				sprat.log(Logging.VERBOSITY_VERBOSE,this.getClass().getName()+
+					  ":init:Trying to retrieve CCD C layer communication config.");
+				getCCDCLayerConfig();
 			}
 			catch(Exception e)
 			{
-				sprat.error(this.getClass().getName()+":init:getMechanismConfig failed:"+
+				sprat.error(this.getClass().getName()+
+					    ":init:getMechanismConfig or getCCDCLayerConfig failed:"+
 					    command.getClass().getName()+":"+e,e);
 			}
 		}
@@ -129,6 +148,44 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Routine to set the telescope focus offset.The offset sent is based on:
+	 * <ul>
+	 * <li>The instrument's offset with respect to the telescope's natural offset (in the configuration
+	 *     property 'sprat.focus.offset'.
+	 * <ul>
+	 * This method sends a OFFSET_FOCUS command to
+	 * the ISS. 
+	 * @param id The Id is used as the OFFSET_FOCUS command's id.
+	 * @exception Exception Thrown if the return value of the OFFSET_FOCUS ISS command is false.
+	 */
+	protected void setFocusOffset(String id) throws Exception
+	{
+		OFFSET_FOCUS offsetFocusCommand = null;
+		INST_TO_ISS_DONE instToISSDone = null;
+		String instrumentName = null;
+		float focusOffset = 0.0f;
+
+		sprat.log(Logging.VERBOSITY_VERY_TERSE,this.getClass().getName()+":setFocusOffset:Started.");
+		focusOffset = 0.0f;
+	// get default focus offset
+		focusOffset += status.getPropertyFloat("sprat.focus.offset");
+		sprat.log(Logging.VERBOSITY_VERY_TERSE,this.getClass().getName()+":setFocusOffset:Master offset is "+
+			 focusOffset+".");
+	// send the overall focusOffset to the ISS using  OFFSET_FOCUS
+		offsetFocusCommand = new OFFSET_FOCUS(id);
+		offsetFocusCommand.setFocusOffset(focusOffset);
+		sprat.log(Logging.VERBOSITY_VERY_TERSE,this.getClass().getName()+":setFocusOffset:Total offset for "+
+			  instrumentName+" is "+focusOffset+".");
+		instToISSDone = sprat.sendISSCommand(offsetFocusCommand,serverConnectionThread);
+		if(instToISSDone.getSuccessful() == false)
+		{
+			throw new Exception(this.getClass().getName()+":focusOffset failed:"+focusOffset+":"+
+					    instToISSDone.getErrorString());
+		}
+		sprat.log(Logging.VERBOSITY_VERY_TERSE,this.getClass().getName()+":setFocusOffset:Finished.");
 	}
 
 	/**
@@ -240,6 +297,213 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	}
 
 	/**
+	 * Move the grism to the desired position.
+	 * The following status is used to configure the move parameters:
+	 * <ul>
+	 * <li><b>sprat.mechanism.hostname</b>
+	 * <li><b>sprat.mechanism.port_number</b>
+	 * <li><b>sprat.config.grism.move.sleep_time</b>
+	 * <li><b>sprat.config.grism.move.timeout_time</b>
+	 * </ul>
+	 * @param position The position to attain, one of POSITION_IN, POSITION_OUT.
+	 * @exception Exception Thrown if an error occurs.
+	 * @see #sprat
+	 * @see #status
+	 * @see Sprat#log
+	 * @see HardwareImplementation#mechanismHostname
+	 * @see HardwareImplementation#mechanismPortNumber
+	 * @see SpratStatus#getProperty
+	 * @see SpratStatus#getPropertyInteger
+	 * @see ngat.phase2.SpratConfig#POSITION_IN
+	 * @see ngat.phase2.SpratConfig#POSITION_OUT
+	 * @see ngat.phase2.SpratConfig#positionToString
+	 * @see ngat.sprat.mechanism.command.GrismCommand
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setCommand
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setSleepTime
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setTimeoutTime
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#moveInOutMechanism
+	 */
+	protected void moveGrism(int position) throws Exception
+	{
+		MoveInOutMechanism mechanismMover = null;
+		GrismCommand command = null;
+		int sleepTime,timeoutTime,returnCode;
+		String errorString = null;
+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"moveGrism:"+
+			  "Position = "+SpratConfig.positionToString(position)+" ("+position+").");
+		// retrieve config
+		sleepTime = status.getPropertyInteger("sprat.config.grism.move.sleep_time");
+		timeoutTime = status.getPropertyInteger("sprat.config.grism.move.timeout_time");
+		// setup command and mover objects
+		sprat.log(Logging.VERBOSITY_VERBOSE,"moveGrism:Creating GrismCommand to send to "+
+			  mechanismHostname+":"+mechanismPortNumber+".");
+		command = new GrismCommand(mechanismHostname,mechanismPortNumber);
+		mechanismMover = new MoveInOutMechanism();
+		mechanismMover.setCommand(command,position);
+		sprat.log(Logging.VERBOSITY_VERBOSE,"moveGrism:Setting mover sleep time to "+sleepTime+
+			  " and timeout time to "+timeoutTime+".");
+		mechanismMover.setSleepTime(sleepTime);
+		mechanismMover.setTimeoutTime(timeoutTime);
+		sprat.log(Logging.VERBOSITY_TERSE,"moveGrism:Starting move.");
+		mechanismMover.moveInOutMechanism();
+		sprat.log(Logging.VERBOSITY_TERSE,"moveGrism:Finished move.");
+	}
+
+	/**
+	 * Rotate the grism to the desired position.
+	 * The following status is used to configure the rotation parameters:
+	 * <ul>
+	 * <li><b>sprat.mechanism.hostname</b>
+	 * <li><b>sprat.mechanism.port_number</b>
+	 * <li><b>sprat.config.grism.rotate.sleep_time</b>
+	 * <li><b>sprat.config.grism.rotate.timeout_time</b>
+	 * </ul>
+	 * @param position The position to attain, one of POSITION_IN, POSITION_OUT.
+	 * @exception Exception Thrown if an error occurs.
+	 * @see #sprat
+	 * @see #status
+	 * @see Sprat#log
+	 * @see SpratStatus#getProperty
+	 * @see SpratStatus#getPropertyInteger
+	 * @see HardwareImplementation#mechanismHostname
+	 * @see HardwareImplementation#mechanismPortNumber
+	 * @see ngat.phase2.SpratConfig#POSITION_IN
+	 * @see ngat.phase2.SpratConfig#POSITION_OUT
+	 * @see ngat.sprat.mechanism.command.RotationCommand
+	 * @see ngat.sprat.mechanism.MoveRotationMechanism
+	 * @see ngat.sprat.mechanism.MoveRotationMechanism#setCommand
+	 * @see ngat.sprat.mechanism.MoveRotationMechanism#setSleepTime
+	 * @see ngat.sprat.mechanism.MoveRotationMechanism#setTimeoutTime
+	 * @see ngat.sprat.mechanism.MoveRotationMechanism#moveRotationMechanism
+	 */
+	protected void rotateGrism(int position) throws Exception
+	{
+		MoveRotationMechanism mechanismMover = null;
+		RotationCommand command = null;
+		int sleepTime,timeoutTime;
+		String errorString = null;
+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"rotateGrism:Position = "+position+".");
+		// retrieve config
+		sleepTime = status.getPropertyInteger("sprat.config.grism.rotate.sleep_time");
+		timeoutTime = status.getPropertyInteger("sprat.config.grism.rotate.timeout_time");
+		// setup command and mover objects
+		sprat.log(Logging.VERBOSITY_VERBOSE,"rotateGrism:Creating RotationCommand to send to "+
+			  mechanismHostname+":"+mechanismPortNumber+".");
+		command = new RotationCommand(mechanismHostname,mechanismPortNumber);
+		mechanismMover = new MoveRotationMechanism();
+		mechanismMover.setCommand(command,position);
+		sprat.log(Logging.VERBOSITY_VERBOSE,"rotateGrism:Setting mover sleep time to "+sleepTime+
+			  " and timeout time to "+timeoutTime+".");
+		mechanismMover.setSleepTime(sleepTime);
+		mechanismMover.setTimeoutTime(timeoutTime);
+		sprat.log(Logging.VERBOSITY_TERSE,"rotateGrism:Starting move.");
+		mechanismMover.moveRotationMechanism();
+		sprat.log(Logging.VERBOSITY_TERSE,"rotateGrism:Finished move.");
+	}
+
+	/**
+	 * Move the slit to the desired position.
+	 * The following status is used to configure the move parameters:
+	 * <ul>
+	 * <li><b>sprat.mechanism.hostname</b>
+	 * <li><b>sprat.mechanism.port_number</b>
+	 * <li><b>sprat.config.slit.move.sleep_time</b>
+	 * <li><b>sprat.config.slit.move.timeout_time</b>
+	 * </ul>
+	 * @param position The position to attain, one of POSITION_IN, POSITION_OUT.
+	 * @exception Exception Thrown if an error occurs.
+	 * @see #sprat
+	 * @see #status
+	 * @see Sprat#log
+	 * @see SpratStatus#getProperty
+	 * @see SpratStatus#getPropertyInteger
+	 * @see HardwareImplementation#mechanismHostname
+	 * @see HardwareImplementation#mechanismPortNumber
+	 * @see ngat.phase2.SpratConfig#POSITION_IN
+	 * @see ngat.phase2.SpratConfig#POSITION_OUT
+	 * @see ngat.phase2.SpratConfig#positionToString
+	 * @see ngat.sprat.mechanism.command.SlitCommand
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setCommand
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setSleepTime
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setTimeoutTime
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#moveInOutMechanism
+	 */
+	protected void moveSlit(int position) throws Exception
+	{
+		MoveInOutMechanism mechanismMover = null;
+		SlitCommand command = null;
+		int sleepTime,timeoutTime;
+		String errorString = null;
+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"moveSlit:"+
+			  "Position = "+SpratConfig.positionToString(position)+" ("+position+").");
+		// retrieve config
+		sleepTime = status.getPropertyInteger("sprat.config.slit.move.sleep_time");
+		timeoutTime = status.getPropertyInteger("sprat.config.slit.move.timeout_time");
+		// setup command and mover objects
+		sprat.log(Logging.VERBOSITY_VERBOSE,"moveSlit:Creating SlitCommand to send to "+
+			  mechanismHostname+":"+mechanismPortNumber+".");
+		command = new SlitCommand(mechanismHostname,mechanismPortNumber);
+		mechanismMover = new MoveInOutMechanism();
+		mechanismMover.setCommand(command,position);
+		sprat.log(Logging.VERBOSITY_VERBOSE,"moveSlit:Setting mover sleep time to "+sleepTime+
+			  " and timeout time to "+timeoutTime+".");
+		mechanismMover.setSleepTime(sleepTime);
+		mechanismMover.setTimeoutTime(timeoutTime);
+		sprat.log(Logging.VERBOSITY_TERSE,"moveSlit:Starting move.");
+		mechanismMover.moveInOutMechanism();
+		sprat.log(Logging.VERBOSITY_TERSE,"moveSlit:Finished move.");
+	}
+
+	/**
+	 * Get the current mirror position.
+	 * An instance of MirrorCommand is "run". If a run exception occurs this is thrown.
+	 * If an error is returned this is thrown as an exception.
+	 * @return The current position is returned as an integer, one of:POSITION_ERROR, POSITION_UNKNOWN, 
+	 *         POSITION_IN, POSITION_OUT.
+	 * @see HardwareImplementation#mechanismHostname
+	 * @see HardwareImplementation#mechanismPortNumber
+	 * @see ngat.sprat.mechanism.command.MirrorCommand
+	 * @see ngat.sprat.mechanism.command.MirrorCommand#run
+	 * @see ngat.sprat.mechanism.command.MirrorCommand#getRunException
+	 * @see ngat.sprat.mechanism.command.MirrorCommand#getIsError
+	 * @see ngat.sprat.mechanism.command.MirrorCommand#getErrorString
+	 * @see ngat.sprat.mechanism.command.MirrorCommand#getCurrentPosition
+	 * @see ngat.sprat.mechanism.command.MirrorCommand#positionToString
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_ERROR
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_UNKNOWN
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_IN
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_OUT
+	 */
+	protected int getMirrorPosition() throws Exception
+	{
+		MirrorCommand command = null;
+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getMirrorPosition:started.");
+		command = new MirrorCommand(mechanismHostname,mechanismPortNumber);
+		command.run();
+		if(command.getRunException() != null)
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getMirrorPosition:Mirror command threw exception.",
+					    command.getRunException());
+		}
+		if(command.getIsError())
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getMirrorPosition:Mirror command returned an error:"+
+					    command.getErrorString());
+		}
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"getMirrorPosition:finished with position:"+
+			  MirrorCommand.positionToString(command.getCurrentPosition()));
+		return command.getCurrentPosition();
+	}
+
+ 	/**
 	 * Get the current slit position.
 	 * An instance of SlitCommand is "run". If a run exception occurs this is thrown.
 	 * getMechanismConfig must have been called before this method to set the mechanismHostname/mechanismPortNumber
@@ -379,6 +643,230 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 			  ":getRotationPosition:finished with position:"+
 			  command.getCurrentPosition());
 		return command.getCurrentPosition();
+	}
+
+	/**
+	 * Get a mechanism temperature.
+	 * An instance of TemperatureCommand is "run". If a run exception occurs this is thrown.
+	 * If an error is returned this is thrown as an exception.
+	 * @return The current temeprature as a double, in Kelvin.
+	 * @param sensorNumber Which number temperature sensor to query.
+	 * @see #mechanismHostname
+	 * @see #mechanismPortNumber
+	 * @see Sprat#CENTIGRADE_TO_KELVIN
+	 * @see ngat.sprat.mechanism.command.TemperatureCommand
+	 * @see ngat.sprat.mechanism.command.TemperatureCommand#run
+	 * @see ngat.sprat.mechanism.command.TemperatureCommand#getRunException
+	 * @see ngat.sprat.mechanism.command.TemperatureCommand#getIsError
+	 * @see ngat.sprat.mechanism.command.TemperatureCommand#getErrorString
+	 * @see ngat.sprat.mechanism.command.TemperatureCommand#getTemperature
+	 */
+ 	protected double getMechanismTemperature(int sensorNumber) throws Exception
+	{
+		TemperatureCommand command = null;
+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			  ":getMechanismTemperature(sensorNumber="+sensorNumber+"):started.");
+		command = new TemperatureCommand(mechanismHostname,mechanismPortNumber,sensorNumber);
+		command.run();
+		if(command.getRunException() != null)
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getMechanismTemperature(sensorNumber="+sensorNumber+
+					    "):command threw exception.",command.getRunException());
+		}
+		if(command.getIsError())
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getMechanismTemperature(sensorNumber="+sensorNumber+
+					    "):command returned an error:"+command.getErrorString());
+		}
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			  ":getMechanismTemperature(sensorNumber="+
+			  sensorNumber+"):finished with temperature:"+
+			  (command.getTemperature()+Sprat.CENTIGRADE_TO_KELVIN)+" K.");
+		return (command.getTemperature()+Sprat.CENTIGRADE_TO_KELVIN);
+	}
+
+ 	/**
+	 * Get a mechanism humidity measurement.
+	 * An instance of HumidityCommand is "run". If a run exception occurs this is thrown.
+	 * If an error is returned this is thrown as an exception.
+	 * @return The current humidity in percent as a double.
+	 * @param sensorNumber Which number humidity sensor to query.
+	 * @see HardwareImplementation#mechanismHostname
+	 * @see HardwareImplementation#mechanismPortNumber
+	 * @see ngat.sprat.mechanism.command.HumidityCommand
+	 * @see ngat.sprat.mechanism.command.HumidityCommand#run
+	 * @see ngat.sprat.mechanism.command.HumidityCommand#getRunException
+	 * @see ngat.sprat.mechanism.command.HumidityCommand#getIsError
+	 * @see ngat.sprat.mechanism.command.HumidityCommand#getErrorString
+	 * @see ngat.sprat.mechanism.command.HumidityCommand#getHumidity
+	 */
+ 	protected double getHumidity(int sensorNumber) throws Exception
+	{
+		HumidityCommand command = null;
+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			  ":getHumidity(sensorNumber="+sensorNumber+"):started.");
+		command = new HumidityCommand(mechanismHostname,mechanismPortNumber,sensorNumber);
+		command.run();
+		if(command.getRunException() != null)
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getHumidity(sensorNumber="+sensorNumber+
+					    "):command threw exception.",command.getRunException());
+		}
+		if(command.getIsError())
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getHumidity(sensorNumber="+sensorNumber+
+					    "):command returned an error:"+command.getErrorString());
+		}
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":getHumidity(sensorNumber="+
+			  sensorNumber+"):finished with humidity:"+command.getHumidity()+" %.");
+		return command.getHumidity();
+	}
+
+ 	/**
+	 * Get the CCD C layer hostname and port number from the properties into some internal variables.
+	 * <ul>
+	 * <li>"sprat.ccd.c.hostname" contains the hostname of the CCD C layer.
+	 * <li>"sprat.ccd.c.port_number" contains the port number of the CCD C layer.
+	 * @see #status
+	 * @see #ccdCLayerHostname
+	 * @see #ccdCLayerPortNumber
+	 * @see #status
+	 * @see SpratStatus#getProperty
+	 * @see SpratStatus#getPropertyInteger
+	 */
+	protected void getCCDCLayerConfig() throws Exception
+	{
+		ccdCLayerHostname = status.getProperty("sprat.ccd.c.hostname");
+		ccdCLayerPortNumber = status.getPropertyInteger("sprat.ccd.c.port_number");
+	}
+
+	/**
+	 * Send the extracted config data onto the C layer.
+	 * @param xBin X/serial binning.
+	 * @param yBin Y/parallel binning.
+	 * @param useWindow If true, a subwindow is specified.
+	 * @param window The subwindow, if specified.
+	 * @exception Exception Thrown if an error occurs.
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
+	 * @see ngat.phase2.Window
+	 * @see ngat.sprat.ccd.command.ConfigCommand
+	 * @see ngat.sprat.ccd.command.ConfigCommand#setAddress
+	 * @see ngat.sprat.ccd.command.ConfigCommand#setPortNumber
+	 * @see ngat.sprat.ccd.command.ConfigCommand#setCommand
+	 * @see ngat.sprat.ccd.command.ConfigCommand#sendCommand
+	 * @see ngat.sprat.ccd.command.ConfigCommand#getParsedReplyOK
+	 * @see ngat.sprat.ccd.command.ConfigCommand#getReturnCode
+	 * @see ngat.sprat.ccd.command.ConfigCommand#getParsedReply
+	 */
+	protected void sendConfigCommand(int xBin,int yBin,boolean useWindow,Window window) throws Exception
+	{
+		ConfigCommand command = null;
+		int returnCode;
+		String errorString = null;
+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendConfigCommand:"+
+			  "\n\t:X Bin = "+xBin+
+			  "\n\t:Y Bin = "+yBin+"."+
+			  "\n\t:Use Window = "+useWindow+".");
+		if(useWindow)
+		{
+			sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendConfigCommand:"+
+				  "\n\t:X Start = "+window.getXs()+
+				  "\n\t:Y Start = "+window.getYs()+
+				  "\n\t:X End = "+window.getXe()+
+				  "\n\t:Y End = "+window.getYe()+".");
+		}
+		command = new ConfigCommand();
+		// configure C comms
+		command.setAddress(ccdCLayerHostname);
+		command.setPortNumber(ccdCLayerPortNumber);
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendConfigCommand:hostname = "+ccdCLayerHostname+
+			  " :port number = "+ccdCLayerPortNumber+".");
+		// set command parameters
+		if(useWindow)
+		{
+			command.setCommand(xBin,yBin,window.getXs(),window.getXe(),window.getYs(),window.getYe());
+		}
+		else
+		{
+			command.setCommand(xBin,yBin);
+		}
+		// actually send the command to the C layer
+		// This method can throw an exception 
+		command.sendCommand();
+		// check the parsed reply
+		if(command.getParsedReplyOK() == false)
+		{
+			returnCode = command.getReturnCode();
+			errorString = command.getParsedReply();
+			sprat.log(Logging.VERBOSITY_TERSE,"sendConfigCommand:config command failed with return code "+
+				  returnCode+" and error string:"+errorString);
+			throw new Exception(this.getClass().getName()+
+					    ":sendConfigCommand:Command failed with return code "+returnCode+
+					    " and error string:"+errorString);
+		}
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendConfigCommand:finished.");
+	}
+
+	/**
+	 * Get the current, or C layer cached, CCD temperature.
+	 * An instance of StatusTemperatureGetCommand is used to send the command
+	 * to the C layer, using ccdCLayerHostname and ccdCLayerPortNumber. A timestamp is also
+	 * retrieved (when the temperature was actually measured, it may be a cached value), and this
+	 * is stored in the "Temperature Timestamp" key.
+	 * @return A double representing the CCD temperature in Kelvin.
+	 * @exception Exception Thrown if an error occurs.
+	 * @see HardwareImplementation#ccdCLayerHostname
+	 * @see HardwareImplementation#ccdCLayerPortNumber
+	 * @see ngat.sprat.Sprat#CENTIGRADE_TO_KELVIN
+	 * @see ngat.sprat.ccd.command.StatusTemperatureGetCommand
+	 * @see ngat.sprat.ccd.command.StatusTemperatureGetCommand#setAddress
+	 * @see ngat.sprat.ccd.command.StatusTemperatureGetCommand#setPortNumber
+	 * @see ngat.sprat.ccd.command.StatusTemperatureGetCommand#sendCommand
+	 * @see ngat.sprat.ccd.command.StatusTemperatureGetCommand#getReturnCode
+	 * @see ngat.sprat.ccd.command.StatusTemperatureGetCommand#getParsedReply
+	 * @see ngat.sprat.ccd.command.StatusTemperatureGetCommand#getTemperature
+	 * @see ngat.sprat.ccd.command.StatusTemperatureGetCommand#getTimestamp
+	 */
+	protected double getCCDTemperature() throws Exception
+	{
+		StatusTemperatureGetCommand statusCommand = null;
+		int returnCode;
+		String errorString = null;
+		double temperature;
+		Date timestamp;
+
+		sprat.log(Logging.VERBOSITY_VERBOSE,this.getClass().getName()+":getCCDTemperature:started.");
+		statusCommand = new StatusTemperatureGetCommand();
+		statusCommand.setAddress(ccdCLayerHostname);
+		statusCommand.setPortNumber(ccdCLayerPortNumber);
+		// actually send the command to the CCD C layer
+		statusCommand.sendCommand();
+		// check the parsed reply
+		if(statusCommand.getParsedReplyOK() == false)
+		{
+			returnCode = statusCommand.getReturnCode();
+			errorString = statusCommand.getParsedReply();
+			sprat.log(Logging.VERBOSITY_TERSE,
+				 "getCCDTemperature:exposure run command failed with return code "+
+				 returnCode+" and error string:"+errorString);
+			throw new Exception(this.getClass().getName()+
+					 ":getCCDTemperature:exposure run command failed with return code "+
+					    returnCode+" and error string:"+errorString);
+		}
+		temperature = statusCommand.getTemperature();
+		timestamp = statusCommand.getTimestamp();
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			  ":getCCDTemperature:finished with temperature:"+
+			   temperature+" C measured at "+timestamp);
+		return temperature+Sprat.CENTIGRADE_TO_KELVIN;
 	}
 
 	/**
