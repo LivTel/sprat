@@ -15,7 +15,7 @@ import ngat.util.*;
 /**
  * This class send an Sprat camera configuration to Sprat. 
  * @author Chris Mottram
- * @version $Revision: 1.2 $
+ * @version $Revision$
  */
 public class SendConfigCommand
 {

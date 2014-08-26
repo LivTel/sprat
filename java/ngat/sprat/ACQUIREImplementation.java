@@ -18,7 +18,7 @@ import ngat.util.logging.*;
  * This class provides the implementation for the ACQUIRE command sent to a server using the
  * Java Message System.
  * @author Chris Motram
- * @version $Revision: 1.3 $
+ * @version $Revision$
  */
 public class ACQUIREImplementation extends FITSImplementation implements JMSCommandImplementation
 {

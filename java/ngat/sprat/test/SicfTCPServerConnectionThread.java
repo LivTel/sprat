@@ -16,7 +16,7 @@ import ngat.message.ISS_INST.*;
  * This class extends the TCPServerConnectionThread class for the SendISSCommandFile application. This
  * allows SendISSCommandFile to emulate the ISS's response to Sprat sending it commands.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class SicfTCPServerConnectionThread extends TCPServerConnectionThread
 {

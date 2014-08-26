@@ -13,7 +13,7 @@ import ngat.net.*;
  * CONFIG commands to Sprat to test it's execution. The CONFIG command involves sending commands back to the ISS, 
  * and this class is designed to catch these requests and to spawn a SicfTCPServerConnectionThread to deal with them.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class SicfTCPServer extends TCPServer
 {

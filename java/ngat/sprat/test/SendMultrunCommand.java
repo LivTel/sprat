@@ -15,7 +15,7 @@ import ngat.util.*;
 /**
  * This class send a MULTRUN to Sprat. 
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class SendMultrunCommand
 {

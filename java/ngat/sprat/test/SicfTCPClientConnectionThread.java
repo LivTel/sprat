@@ -14,7 +14,7 @@ import ngat.message.ISS_INST.*;
  * The SicfTCPClientConnectionThread extends TCPClientConnectionThread. 
  * It implements the generic ISS instrument command protocol.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class SicfTCPClientConnectionThread extends TCPClientConnectionThreadMA
 {

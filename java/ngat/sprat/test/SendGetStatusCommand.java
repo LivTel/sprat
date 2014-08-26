@@ -15,7 +15,7 @@ import ngat.util.*;
 /**
  * This class sends a GET_STATUS command to Sprat. 
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class SendGetStatusCommand
 {

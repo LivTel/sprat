@@ -10,7 +10,7 @@ import java.net.*;
  * The "status multrun biny" command is an extension of the IntegerReplyCommand, and returns the Y binning factor
  * used to configure the CCD in the current multrun. 
  * @author Chris Mottram
- * @version $Revision: 17 $
+ * @version $Revision$
  */
 public class StatusMultrunBinYCommand extends IntegerReplyCommand implements Runnable
 {
