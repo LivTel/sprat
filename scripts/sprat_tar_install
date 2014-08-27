@@ -51,7 +51,7 @@ foreach file ( ${file_list} )
     endif
 end
 #
-# Ensure LD_LIBRARY_PATH includes tiptilt libraries dir so send_command below works.
+# Ensure LD_LIBRARY_PATH includes libraries dir so send_command below works.
 #
 if ( -d /icc/bin/lib/i386-linux ) then
     if ( ${?LD_LIBRARY_PATH} == 0 ) then
@@ -65,8 +65,8 @@ endif
 # Kill any running processes
 #
 if ( -x /icc/bin/scripts/killhup.csh ) then
-    echo "Trying to kill AutoBooter."
-    /icc/bin/scripts/killhup.csh AutoBooter
+    echo "Trying to kill SpratAutoBooter."
+    /icc/bin/scripts/killhup.csh SpratAutoBooter
 else
     echo "killhup not found:FAILED to stop running processess."
 endif
@@ -75,6 +75,18 @@ if ( -x /icc/bin/commandserver/test/i386-linux/send_command  ) then
     /icc/bin/commandserver/test/i386-linux/send_command  -h ${machine_name} -p 8367 -c "shutdown"
 else
     echo "send_command not found:FAILED to stop running tiptilt."
+endif
+if ( -x /icc/bin/scripts/killhup.csh ) then
+    echo "Trying to kill Sprat."
+    /icc/bin/scripts/killhup.csh Sprat
+    echo "Trying to kill SpratDpRt."
+    /icc/bin/scripts/killhup.csh SpratDpRt
+    echo "Trying to kill icsd_inet."
+    /icc/bin/scripts/killhup.csh icsd_inet
+#    echo "Trying to kill sprat (if shutdown didn't already kill it)."
+#    /icc/bin/scripts/killhup.csh sprat
+else
+    echo "killhup not found:ENGINEERING mode FAILED."
 endif
 #
 # Kill nfs server - /icc/sprat-data is usually mounted for the rcs machine
@@ -118,39 +130,25 @@ rm -f ${deployment_tar}
 #
 # Init script setup
 #
-# Init script already copied as /etc/init.d/autobooter
-#echo "Setting up autobooter initialisation script."
-#if( "${HOSTTYPE}" == "sun4" ) then
-#    set dir_list = "/etc/rc0.d /etc/rc1.d /etc/rc3.d /etc/rcS.d"
-#else if ( "${HOSTTYPE}" == "i386-linux" ) then
-#    set dir_list = "/etc/rc0.d /etc/rc1.d /etc/rc2.d /etc/rc4.d /etc/rc6.d"
-#else
-#    echo "Illegal hosttype ${HOSTTYPE}."
-#    exit 1
-#endif
-#foreach dir ( ${dir_list} )
-#    cd ${dir}
-#    if( ! -e K01autobooter ) then
-#	ln -s ../init.d/autobooter K01autobooter
-#    endif
-#end
-#if( "${HOSTTYPE}" == "sun4" ) then
-#    set dir_list = "/etc/rc2.d"
-#else if ( "${HOSTTYPE}" == "i386-linux" ) then
-#    set dir_list = "/etc/rc3.d /etc/rc5.d"
-#else
-#    echo "Illegal hosttype ${HOSTTYPE}."
-#    exit 1
-#endif
-#foreach dir ( ${dir_list} )
-#    cd ${dir}
-#    if( ! -e S99autobooter ) then
-#	ln -s ../init.d/autobooter S99autobooter
-#    endif
-#end
-echo "Setting up autobooter script."
-chmod u+x /etc/init.d/autobooter
-chown root:sys /etc/init.d/autobooter
+# Init script already copied as /etc/init.d/sprat.autobooter
+echo "Setting up sprat.autobooter initialisation script."
+set dir_list = "/etc/rc0.d /etc/rc1.d /etc/rc2.d /etc/rc4.d /etc/rc6.d"
+foreach dir ( ${dir_list} )
+    cd ${dir}
+    if( ! -e K01sprat.autobooter ) then
+	ln -s ../init.d/sprat.autobooter K01sprat.autobooter
+    endif
+end
+set dir_list = "/etc/rc3.d /etc/rc5.d"
+foreach dir ( ${dir_list} )
+    cd ${dir}
+    if( ! -e S99sprat.autobooter ) then
+	ln -s ../init.d/sprat.autobooter S99sprat.autobooter
+    endif
+end
+echo "Setting up sprat.autobooter script."
+chmod u+x /etc/init.d/sprat.autobooter
+chown root:sys /etc/init.d/sprat.autobooter
 #
 # Set up /icc ownership
 #

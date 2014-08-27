@@ -259,7 +259,7 @@ void monitorSensors()
   // The humidity sensor should only be read about once every 2 seconds
   // The DHT library has an internal clock and returns old values if read is queried more often than that.
   // However this is not available external to the library, so we have our own external clock here.
-  if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_HUMIDITY0]) > 3000)
+  if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_HUMIDITY0]) > 58000)
   {
     printTime(); Serial.println("monitorSensors:Reading dht0.");
     retval = dht0.read();
@@ -273,7 +273,7 @@ void monitorSensors()
         printTime(); Serial.println("monitorSensors:Failed to read dht0.");
     }
   }
-  if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_HUMIDITY1]) > 3000)
+  if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_HUMIDITY1]) > 59000)
   {
     printTime(); Serial.println("monitorSensors:Reading dht1.");
     retval = dht1.read();
@@ -288,7 +288,7 @@ void monitorSensors()
     }
   }
   // MPU6050 gyroscope
-  if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_GYRO]) > 1001)
+  if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_GYRO]) > 10000)
   {
     printTime(); Serial.print("monitorSensors:Reading MPU6050 ");
     Serial.print(MPU6050_SAMPLE_COUNT);

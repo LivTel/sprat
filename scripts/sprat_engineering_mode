@@ -12,8 +12,8 @@ echo "This will only succeed if you are root."
 # Kill any running processes
 #
 if ( -x /icc/bin/scripts/killhup.csh ) then
-    echo "Trying to kill AutoBooter."
-    /icc/bin/scripts/killhup.csh AutoBooter
+    echo "Trying to kill SpratAutoBooter."
+    /icc/bin/scripts/killhup.csh SpratAutoBooter
 else
     echo "killhup not found:FAILED to stop running processess."
 endif
@@ -39,8 +39,8 @@ endif
 if ( -x /icc/bin/scripts/killhup.csh ) then
     echo "Trying to kill Sprat."
     /icc/bin/scripts/killhup.csh Sprat
-    echo "Trying to kill DpRt."
-    /icc/bin/scripts/killhup.csh DpRt
+    echo "Trying to kill SpratDpRt."
+    /icc/bin/scripts/killhup.csh SpratDpRt
     echo "Trying to kill icsd_inet."
     /icc/bin/scripts/killhup.csh icsd_inet
     echo "Trying to kill sprat (if shutdown didn't already kill it)."
