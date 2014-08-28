@@ -25,7 +25,8 @@ SETUP_IMPL_SRCS		= CONFIGImplementation.java
 OBJS 		= $(SRCS:%.java=$(BINDIR)/%.class)
 
 CONFIG_SRCS	= sprat1.sprat.properties sprat1.sprat.net.properties sprat1.fits.properties \
-		  ltobs9.sprat.properties ltobs9.sprat.net.properties ltobs9.fits.properties
+		  ltobs9.sprat.properties ltobs9.sprat.net.properties ltobs9.fits.properties \
+		  frodospec1.sprat.properties frodospec1.sprat.net.properties frodospec1.fits.properties
 CONFIG_OBJS	= $(CONFIG_SRCS:%.properties=$(CONFIG_BINDIR)/%.properties)
 SCRIPT_SRCS	= 
 SCRIPT_OBJS	= 

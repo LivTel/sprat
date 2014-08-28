@@ -50,7 +50,7 @@ EXE_OBJS		= $(EXE_SRCS:%.c=$(BINDIR)/%.o)
 OBJS			= $(SRCS:%.c=$(BINDIR)/%.o)
 EXES			= $(BINDIR)/sprat
 DOCS 			= $(SRCS:%.c=$(DOCSDIR)/%.html)
-CONFIG_SRCS		= ltobs9.sprat.c.properties sprat1.sprat.c.properties
+CONFIG_SRCS		= ltobs9.sprat.c.properties sprat1.sprat.c.properties frodospec1.sprat.c.properties
 CONFIG_BINS		= $(CONFIG_SRCS:%.properties=$(BINDIR)/%.properties)
 SCRIPT_SRCS		= start_sprat_ltobs9.csh start_sprat_sprat1.csh
 SCRIPT_BINS		= $(SCRIPT_SRCS:%=$(BINDIR)/%)

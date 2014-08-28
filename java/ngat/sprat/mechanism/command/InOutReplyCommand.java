@@ -33,10 +33,14 @@ public class InOutReplyCommand extends Command implements Runnable, TelnetConnec
 	public final static int POSITION_UNKNOWN = -1;
 	/**
 	 * Position state - in this case, the mechanism is IN the beam.
+	 * This value should mirror the one in ngat.phase2.SpratConfig.
+	 * @see ngat.phase2.SpratConfig#POSITION_IN
 	 */
 	public final static int POSITION_IN = 1;
 	/**
 	 * Position state - in this case, the mechanism is OUT of the beam.
+	 * This value should mirror the one in ngat.phase2.SpratConfig.
+	 * @see ngat.phase2.SpratConfig#POSITION_OUT
 	 */
 	public final static int POSITION_OUT = 2;
 	/**

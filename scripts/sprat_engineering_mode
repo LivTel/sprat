@@ -29,8 +29,9 @@ foreach directory ( /icc/bin/lib/i386-linux )
 end
 # Send a shutdown command to sprat C layer, after killing the autobooter
 if ( -x /icc/bin/commandserver/test/i386-linux/send_command  ) then
+    set sprat_hostname = `/bin/hostname --short`
     echo "Sending shutdown to sprat C layer."
-    /icc/bin/commandserver/test/i386-linux/send_command -h sprat1 -p 8367 -c "shutdown"
+    /icc/bin/commandserver/test/i386-linux/send_command -h ${sprat_hostname} -p 8367 -c "shutdown"
     echo "Waiting to see if that worked..."
     /bin/sleep 5
 else

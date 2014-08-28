@@ -101,10 +101,10 @@ foreach jar ( ${jar_list} )
 	foreach class ( `cat ${deployment_tmp_dir}/class_list.txt` )
 		( ident ${class} > ${deployment_tmp_dir}/ident.txt ) >& ${deployment_tmp_dir}/ident_error.txt
 		set ident_string = `cat ${deployment_tmp_dir}/ident.txt`
-		echo "${ident_string}" >>! ${deployment_tmp_dir}/ident_list.txt
+		echo "${ident_string}" >>! ${deployment_tmp_dir}/sprat_ident_list.txt
 	end
-	if ( -r ${deployment_tmp_dir}/ident_list.txt) then
-		cat ${deployment_tmp_dir}/ident_list.txt >>! ${deployment_icc_dir}/ident_list.txt 
+	if ( -r ${deployment_tmp_dir}/sprat_ident_list.txt) then
+		cat ${deployment_tmp_dir}/sprat_ident_list.txt >>! ${deployment_icc_dir}/sprat_ident_list.txt 
 	endif
 # keep track of number of jars processed
 	@ jar_count ++
@@ -135,11 +135,11 @@ foreach java_class_dir ( ${java_class_dir_list} )
 	foreach class ( `cat ${deployment_tmp_dir}/class_list.txt` )
 		( ident ${class} > ${deployment_tmp_dir}/ident.txt ) >& ${deployment_tmp_dir}/ident_error.txt
 		set ident_string = `cat ${deployment_tmp_dir}/ident.txt`
-		echo "${ident_string}" >>! ${deployment_tmp_dir}/ident_list.txt
+		echo "${ident_string}" >>! ${deployment_tmp_dir}/sprat_ident_list.txt
 		@ java_class_file_count ++
 	end
-	if ( -r ${deployment_tmp_dir}/ident_list.txt) then
-		cat ${deployment_tmp_dir}/ident_list.txt >>! ${deployment_icc_dir}/ident_list.txt 
+	if ( -r ${deployment_tmp_dir}/sprat_ident_list.txt) then
+		cat ${deployment_tmp_dir}/sprat_ident_list.txt >>! ${deployment_icc_dir}/sprat_ident_list.txt 
 	endif
 # keep track of number of java_class_dirs processed
 	@ java_class_dir_count ++
@@ -179,9 +179,9 @@ foreach clib ( ${clib_list} )
 	cd ${deployment_bin_dir}
 	( ident lib/${HOSTTYPE}/${clib} > ${deployment_tmp_dir}/ident.txt ) >& ${deployment_tmp_dir}/ident_error.txt
 	set ident_string = `cat ${deployment_tmp_dir}/ident.txt`
-	echo "${ident_string}" >>! ${deployment_tmp_dir}/ident_list.txt
-	if ( -r ${deployment_tmp_dir}/ident_list.txt) then
-		cat ${deployment_tmp_dir}/ident_list.txt >>! ${deployment_icc_dir}/ident_list.txt 
+	echo "${ident_string}" >>! ${deployment_tmp_dir}/sprat_ident_list.txt
+	if ( -r ${deployment_tmp_dir}/sprat_ident_list.txt) then
+		cat ${deployment_tmp_dir}/sprat_ident_list.txt >>! ${deployment_icc_dir}/sprat_ident_list.txt 
 	endif
 # keep track of number of clibs processed
 	@ clib_count ++
@@ -221,7 +221,7 @@ foreach dir ( ${dir_list} )
 # ident file and add to list
 			( ident ${dir}/${file:t} > ${deployment_tmp_dir}/ident.txt ) >& ${deployment_tmp_dir}/ident_error.txt
 			set ident_string = `cat ${deployment_tmp_dir}/ident.txt`
-			echo "${ident_string}" >>! ${deployment_tmp_dir}/ident_list.txt
+			echo "${ident_string}" >>! ${deployment_tmp_dir}/sprat_ident_list.txt
 			@ file_count ++
 		else
 			echo "NOT Deploying ${file}."
@@ -231,8 +231,8 @@ foreach dir ( ${dir_list} )
 # keep track of number of dirs processed
 	@ dir_count ++
 end
-if ( -r ${deployment_tmp_dir}/ident_list.txt) then
-	cat ${deployment_tmp_dir}/ident_list.txt >>! ${deployment_icc_dir}/ident_list.txt 
+if ( -r ${deployment_tmp_dir}/sprat_ident_list.txt) then
+	cat ${deployment_tmp_dir}/sprat_ident_list.txt >>! ${deployment_icc_dir}/sprat_ident_list.txt 
 endif
 cd ${deployment_dir}
 rm -rf ${deployment_tmp_dir}
@@ -277,7 +277,7 @@ end
 echo "${file_count} configuration files copied."
 echo "Copying Autobooter initialisation script."
 set from_file = "${dev_bin_dir}/autobooter/java/${machine_name}.sprat.autobooter"
-set to_file = "${deployment_dir}/${init_d_dir}/autobooter.sprat"
+set to_file = "${deployment_dir}/${init_d_dir}/sprat.autobooter"
 cp  ${from_file} ${to_file}
 set cp_status = $status
 if( ${cp_status} != 0 ) then
