@@ -168,9 +168,12 @@ public class CONFIGImplementation extends HardwareImplementation implements JMSC
 		configName = config.getId();
 		sprat.log(Logging.VERBOSITY_VERY_TERSE,"Command:"+
 			  configCommand.getClass().getName()+
-			  "\n\t:id = "+configName+
-			  "\n\t:X Bin = "+detector.getXBin()+
-			  "\n\t:Y Bin = "+detector.getYBin()+".");
+			  ":id = "+configName+
+			  ":X Bin = "+detector.getXBin()+
+			  ":Y Bin = "+detector.getYBin()+
+			  ":Slit Position = "+config.slitPositionToString()+"("+config.getSlitPosition()+")"+
+			  ":Grism Position = "+config.grismPositionToString()+"("+config.getGrismPosition()+")"+
+			  ":Grism Rotation Position = "+config.getGrismRotation()+".");
 	// windows
 		for(int i = 0; i < detector.getMaxWindowCount(); i++)
 		{
@@ -204,7 +207,7 @@ public class CONFIGImplementation extends HardwareImplementation implements JMSC
 			sprat.error(this.getClass().getName()+
 				    ":processCommand:Sending config command to C layer failed:"+command,e);
 			configDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+804);
-			configDone.setErrorString(e.toString());
+			configDone.setErrorString("Sending config command to C layer failed:"+e.toString());
 			configDone.setSuccessful(false);
 			return configDone;
 		}
@@ -227,9 +230,13 @@ public class CONFIGImplementation extends HardwareImplementation implements JMSC
 		}
 		catch(Exception e)
 		{
-			sprat.error(this.getClass().getName()+":processCommand:Moving Grism failed:"+command,e);
+			sprat.error(this.getClass().getName()+":processCommand:Moving Grism (Rotation) to position "+
+				    config.grismPositionToString()+"("+config.getGrismRotation()+") failed:"+
+				    command,e);
 			configDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+805);
-			configDone.setErrorString(e.toString());
+			configDone.setErrorString("Moving Grism (Rotation) to position "+
+						  config.grismPositionToString()+
+						  "("+config.getGrismRotation()+") failed:"+e.toString());
 			configDone.setSuccessful(false);
 			return configDone;
 		}
@@ -243,9 +250,11 @@ public class CONFIGImplementation extends HardwareImplementation implements JMSC
 		}
 		catch(Exception e)
 		{
-			sprat.error(this.getClass().getName()+":processCommand:Moving Slit failed:"+command,e);
+			sprat.error(this.getClass().getName()+":processCommand:Moving Slit to position "+
+				    config.slitPositionToString()+" failed:"+command,e);
 			configDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+809);
-			configDone.setErrorString(e.toString());
+			configDone.setErrorString("Moving Slit to position "+config.slitPositionToString()+
+						  " failed:"+e.toString());
 			configDone.setSuccessful(false);
 			return configDone;
 		}
@@ -261,7 +270,7 @@ public class CONFIGImplementation extends HardwareImplementation implements JMSC
 		{
 			sprat.error(this.getClass().getName()+":processCommand:"+command+":setFocusOffset failed:",e);
 			configDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+807);
-			configDone.setErrorString(e.toString());
+			configDone.setErrorString("setFocusOffset failed:"+e.toString());
 			configDone.setSuccessful(false);
 			return configDone;
 		}

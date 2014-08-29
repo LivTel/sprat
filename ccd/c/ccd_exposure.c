@@ -260,6 +260,8 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 	{
 		Exposure_Error_Number = 43;
 		sprintf(Exposure_Error_String,"CCD_Exposure_Expose:CCD_Setup_Get_Buffer_Length failed.");
+		if(image_data != NULL)
+			free(image_data);
 		return FALSE;
 	}
 #if LOGGING > 5
@@ -284,6 +286,8 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 		Exposure_Error_Number = 5;
 		sprintf(Exposure_Error_String,"CCD_Exposure_Expose: StartAcquisition() failed %s(%u).",
 			CCD_Global_Andor_ErrorCode_To_String(andor_retval),andor_retval);
+		if(image_data != NULL)
+			free(image_data);
 		return FALSE;
 	}
 	/* wait until acquisition complete */
@@ -303,6 +307,8 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 			Exposure_Error_Number = 6;
 			sprintf(Exposure_Error_String,"CCD_Exposure_Expose: GetStatus() failed %s(%u).",
 				CCD_Global_Andor_ErrorCode_To_String(andor_retval),andor_retval);
+			if(image_data != NULL)
+				free(image_data);
 			return FALSE;
 		}
 #if LOGGING > 3
@@ -331,6 +337,8 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 			Exposure_Data.Elapsed_Exposure_Time = 0;
 			Exposure_Error_Number = 7;
 			sprintf(Exposure_Error_String,"CCD_Exposure_Expose:Aborted.");
+			if(image_data != NULL)
+				free(image_data);
 			return FALSE;
 		}
 		/* timeout */
@@ -380,6 +388,8 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 			CCD_Global_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Expose",
 					       LOG_VERBOSITY_VERY_TERSE,"CCD",
 					       "Timeout (Andor library stuck in DRV_ACQUIRING).");
+			if(image_data != NULL)
+				free(image_data);
 			return FALSE;
 		}
 	}
@@ -405,6 +415,8 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 		sprintf(Exposure_Error_String,"CCD_Exposure_Expose: GetAcquiredData16(%p,%lu) failed %s(%u).",
 			(void*)image_data,(long unsigned int)buffer_length_pixels,
 			CCD_Global_Andor_ErrorCode_To_String(andor_retval),andor_retval);
+		if(image_data != NULL)
+			free(image_data);
 		return FALSE;
 	}
 	Exposure_Data.Exposure_Status = CCD_EXPOSURE_STATUS_NONE;
@@ -416,8 +428,13 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 	}
 	if(!Exposure_Save(image_data,image_data_length,header,filename))
 	{
+		if(image_data != NULL)
+			free(image_data);
 		return FALSE;
 	}
+	/* free image data */
+	if(image_data != NULL)
+		free(image_data);
 #if LOGGING > 1
 	CCD_Global_Log("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_INTERMEDIATE,"CCD",
 			"CCD_Exposure_Expose finished.");

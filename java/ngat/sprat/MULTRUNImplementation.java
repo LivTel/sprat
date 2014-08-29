@@ -152,7 +152,7 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 			sprat.error(this.getClass().getName()+":processCommand:Moving Calibration Mirror failed:"+
 				    command,e);
 			multRunDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1201);
-			multRunDone.setErrorString(e.toString());
+			multRunDone.setErrorString("Moving Calibration Mirror failed:"+e.toString());
 			multRunDone.setSuccessful(false);
 			return multRunDone;
 		}
@@ -247,7 +247,7 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 					sprat.error(this.getClass().getName()+
 						":processCommand:sendAcknowledge(DP):"+command+":"+e.toString());
 					multRunDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1203);
-					multRunDone.setErrorString(e.toString());
+					multRunDone.setErrorString("sendAcknowledge(DP) failed:"+e.toString());
 					multRunDone.setSuccessful(false);
 					return multRunDone;
 				}
@@ -379,7 +379,7 @@ public class MULTRUNImplementation extends EXPOSEImplementation implements JMSCo
 			sprat.error(this.getClass().getName()+
 				    ":sendMultrunAck:sendAcknowledge:"+multRunCommand+":"+e.toString(),e);
 			multRunDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1204);
-			multRunDone.setErrorString(":sendMultrunAck:sendAcknowledge:"+e.toString());
+			multRunDone.setErrorString("sendMultrunAck:sendAcknowledge:"+e.toString());
 			multRunDone.setSuccessful(false);
 			return false;
 		}
