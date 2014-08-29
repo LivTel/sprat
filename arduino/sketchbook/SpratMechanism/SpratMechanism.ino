@@ -42,9 +42,11 @@
 #define PIN_HUMIDITY_0                 (6)  // DHT22, also used for temperature 0 at the moment. 
                                             // Data pin should have a 10k pullup resistor connected to 5v VCC, however
                                             // the phenoptix unit has an inbuilt 5.5k resistor instead.
+                                            // Currenly cabled up to the external sensor
 #define PIN_HUMIDITY_1                 (7)  // DHT22, also used for temperature 1 at the moment. 
                                             // Data pin should have a 10k pullup resistor connected to 5v VCC, however
                                             // the unit we have has an inbuilt 5.5k resistor instead.
+                                            // Currenly cabled up to the internal sensor
 #define PIN_ARC_LAMP_OUTPUT            (8)
 #define PIN_MIRROR_OUTPUT              (22) // IN = HIGH, OUT = LOW (RELAY1)
 #define PIN_MIRROR_OUT_INPUT           (23) // LOW when in position, HIGH when NOT in this position
@@ -74,13 +76,13 @@
 // http://forum.freetronics.com/viewtopic.php?f=25&t=5520
 byte mac[] =     { 0xDE, 0xAD, 0xBE, 0xEF, 0x69, 0x56 };
 // on site
-//byte ip[]  =     {192, 168, 1, 77 };
-//byte gateway[] = {192, 168, 1, 254 };
-//byte subnet[]  = {255, 255, 255, 0 };
+byte ip[]  =     {192, 168, 1, 77 };
+byte gateway[] = {192, 168, 1, 254 };
+byte subnet[]  = {255, 255, 255, 0 };
 // ARI testing
-byte ip[]  =     {150, 204, 240, 112 }; // lttest2
-byte gateway[] = {150, 204, 241, 254 };
-byte subnet[]  = {255, 255, 254, 0 };
+//byte ip[]  =     {150, 204, 240, 112 }; // lttest2
+//byte gateway[] = {150, 204, 241, 254 };
+//byte subnet[]  = {255, 255, 254, 0 };
 
 EthernetServer server(23); // Telnet listens on port 23
 EthernetClient client = 0; // Client needs to have global scope so it can be called
