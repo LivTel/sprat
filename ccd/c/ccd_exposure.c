@@ -1014,7 +1014,7 @@ static int Exposure_Save(void *buffer,size_t buffer_length,struct Fits_Header_St
 	}
 	/* debug whats in the buffer */
 #if LOGGING > 9
-	Exposure_Debug_Buffer("Exposure_Save",(unsigned short*)buffer,buffer_length);
+	Exposure_Debug_Buffer("Exposure_Save",(unsigned short*)buffer,ncols*nrows);
 #endif
 	/* write the data */
 	retval = fits_write_img(fits_fp,TUSHORT,1,ncols*nrows,buffer,&status);

@@ -16,6 +16,7 @@ foreach arg ( $argv )
 		    echo "$0 [-help] [-nodelbin] <machine>"
 		    echo "\t -nodelbin does not delete the binary directory before installation,"
 		    echo "\t\tfor multiple instrument installations."
+		    exit 0
 	     	    breaksw
 		default:
 		    set machine_name = $arg
@@ -149,6 +150,15 @@ end
 echo "Setting up sprat.autobooter script."
 chmod u+x /etc/init.d/sprat.autobooter
 chown root:sys /etc/init.d/sprat.autobooter
+#
+# Reseting / ownership (to stop /var/log/messages "pam_timestamp_check: pam_timestamp: `/' owner UID != 0"
+# and "pam_timestamp_check: pam_timestamp: `/' permissions are lax"
+#
+echo "Reseting up / ownership."
+chown root:root /
+chown root:root /etc
+chown root:root /etc/init.d
+chmod go-w /
 #
 # Set up /icc ownership
 #
