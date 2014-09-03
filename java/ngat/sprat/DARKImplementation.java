@@ -192,6 +192,7 @@ public class DARKImplementation extends CALIBRATEImplementation implements JMSCo
 
 	/**
 	 * Send the dark command to the C layer.
+	 * @param exposureLength The exposure length in milliseconds.
 	 * @exception Exception Thrown if an error occurs.
 	 * @see #filename
 	 * @see #multrunNumber
@@ -233,7 +234,7 @@ public class DARKImplementation extends CALIBRATEImplementation implements JMSCo
 			returnCode = command.getReturnCode();
 			errorString = command.getParsedReply();
 			sprat.log(Logging.VERBOSITY_TERSE,
-				   "sendBiasCommand:dark command failed with return code "+
+				   "sendDarkCommand:dark command failed with return code "+
 				   returnCode+" and error string:"+errorString);
 			throw new Exception(this.getClass().getName()+
 					    ":sendDarkCommand:Command failed with return code "+returnCode+

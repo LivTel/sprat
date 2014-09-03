@@ -973,6 +973,9 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * <li><b>Process List</b> The results of running a 
 	 *       &quot;ps -e -o pid,pcpu,vsz,ruser,stime,time,args&quot;, 
 	 * 	to get the processes running on this machine.
+	 * <li><b>TCP Socket List</b> The results of running a 
+	 *       &quot;netstat -t&quot;, 
+	 * 	to get the open TCP sockets on this machine.
 	 * <li><b>Uptime</b> The results of running a &quot;uptime&quot;, 
 	 * 	to get system load and time since last reboot.
 	 * <li><b>Total Memory, Free Memory</b> The total and free memory in the Java virtual machine.
@@ -980,7 +983,7 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * 	Java virtual machine version, classpath and type.
 	 * <li><b>os.name, os.arch, os.version</b> The operating system type/version.
 	 * <li><b>user.name, user.home, user.dir</b> Data about the user the process is running as.
-	 * <li><b>thread.list</b> A list of threads the THOR process is running.
+	 * <li><b>thread.list</b> A list of threads the Sprat process is running.
 	 * </ul>
 	 * @see #serverConnectionThread
 	 * @see #hashTable
@@ -1011,6 +1014,13 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 			hashTable.put("Process List",new String(executeCommand.getOutputString()));
 		else
 			hashTable.put("Process List",new String(executeCommand.getException().toString()));
+		// execute "netstat -t" on instrument computer
+		executeCommand = new ExecuteCommand("netstat -t");
+		executeCommand.run();
+		if(executeCommand.getException() == null)
+			hashTable.put("TCP Socket List",new String(executeCommand.getOutputString()));
+		else
+			hashTable.put("TCP Socket List",new String(executeCommand.getException().toString()));
 		// execute "uptime" on instrument computer
 		executeCommand = new ExecuteCommand("uptime");
 		executeCommand.run();

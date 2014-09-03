@@ -378,7 +378,7 @@ static int Sprat_Startup_CCD(void)
 	}
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log_Format("CCD","sprat_main.c","Sprat_Startup_CCD",LOG_VERBOSITY_VERBOSE,
-				 "STARTUP","SPRAT using andor CCD Mdel '%s' serial number %d.",
+				 "STARTUP","SPRAT using andor CCD Model '%s' serial number %d.",
 				 head_model_name,serial_number);
 #endif
 	/* set CCD target temperature */
@@ -437,16 +437,6 @@ static int Sprat_Startup_CCD(void)
 		sprintf(Sprat_Global_Error_String,"Sprat_Startup_CCD:Failed to Initialise FITS filenames for camera.");
 		return FALSE;
 	}
-	/* initialise fits headers */
-	/* diddly we are unsure where this goes at the moment, and where the variable that stores the 
-	** headers should be located. 
-	if(!CCD_Fits_Header_Initialise(&))
-	{
-		Sprat_Global_Error_Number = ;
-		sprintf(Sprat_Global_Error_String,"Sprat_Startup_CCD:Failed to Initialise FITS header.");
-		return FALSE;
-	}
-	*/
 	return TRUE;
 }
 

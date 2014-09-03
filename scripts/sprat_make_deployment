@@ -152,8 +152,7 @@ echo "${java_class_dir_count} Java class directories copied with ${java_class_fi
 # Today, dprt_libfits requires ccd_dprt for 'buf_base_filename'
 # ccd_dprt requires lt_filenames
 echo "Copying C libraries..."
-set clib_list = "libcfitsio.so libngatastro.so libngatastrometrywcstools.so libngatfits.so libngatutil.so libestar_config.so liblog_udp.so libcommandserver.so libsprat_ccd.so libdprt_jni_general.so libdprt_sprat.so libdprt_object.so libdprt_libfits.so liblt_filenames.so"
-#libccd_dprt.so 
+set clib_list = "libcfitsio.so libngatastro.so libngatastrometrywcstools.so libngatfits.so libngatutil.so libestar_config.so liblog_udp.so libcommandserver.so libsprat_ccd.so libdprt_jni_general.so libdprt_sprat.so libdprt_object.so libdprt_libfits.so liblt_filenames.so libsprat_ccd_dprt.so "
 set clib_count = 0
 foreach clib ( ${clib_list} )
 	echo "C Library : ${clib}"

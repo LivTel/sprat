@@ -10,7 +10,8 @@ CONFIG_BINDIR 	= $(SPRAT_BIN_HOME)/java
 SCRIPT_BINDIR 	= $(SPRAT_BIN_HOME)/java
 SRCS 		= $(MAIN_SRCS) $(IMPL_SRCS)
 MAIN_SRCS 	= SpratConstants.java SpratStatus.java Sprat.java \
-		  SpratTCPClientConnectionThread.java SpratTCPServerConnectionThread.java SpratTCPServer.java
+		  SpratTCPClientConnectionThread.java SpratTCPServerConnectionThread.java SpratTCPServer.java \
+		  SpratREBOOTQuitThread.java
 
 
 IMPL_SRCS = $(BASE_IMPL_SRCS) $(CALIBRATE_IMPL_SRCS) $(EXPOSE_IMPL_SRCS) $(INTERRUPT_IMPL_SRCS) $(SETUP_IMPL_SRCS)
@@ -21,7 +22,7 @@ CALIBRATE_IMPL_SRCS 	= CALIBRATEImplementation.java ARCImplementation.java \
 			LAMPFLATImplementation.java MULTBIASImplementation.java MULTDARKImplementation.java \
 			SKYFLATImplementation.java 
 EXPOSE_IMPL_SRCS	= EXPOSEImplementation.java MULTRUNImplementation.java 
-INTERRUPT_IMPL_SRCS 	= GET_STATUSImplementation.java
+INTERRUPT_IMPL_SRCS 	= ABORTImplementation.java GET_STATUSImplementation.java REBOOTImplementation.java
 SETUP_IMPL_SRCS		= CONFIGImplementation.java
 OBJS 		= $(SRCS:%.java=$(BINDIR)/%.class)
 

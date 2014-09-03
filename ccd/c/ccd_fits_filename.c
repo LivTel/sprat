@@ -343,7 +343,7 @@ int CCD_Fits_Filename_Get_Filename(enum CCD_FITS_FILENAME_EXPOSURE_TYPE exposure
 				   char *filename,int filename_length)
 {
 	char tmp_buff[256];
-	char exposure_type_string[7] = {'a','b','d','e','f','s','w'};
+	char exposure_type_string[8] = {'q','a','b','d','e','f','s','w'};
 
 	if(filename == NULL)
 	{

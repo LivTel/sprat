@@ -518,10 +518,12 @@ int CCD_Setup_Startup(int use_recommended_vs,int vs_speed_index,int hs_speed_ind
 }
 
 /**
- * Routine to shut down the Andor CCD Controller board. We now call CoolerOFF
+ * Routine to shut down the Andor CCD Controller board. We could call CoolerOFF
  * to turn off the cooler, this should ramp to ambient sensibly.
  * According to the Andor manual, the temperature should be up to around 0C before calling Shutdown, otherwise
  * the CCD may warm up too fast.
+ * Currently this routine does nothing, as both calling CoolerOFF and or Shutdown do not seem to enable
+ * us to warm the CCD slowly.
  * @return The routine returns TRUE on success and FALSE on failure.
  * @see #Setup_Data
  */

@@ -224,10 +224,13 @@ public class Sprat
 						  "ngat.sprat.ccd.command.StatusExposureRunCommand",
 						  "ngat.sprat.ccd.command.StatusExposureStartTimeCommand",
 						  "ngat.sprat.ccd.command.StatusExposureStatusCommand",
+						  "ngat.sprat.ccd.command.StatusMultrunBinXCommand",
+						  "ngat.sprat.ccd.command.StatusMultrunBinYCommand",
 						  "ngat.sprat.ccd.command.StatusMultrunCountCommand",
 						  "ngat.sprat.ccd.command.StatusMultrunIndexCommand",
 						  "ngat.sprat.ccd.command.StatusTemperatureGetCommand",
 						  "ngat.sprat.ccd.command.StatusTemperatureStatusCommand",
+						  "ngat.sprat.ccd.command.TemperatureSetCommand",
 						  "ngat.sprat.mechanism.command.ArcLampCommand",
 						  "ngat.sprat.mechanism.command.Command",
 						  "ngat.sprat.mechanism.command.DoubleReplyCommand",
@@ -728,14 +731,8 @@ public class Sprat
 
 	/**
 	 * Method to initialise the mechanisms and CCD control C layer.
-	 * <ul>
-	 * <li>
-	 * </ul>
+	 * This does nothing at the moment.
 	 * @exception Exception Thrown if an error occurs
-	 * @see #status
-	 * @see SpratStatus#getProperty
-	 * @see SpratStatus#getPropertyBoolean
-	 * @see SpratStatus#getPropertyInteger
 	 */
 	public void startupController() throws Exception
 	{
@@ -743,6 +740,7 @@ public class Sprat
 
 	/**
 	 * Method to shutdown the low level software.
+	 * This does nothing at the moment.
 	 */
 	public void shutdownController() throws Exception
 	{

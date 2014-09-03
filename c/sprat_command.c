@@ -1751,7 +1751,7 @@ static int Command_Parse_Date(char *time_string,int *time_secs)
  * Parse a string containing an exposure type into an instance of CCD_FITS_FILENAME_EXPOSURE_TYPE containing
  * the parsed value.
  * @param exposure_type_string A string containing a valid exposure type. One of:
- *                            arc|exposure|skyflat|standard|lampflat|bias|dark.
+ *                            acquire|arc|exposure|skyflat|standard|lampflat|bias|dark.
  * @param exposure_type The address of an instance of enum CCD_FITS_FILENAME_EXPOSURE_TYPE to fill in with the parsed
  *        exposure type.
  * @see sprat_global.html#Sprat_Global_Error_Number
@@ -1772,7 +1772,9 @@ static int Command_Exposure_Type_Parse(char *exposure_type_string,enum CCD_FITS_
 		sprintf(Sprat_Global_Error_String,"Command_Exposure_Type_Parse:exposure_type was NULL.");
 		return FALSE;
 	}
-	if(strcmp(exposure_type_string,"arc") == 0)
+	if(strcmp(exposure_type_string,"acquire") == 0)
+		(*exposure_type) = CCD_FITS_FILENAME_EXPOSURE_TYPE_ACQUIRE;
+	else if(strcmp(exposure_type_string,"arc") == 0)
 		(*exposure_type) = CCD_FITS_FILENAME_EXPOSURE_TYPE_ARC;
 	else if(strcmp(exposure_type_string,"bias") == 0)
 		(*exposure_type) = CCD_FITS_FILENAME_EXPOSURE_TYPE_BIAS;

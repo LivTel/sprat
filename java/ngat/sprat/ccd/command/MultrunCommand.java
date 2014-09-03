@@ -23,6 +23,11 @@ public class MultrunCommand extends MultrunFilenameReplyCommand implements Runna
 	 * A string describing a type of exposure that the multrun command can perform. This affects
 	 * the FITS image filename that the acquired data is saved into.
 	 */
+	public final static String EXPOSURE_TYPE_ACQUIRE = new String("acquire");
+	/**
+	 * A string describing a type of exposure that the multrun command can perform. This affects
+	 * the FITS image filename that the acquired data is saved into.
+	 */
 	public final static String EXPOSURE_TYPE_ARC = new String("arc");
 	/**
 	 * A string describing a type of exposure that the multrun command can perform. This affects

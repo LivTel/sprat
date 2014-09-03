@@ -12,7 +12,8 @@ SRCS 		= Command.java IntegerReplyCommand.java MultrunFilenameReplyCommand.java 
 		StatusExposureLengthCommand.java StatusExposureMultrunCommand.java \
 		StatusExposureRunCommand.java StatusExposureStartTimeCommand.java StatusExposureStatusCommand.java \
 		StatusMultrunCountCommand.java StatusMultrunIndexCommand.java StatusMultrunBinXCommand.java \
-		StatusMultrunBinYCommand.java StatusTemperatureGetCommand.java StatusTemperatureStatusCommand.java
+		StatusMultrunBinYCommand.java StatusTemperatureGetCommand.java StatusTemperatureStatusCommand.java \
+		TemperatureSetCommand.java
 
 
 OBJS 		= $(SRCS:%.java=$(BINDIR)/%.class)

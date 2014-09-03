@@ -565,11 +565,12 @@ int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,enum CCD_FITS_F
 	/* check exposure type is legal
 	** We don't use CCD_FITS_FILENAME_IS_EXPOSURE_TYPE here, as BIAS and DARK are illegal for this function
 	** (which opens the shutter). */
-	if(!(((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_ARC)||
-	    ((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_EXPOSURE)||
-	    ((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_SKYFLAT)||
-	    ((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_STANDARD)|| 
-	    ((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_LAMPFLAT)))
+	if(!(((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_ACQUIRE)||
+	     ((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_ARC)||
+	     ((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_EXPOSURE)||
+	     ((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_SKYFLAT)||
+	     ((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_STANDARD)|| 
+	     ((exposure_type) == CCD_FITS_FILENAME_EXPOSURE_TYPE_LAMPFLAT)))
 	{
 		/* reset active flag */
 		Multrun_Data.Is_Active = FALSE;

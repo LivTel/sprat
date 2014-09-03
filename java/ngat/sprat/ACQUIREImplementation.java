@@ -799,7 +799,7 @@ public class ACQUIREImplementation extends FITSImplementation implements JMSComm
 		command.setPortNumber(ccdCLayerPortNumber);
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendMultrunCommand:hostname = "+ccdCLayerHostname+
 			   " :port number = "+ccdCLayerPortNumber+".");
-		command.setCommand(exposureLength,1,MultrunCommand.EXPOSURE_TYPE_EXPOSURE);
+		command.setCommand(exposureLength,1,MultrunCommand.EXPOSURE_TYPE_ACQUIRE);
 		// actually send the command to the C layer
 		command.sendCommand();
 		// check the parsed reply
