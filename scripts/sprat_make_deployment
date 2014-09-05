@@ -240,7 +240,7 @@ echo "${dir_count} C test program directories copied, containg ${file_count} C t
 # Scripts
 #
 echo "Copying scripts..."
-set file_list = "bin/scripts/configure_tai_data.csh bin/scripts/delete_log_files.csh bin/scripts/killhup.csh bin/scripts/fuser_check bin/sprat/c/${HOSTTYPE}/start_sprat_sprat1.csh bin/ccs_gui/java/spratgui bin/sprat/scripts/sprat_engineering_mode bin/sprat/scripts/soak_test"
+set file_list = "bin/scripts/configure_tai_data.csh bin/scripts/delete_log_files.csh bin/scripts/killhup.csh bin/scripts/fuser_check bin/sprat/c/${HOSTTYPE}/start_sprat_sprat1.csh bin/ccs_gui/java/spratgui bin/sprat/scripts/sprat_engineering_mode bin/sprat/scripts/soak_test bin/sprat/scripts/sprat_monitor_machine"
 set file_count = 0
 cd ${dev_dir}
 foreach file ( ${file_list} )

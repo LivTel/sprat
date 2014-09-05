@@ -1,0 +1,22 @@
+#!/bin/csh
+# monitor the number of sockets in use in sprat - other system resources as well.
+# $HeadURL$
+set date_doy_string = `date +"%j"`
+set date_string = `/bin/date`
+set date_string_s = `/bin/date +"%s"`
+set machine_name = `/bin/hostname --short`
+set log_filename = "${LT_HOME}/log/sprat_monitor_${machine_name}_${date_doy_string}.txt"
+set tcp_connection_count = `/bin/netstat -t | wc -l`
+set c_layer_tcp_connection_count = `/bin/netstat -t | grep 8367 | wc -l`
+set java_layer_tcp_connection_count = `/bin/netstat -t | grep 8374 | wc -l`
+set mem_free = `cat /proc/meminfo | grep MemFree | awk ' { print $2 } '`
+if ( ! -r ${log_filename} ) then
+	echo "Date,Date(s),Tcp Connections,C Layer Connections,Java Layer Connections,Free Memory (Kb)" >> ${log_filename}
+endif
+echo "${date_string},${date_string_s},${tcp_connection_count},${c_layer_tcp_connection_count},${java_layer_tcp_connection_count},${mem_free}" >> ${log_filename}
+#
+# netstat details
+#
+set netstat_log_filename = "${LT_HOME}/log/sprat_monitor_netstat_${machine_name}_${date_doy_string}.txt"
+echo "Date ${date_string}" >> ${netstat_log_filename}
+/bin/netstat -t >> ${netstat_log_filename}
