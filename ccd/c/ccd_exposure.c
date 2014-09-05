@@ -887,6 +887,37 @@ static void Exposure_Debug_Buffer(char *description,unsigned short *buffer,size_
 
 /**
  * Save the exposure to disk.
+ * <ul>
+ * <li>The number of rows/columns and binning factors are retrieved from setup (CCD_Setup_Get_Bin_X / 
+ *     CCD_Setup_Get_Bin_Y / CCD_Setup_Get_NCols / CCD_Setup_Get_NRows) and used along with CCD_GLOBAL_BYTES_PER_PIXEL
+ *     to check the image data buffer is the correct length.
+ * <li>A FITS filename lock file is created with CCD_Fits_Filename_Lock.
+ * <li>We open or create a new FITS file.
+ * <li>We print out a subset of the data using Exposure_Debug_Buffer.
+ * <li>We call fits_write_img to write the data into the FITS image.
+ * <li>We call CCD_Fits_Header_Write_To_Fits to write FITS headers stored in the list to the FITS image.
+ * <li>Exposure_Data.Start_Time is passed into CCD_Exposure_TimeSpec_To_Date_String, and the results written into a 
+ *     DATE FITS header entry.
+ * <li>Exposure_Data.Start_Time is passed into CCD_Exposure_TimeSpec_To_Date_Obs_String, and the results written into a
+ *     DATE-OBS FITS header entry.
+ * <li>Exposure_Data.Start_Time is passed into CCD_Exposure_TimeSpec_To_UtStart_String, and the results written into a
+ *     UTSTART FITS header entry.
+ * <li>Exposure_Data.Start_Time is passed into CCD_Exposure_TimeSpec_To_Mjd, and the results written into a
+ *     MJD FITS header entry.
+ * <li>We use CCD_Setup_Get_Bin_X and CCD_Setup_Get_Bin_Y to retrieve binning values to write into CCDXBIN and CCDYBIN
+ *     FITS header entry.
+ * <li>We use CCD_Setup_Is_Window to write the value of the CCDWMODE FITS header entry.
+ * <li>We use CCD_Setup_Get_Horizontal_Start, CCD_Setup_Get_Horizontal_End, CCD_Setup_Get_Vertical_Start and 
+ *     CCD_Setup_Get_Vertical_End to write the CCDWXOFF,CCDWYOFF,CCDWXSIZ,CCDWYSIZ FITS header entries.
+ * <li>We use CCD_Setup_Get_Detector_Pixel_Count_X and CCD_Setup_Get_Detector_Pixel_Count_Y to write the 
+ *     CCDXIMSI and CCDYIMSI FITS header entries.
+ * <li>We use Exposure_Data.Exposure_Length to write the EXPTIME FITS header entry.
+ * <li>We use Exposure_Data.Accumulation and Exposure_Data.Series to write the ACCUM and SERIES FITS header entries.
+ * <li>We use CCD_Temperature_Get_Cached_Temperature to write the CCDATEMP TEMPSTAT and TEMPDATE FITS header entries.
+ * <li>We use CCD_Temperature_Target_Temperature_Get to write the CCDSTEMP FITS header entry.
+ * <li>We call fits_close_file to finish writing the FITS image.
+ * <li>We call CCD_Fits_Filename_UnLock to delete the lock file associated with the FITS image.
+ * </ul>
  * @param buffer Pointer to a previously allocated array of unsigned shorts containing the image pixel values.
  * @param buffer_length The length of the buffer in bytes.
  * @param header A list of FITS headers to wrire into the FITS image.
@@ -895,12 +926,14 @@ static void Exposure_Debug_Buffer(char *description,unsigned short *buffer,size_
  * @see #Exposure_Error_Number
  * @see #Exposure_Error_String
  * @see #Exposure_Debug_Buffer
+ * @see #Exposure_Data
  * @see #CCD_Exposure_TimeSpec_To_Date_String
  * @see #CCD_Exposure_TimeSpec_To_Date_Obs_String
  * @see #CCD_Exposure_TimeSpec_To_UtStart_String
  * @see #CCD_Exposure_TimeSpec_To_Mjd
  * @see ccd_fits_filename.html#CCD_Fits_Filename_Lock
  * @see ccd_fits_filename.html#CCD_Fits_Filename_UnLock
+ * @see ccd_fits_header.html#CCD_Fits_Header_Write_To_Fits
  * @see ccd_global.html#CCD_GLOBAL_BYTES_PER_PIXEL
  * @see ccd_global.html#CCD_Global_Log
  * @see ccd_global.html#CCD_Global_Log_Format
@@ -911,9 +944,12 @@ static void Exposure_Debug_Buffer(char *description,unsigned short *buffer,size_
  * @see ccd_setup.html#CCD_Setup_Is_Window
  * @see ccd_setup.html#CCD_Setup_Get_Horizontal_Start
  * @see ccd_setup.html#CCD_Setup_Get_Horizontal_End
+ * @see ccd_setup.html#CCD_Setup_Get_Vertical_Start
  * @see ccd_setup.html#CCD_Setup_Get_Vertical_End
  * @see ccd_setup.html#CCD_Setup_Get_Detector_Pixel_Count_X
  * @see ccd_setup.html#CCD_Setup_Get_Detector_Pixel_Count_Y
+ * @see ccd_temperature.html#CCD_Temperature_Get_Cached_Temperature
+ * @see ccd_temperature.html#CCD_Temperature_Target_Temperature_Get
  * @see #fexist
  */
 static int Exposure_Save(void *buffer,size_t buffer_length,struct Fits_Header_Struct header,char *filename)
@@ -1227,7 +1263,7 @@ static int Exposure_Save(void *buffer,size_t buffer_length,struct Fits_Header_St
 			detector_y_pixel_count,status,buff);
 		return FALSE;
 	}
-	exposure_length = ((double)(Exposure_Data.Exposure_Length))/1000.0;
+       	exposure_length = ((double)(Exposure_Data.Exposure_Length))/1000.0;
 	retval = fits_update_key_fixdbl(fits_fp,"EXPTIME",exposure_length,6,NULL,&status);
 	if(retval)
 	{
@@ -1402,8 +1438,6 @@ static int Exposure_Save(void *buffer,size_t buffer_length,struct Fits_Header_St
 		sprintf(Exposure_Error_String,"Exposure_Save:Failed to lock '%s'.",filename);
 		return FALSE;				
 	}
-
-
 #if LOGGING > 5
 	CCD_Global_Log("ccd","ccd_exposure.c","CCD_Exposure_Save",LOG_VERBOSITY_INTERMEDIATE,"CCD","finished.");
 #endif

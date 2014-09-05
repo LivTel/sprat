@@ -488,8 +488,7 @@ public class ACQUIREImplementation extends FITSImplementation implements JMSComm
 		sprat.log(Logging.VERBOSITY_VERBOSE,"Attempting telescope position XY Pixel offset x(binned pixels):"+
 			  xPixelOffset+":y(binned pixels):"+yPixelOffset+".");
 		// get plate scale from FITS header defaults and current binning
-		// Not sure what happens if we use non-square binning.
-		plateScale = status.getPropertyDouble("sprat.fits.value.CCDSCALE");
+		plateScale = status.getPropertyDouble("sprat.fits.value.CCDSCALE."+bin);
 		// convert pixel offset to arcsec offset (in focal plane geometry/aperture).
 		xArcsecOffset = (float)(xPixelOffset*plateScale);
 		yArcsecOffset = (float)(yPixelOffset*plateScale);

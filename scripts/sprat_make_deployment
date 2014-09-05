@@ -260,7 +260,7 @@ echo "${file_count} scripts copied."
 # in bin sub-directories
 echo "Copying machine configuration files..."
 #ccs_gui/java/${machine_name}.ics_gui.fits.bss.properties 
-set file_list = "sprat/java/${machine_name}.fits.properties sprat/java/${machine_name}.sprat.net.properties sprat/java/${machine_name}.sprat.properties sprat/c/${HOSTTYPE}/${machine_name}.sprat.c.properties dprt/java/${machine_name}.sprat.dprt.properties ccs_gui/java/${machine_name}.sprat.ccs_gui.properties ccs_gui/java/${machine_name}.sprat.ccs_gui_config.properties ccs_gui/java/${machine_name}.sprat.ccs_gui.fits.properties autobooter/java/${machine_name}.sprat.autobooter.properties "
+set file_list = "sprat/java/${machine_name}.fits.properties sprat/java/${machine_name}.sprat.net.properties sprat/java/${machine_name}.sprat.properties sprat/c/${HOSTTYPE}/${machine_name}.sprat.c.properties dprt/java/${machine_name}.sprat.dprt.properties ccs_gui/java/${machine_name}.sprat.ccs_gui.properties ccs_gui/java/${machine_name}.sprat.ccs_gui_config.properties ccs_gui/java/${machine_name}.ccs_gui.fits.properties autobooter/java/${machine_name}.sprat.autobooter.properties "
 set file_count = 0
 cd ${dev_dir}
 foreach file ( ${file_list} )
