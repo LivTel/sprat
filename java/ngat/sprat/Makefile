@@ -20,7 +20,7 @@ BASE_IMPL_SRCS		= JMSCommandImplementation.java CommandImplementation.java Unkno
 CALIBRATE_IMPL_SRCS 	= CALIBRATEImplementation.java ARCImplementation.java \
 			BIASImplementation.java DARKImplementation.java \
 			LAMPFLATImplementation.java MULTBIASImplementation.java MULTDARKImplementation.java \
-			SKYFLATImplementation.java 
+			SKYFLATImplementation.java DAY_CALIBRATEImplementation.java 
 EXPOSE_IMPL_SRCS	= EXPOSEImplementation.java MULTRUNImplementation.java 
 INTERRUPT_IMPL_SRCS 	= ABORTImplementation.java GET_STATUSImplementation.java REBOOTImplementation.java
 SETUP_IMPL_SRCS		= CONFIGImplementation.java

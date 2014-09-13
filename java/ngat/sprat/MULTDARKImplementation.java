@@ -23,14 +23,6 @@ public class MULTDARKImplementation extends CALIBRATEImplementation implements J
 	 * Revision Control System id string, showing the version of the Class.
 	 */
 	public final static String RCSID = new String("$Id$");
-	/**
-	 * The list of FITS filenames returned by the multbias command.
-	 */
-	protected List<String> filenameList = null;
-	/**
-	 * The multrun number used for FITS filenames for this command.
-	 */
-	protected int multrunNumber;
 
 	/**
 	 * Constructor.
@@ -110,9 +102,9 @@ public class MULTDARKImplementation extends CALIBRATEImplementation implements J
 	 *     is sent back to the client after each reduction.
 	 * <li>The done object is setup.
 	 * </ul>
-	 * @see #filenameList
 	 * @see #testAbort
-	 * @see #sendMultDarkCommand
+	 * @see CALIBRATEImplementation#filenameList
+	 * @see CALIBRATEImplementation#sendMultDarkCommand
 	 * @see FITSImplementation#clearFitsHeaders
 	 * @see FITSImplementation#setFitsHeaders
 	 * @see FITSImplementation#getFitsHeadersFromISS
@@ -212,59 +204,6 @@ public class MULTDARKImplementation extends CALIBRATEImplementation implements J
 		return multDarkDone;
 	}
 
-	/**
-	 * Send the multdark command to the C layer.
-	 * @param exposureLength The exposure length of each dark frame in milliseconds.
-	 * @param exposureCount The number of dark frames to generate.
-	 * @exception Exception Thrown if an error occurs.
-	 * @see #filenameList
-	 * @see #multrunNumber
-	 * @see HardwareImplementation#ccdCLayerHostname
-	 * @see HardwareImplementation#ccdCLayerPortNumber
-	 * @see ngat.sprat.ccd.command.MultDarkCommand
-	 * @see ngat.sprat.ccd.command.MultDarkCommand#setAddress
-	 * @see ngat.sprat.ccd.command.MultDarkCommand#setPortNumber
-	 * @see ngat.sprat.ccd.command.MultDarkCommand#setCommand
-	 * @see ngat.sprat.ccd.command.MultDarkCommand#sendCommand
-	 * @see ngat.sprat.ccd.command.MultDarkCommand#getParsedReplyOK
-	 * @see ngat.sprat.ccd.command.MultDarkCommand#getReturnCode
-	 * @see ngat.sprat.ccd.command.MultDarkCommand#getParsedReply
-	 * @see ngat.sprat.ccd.command.MultDarkCommand#getMultrunNumber
-	 * @see ngat.sprat.ccd.command.MultDarkCommand#getFilename
-	 */
-	protected void sendMultDarkCommand(int exposureLength,int exposureCount) throws Exception
-	{
-		MultDarkCommand command = null;
-		int returnCode;
-		String errorString = null;
-
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendDarkCommand:Started.");
-		command = new MultDarkCommand();
-		// configure C comms
-		command.setAddress(ccdCLayerHostname);
-		command.setPortNumber(ccdCLayerPortNumber);
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendDarkCommand:hostname = "+ccdCLayerHostname+
-			   " :port number = "+ccdCLayerPortNumber+".");
-		command.setCommand(exposureLength,exposureCount);
-		// actually send the command to the C layer
-		command.sendCommand();
-		// check the parsed reply
-		if(command.getParsedReplyOK() == false)
-		{
-			returnCode = command.getReturnCode();
-			errorString = command.getParsedReply();
-			sprat.log(Logging.VERBOSITY_TERSE,
-				   "sendMultDarkCommand:multdark command failed with return code "+
-				   returnCode+" and error string:"+errorString);
-			throw new Exception(this.getClass().getName()+
-					    ":sendMultDarkCommand:Command failed with return code "+returnCode+
-					    " and error string:"+errorString);
-		}
-		// extract data from successful reply.
-		multrunNumber = command.getMultrunNumber();
-		filenameList = command.getFilenameList();
-		sprat.log(Logging.VERBOSITY_INTERMEDIATE,"sendMultDarkCommand:Finished.");
-	}
 }
 
 
