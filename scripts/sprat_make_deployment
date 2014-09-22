@@ -79,7 +79,7 @@ echo "${dir_count} directories created."
 # Copy jars
 #
 echo "Copying jars..."
-set jar_list = "ngat_fits.jar ngat_message_base.jar ngat_message_inst_dp.jar ngat_message_iss_inst.jar ngat_message_inst_bss.jar ngat_net.jar ngat_phase2.jar ngat_util.jar ngat_util_logging.jar ngat_swing.jar ngat_sound.jar ngat_sprat.jar"
+set jar_list = "ngat_astrometry.jar ngat_fits.jar ngat_message_base.jar ngat_message_inst_dp.jar ngat_message_iss_inst.jar ngat_message_inst_bss.jar ngat_net.jar ngat_phase2.jar ngat_util.jar ngat_util_logging.jar ngat_swing.jar ngat_sound.jar ngat_sprat.jar"
 set jar_count = 0
 foreach jar ( ${jar_list} )
 	echo "jar : ${jar}"
