@@ -252,7 +252,7 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 			sprat.error(this.getClass().getName()+
 				    ":setFitsHeaders:Failed to get value type for keyword:"+keyword);
 			throw new Exception(this.getClass().getName()+
-					    "setFitsHeader:Failed to get value type for keyword:"+keyword);
+					    ":setFitsHeader:Failed to get value type for keyword:"+keyword);
 		}
 		// get whether the FITS keyword is Spectral only or not.
 		isFitsKeywordSpectral = status.getPropertyBoolean("sprat.fits.value.isspectral."+keyword);
@@ -293,8 +293,13 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 			{
 				Float fov = null;
 				
-				dvalue = status.getPropertyDouble(valueKeywordString);
-				fov = new Float(dvalue);
+				if(valueKeywordString.equals("internal") == false)
+				{
+					dvalue = status.getPropertyDouble(valueKeywordString);
+					fov = new Float(dvalue);
+				}
+				else
+					fov = (Float)(getFitsKeywordInternalValue(keyword));
 				addFitsHeader(keyword,fov);
 			}
 			else if(typeString.equals("double"))
@@ -314,8 +319,13 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 			{
 				Boolean bov = null;
 				
-				bvalue = status.getPropertyBoolean(valueKeywordString);
-				bov = new Boolean(bvalue);
+				if(valueKeywordString.equals("internal") == false)
+				{
+					bvalue = status.getPropertyBoolean(valueKeywordString);
+					bov = new Boolean(bvalue);
+				}
+				else
+					bov = (Boolean)(getFitsKeywordInternalValue(keyword));
 				addFitsHeader(keyword,bov);
 			}
 			else
