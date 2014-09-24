@@ -195,8 +195,8 @@ public class ACQUIREImplementation extends FITSImplementation implements JMSComm
 	 * This method implements the ACQUIRE command. 
 	 * <ul>
 	 * <li>It extracts acquisitionMode, acquireXPixel, acquireYPixel, acquireRARads, acquireDecRads, 
-	 *     acquireRAString, acquireDecString from the acquire command.
-	 * <li>It sets up status's exposure count and number.
+	 *     acquireRAString, acquireDecString, moving, rateTime, raRateRadPerSec, decRateRadPerSec 
+	 *     from the acquire command.
 	 * <li>loadConfig is called.
 	 * <li>moveFold is called.
 	 * <li>We send a Basic Ack (sendBasicAck) so the command does not time out during Config.
@@ -364,8 +364,12 @@ public class ACQUIREImplementation extends FITSImplementation implements JMSComm
 	 * Method to setup the CCD configuration with the specified binning factor.
 	 * <ul>
 	 * <li>Some configuration is loaded from the properties files.
-	 * <li>setFocusOffset is called to set the focus offset for that filter setting. This must be done after
-	 *     beamSteer/filterWheelMove/ndFilterArduino.move  for the right BSS offsets to be returned.
+	 * <li>We call sendConfigCommand to configure the CCD C layer (binning) with no window.
+	 * <li>rotateGrism(0) is called so we can move the grism out of the beam.
+	 * <li>moveGrism is called to move the grism out of the beam.
+	 * <li>moveSlit is called to move the slit out of the beam.
+	 * <li>moveMirror is called to move the calibration mirror out of the beam.
+	 * <li>setFocusOffset is called to set the focus offset for the Sprat instrument focus. 
 	 * <li>incConfigId is called to increment the config's unique ID.
 	 * <li>The status's setConfigName is used to set a name for the config.
 	 * </ul>
@@ -373,6 +377,12 @@ public class ACQUIREImplementation extends FITSImplementation implements JMSComm
 	 * @param acquireDone The done command to be returned to the client. The error details may be filled
 	 *        in by this method if the procedure fails.
 	 * @see #bin
+	 * @see #sendConfigCommand
+	 * @see #rotateGrism
+	 * @see #moveGrism
+	 * @see #moveMirror
+	 * @see #setFocusOffset
+	 * @see ngat.phase2.SpratConfig#POSITION_OUT
 	 * @exception Exception Thrown if sendConfigCommand fails.
 	 */
 	protected void doConfig(ACQUIRE acquireCommand,ACQUIRE_DONE acquireDone) throws Exception
@@ -463,7 +473,7 @@ public class ACQUIREImplementation extends FITSImplementation implements JMSComm
 	 * This method offsets the telescope in X and Y (focal plane geometry) using the 
 	 * xPixelOffset and yPixelOffset parameters. 
 	 * These are converted to arcseconds and sent to the RCS using the OFFSET_X_Y command.
-	 * The plate scale is currently retrieved from the FITS property file value:"sprat.fits.value.CCDSCALE".
+	 * The plate scale is currently retrieved from the FITS property file value:"sprat.fits.value.CCDSCALE."+bin.
 	 * It is not clear how non-square binning is supported yet, or whether this is the right thing to do.
 	 * @param id The string id of the command instance we are implementing. Used for generating ISS command id's.
 	 * @param xPixelOffset The offset in X binned pixels in the focal plane of the acquisition instrument.
@@ -714,7 +724,10 @@ public class ACQUIREImplementation extends FITSImplementation implements JMSComm
 	 * @see #status
 	 * @see #exposureLength
 	 * @see #sendMultrunCommand
+	 * @see #timeStartExposure
+	 * @see #timeEndExposure
 	 * @see FITSImplementation#testAbort
+	 * @see FITSImplementation#clearFitsHeaders
 	 * @see FITSImplementation#setFitsHeaders
 	 * @see FITSImplementation#getFitsHeadersFromISS
 	 */
@@ -969,7 +982,7 @@ public class ACQUIREImplementation extends FITSImplementation implements JMSComm
 	 * <ul>
 	 * <li>We call getWCSFITS to get a WCSTools handle for the reduced filename.
 	 * <li>We call wcsToPixel to find the X,Y binned pixel position of the target RA/Dec (for debugging
-	 *     purposes only).
+	 *     purposes only). If the target is moving there is more debugging printed.
 	 * <li>We call pixelToWCS with the <b>binned</b> acquisition pixel position to find what RA/Dec
 	 *     is at the target pixel location.
 	 * <li>We convert this RA/Dec to radians from the returned degrees.
@@ -997,6 +1010,11 @@ public class ACQUIREImplementation extends FITSImplementation implements JMSComm
 	 * @see #acquireRAString
 	 * @see #acquireDecString
 	 * @see #acquireThreshold
+	 * @see #moving
+	 * @see #rateTime
+	 * @see #raRateRadPerSec
+	 * @see #acquireDecString
+	 * @see #timeStartExposure
 	 * @see ngat.astrometry.WCSTools#getWCSFITS
 	 * @see ngat.astrometry.WCSTools#wcsToPixel
 	 * @see ngat.astrometry.WCSTools#pixelToWCS
@@ -1141,7 +1159,7 @@ public class ACQUIREImplementation extends FITSImplementation implements JMSComm
 	/**
 	 * Compute the XY pixel offset between the brightest object on the last reduced frame and the target
 	 * pixel position. The computation is done in binned pixels.
-	 * The plate scale is currently retrieved from the FITS property file value:"sprat.fits.value.CCDSCALE".
+	 * The plate scale is currently retrieved from the FITS property file value:"sprat.fits.value.CCDSCALE."+bin.
 	 * It is not clear how non-square binning is supported yet, or whether this is the right thing to do.
 	 * @return The method returns true if acquisition has been successful, i.e. the difference between the
 	 *         two pixel positions is less than  acquireThreshold
@@ -1167,7 +1185,7 @@ public class ACQUIREImplementation extends FITSImplementation implements JMSComm
 		done = false;
 		// get plate scale from FITS header defaults and current binning
 		// Not sure what happens if we use non-square binning.
-		plateScale = status.getPropertyDouble("sprat.fits.value.CCDSCALE");
+		plateScale = status.getPropertyDouble("sprat.fits.value.CCDSCALE."+bin);
 		sprat.log(Logging.VERBOSITY_VERBOSE,
 			  "computeXYPixelOffset:Target Pixel(binned): ("+(acquireXPixel/bin)+", "+(acquireYPixel/bin)+
 			  "):Brightest Object Pixel(binned): ("+brightestObjectXPixel+", "+brightestObjectYPixel+

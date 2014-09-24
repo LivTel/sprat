@@ -246,7 +246,7 @@ public class TWILIGHT_CALIBRATEImplementation extends CALIBRATEImplementation im
 	/**
 	 * Constructor.
 	 */
-	public TWILIGHT_CALIBRATEImplementation2()
+	public TWILIGHT_CALIBRATEImplementation()
 	{
 		super();
 	}
@@ -579,11 +579,10 @@ public class TWILIGHT_CALIBRATEImplementation extends CALIBRATEImplementation im
 						       timeOfNightString+index+LIST_KEY_SLIT_STRING));
 				        grismPosition = SpratConfig.parsePosition(status.getProperty(
 							LIST_KEY_STRING+LIST_KEY_CALIBRATION_STRING+
-							timeOfNightString+index+LIST_KEY_GRISM_STRING);
+							timeOfNightString+index+LIST_KEY_GRISM_STRING));
 				        grismRotation = status.getPropertyInteger(LIST_KEY_STRING+
 							      LIST_KEY_CALIBRATION_STRING+
 							      timeOfNightString+index+LIST_KEY_GRISM_ROTATION_STRING);
-					
 				}
 				catch(Exception e)
 				{
@@ -793,7 +792,7 @@ public class TWILIGHT_CALIBRATEImplementation extends CALIBRATEImplementation im
 		return true;
 	}
 
-diddly
+	//diddly
 	/**
 	 * This method does the specified calibration.
 	 * <ul>
@@ -888,7 +887,7 @@ diddly
 			exposureLength = minExposureLength;
 		if(optimalExposureLength > maxExposureLength)
 			exposureLength = maxExposureLength;
-		predictedMeanCounts = meanCounts * (float)((binx*biny)/(lastBinX*lastBinY))*
+		predictedMeanCounts = meanCounts * (float)(((binx*biny)/(lastBinX*lastBinY))*
 			(exposureLength/lastExposureLength));
 		sprat.log(Logging.VERBOSITY_VERBOSE,
 		      "Command:"+twilightCalibrateCommand.getClass().getName()+":doCalibrate:predictedMeanCounts are "+
@@ -1008,3 +1007,5 @@ diddly
 				   TWILIGHT_CALIBRATE_DONE twilightCalibrateDone,int binx,int biny,
 				   int slitPosition,int grismPosition,int grismRotation)
 	{
+	}
+}

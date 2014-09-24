@@ -335,8 +335,8 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 	 * given the specified list of things it can vary by.
 	 * @param keyword The FITS header keyword.
 	 * @param varyByString A string (which may be null or blank), describing what things cause the value of the 
-	 *        specified FITS keyword to change.  Legal values : <blank> | mirror | grism | grismrot | 
-	 *        grism.grismrot | slit | slit.grism.grismrot |binning | internal.
+	 *        specified FITS keyword to change.  Legal values : <blank> | mirror | grism | grismrot | slit | 
+	 *        slit.grism.grismrot | binx | biny | binxbiny | internal.
 	 * @param mirrorPosition The current mirror position. 
 	 *        One of MirrorCommand.POSITION_IN | MirrorCommand.POSITION_OUT | MirrorCommand.POSITION_ERROR | 
 	 *        MirrorCommand.POSITION_UNKNOWN .
@@ -380,7 +380,7 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 		{
 			return new String("internal");
 		}
-		// based on what the keywords value's vary by, construct a suitable value proerty keyword string to 
+		// based on what the keywords value's vary by, construct a suitable value property keyword string to 
 		// return.
 		else if(varyByString.equals("mirror"))
 		{
@@ -517,7 +517,8 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 
 	/**
 	 * Get the value for a FITS header keyword that has a "varyby" setting of "internal".
-	 * Current keywords supported: CONFIGID | CONFNAME | CCDATEMP | ENVTEMP0 | ENVTEMP1 | ENVHUM0 | ENVHUM1.
+	 * Current keywords supported: CONFIGID | CONFNAME | CCDATEMP | ENVTEMP0 | ENVTEMP1 | ENVHUM0 | ENVHUM1 |
+	 * ORIENT1 | ORIENT2 | ORIENT3 | LAMP1SET | LAMP2SET.
 	 * @param keyword The keyword to retrieve a value for.
 	 * @return An internally generated value.
 	 * @exception Exception Thrown if the keyword is not known to have an internal value by this method.
@@ -525,6 +526,11 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 	 * @see HardwareImplementation#getCCDTemperature
 	 * @see HardwareImplementation#getMechanismTemperature
 	 * @see HardwareImplementation#getHumidity
+	 * @see HardwareImplementation#getGyroPositionX
+	 * @see HardwareImplementation#getGyroPositionY
+	 * @see HardwareImplementation#getGyroPositionZ
+	 * @see HardwareImplementation#getArcLampIsOn
+	 * @see HardwareImplementation#getWLampIsOn
 	 * @see SpratStatus#getConfigId
 	 * @see SpratStatus#getConfigName
 	 */
@@ -558,7 +564,26 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 		{
 			return new Double(getHumidity(1));
 		}
-		// diddly gyro
+		else if(keyword.equals("ORIENT1"))
+		{
+			return new Double(getGyroPositionX());
+		}
+		else if(keyword.equals("ORIENT2"))
+		{
+			return new Double(getGyroPositionY());
+		}
+		else if(keyword.equals("ORIENT3"))
+		{
+			return new Double(getGyroPositionZ());
+		}
+		else if(keyword.equals("LAMP1SET"))
+		{
+			return new Boolean(getArcLampIsOn());
+		}
+		else if(keyword.equals("LAMP2SET"))
+		{
+			return new Boolean(getWLampIsOn());
+		}
 		throw new Exception(this.getClass().getName()+
 				    ":getFitsKeywordInternalValue:Failed to find internal handling procedure "+
 				    "for keyword:"+keyword);

@@ -913,6 +913,8 @@ static void Exposure_Debug_Buffer(char *description,unsigned short *buffer,size_
  *     CCDXIMSI and CCDYIMSI FITS header entries.
  * <li>We use Exposure_Data.Exposure_Length to write the EXPTIME FITS header entry.
  * <li>We use Exposure_Data.Accumulation and Exposure_Data.Series to write the ACCUM and SERIES FITS header entries.
+ * <li>We use CCD_Fits_Filename_Multrun_Get to write the RUNNUM FITS header entry.
+ * <li>We use CCD_Fits_Filename_Run_Get to write the EXPNUM FITS header entry.
  * <li>We use CCD_Temperature_Get_Cached_Temperature to write the CCDATEMP TEMPSTAT and TEMPDATE FITS header entries.
  * <li>We use CCD_Temperature_Target_Temperature_Get to write the CCDSTEMP FITS header entry.
  * <li>We call fits_close_file to finish writing the FITS image.
@@ -933,6 +935,8 @@ static void Exposure_Debug_Buffer(char *description,unsigned short *buffer,size_
  * @see #CCD_Exposure_TimeSpec_To_Mjd
  * @see ccd_fits_filename.html#CCD_Fits_Filename_Lock
  * @see ccd_fits_filename.html#CCD_Fits_Filename_UnLock
+ * @see ccd_fits_filename.html#CCD_Fits_Filename_Multrun_Get
+ * @see ccd_fits_filename.html#CCD_Fits_Filename_Run_Get
  * @see ccd_fits_header.html#CCD_Fits_Header_Write_To_Fits
  * @see ccd_global.html#CCD_GLOBAL_BYTES_PER_PIXEL
  * @see ccd_global.html#CCD_Global_Log
@@ -1304,44 +1308,34 @@ static int Exposure_Save(void *buffer,size_t buffer_length,struct Fits_Header_St
 			status,buff);
 		return FALSE;
 	}
-	/* CCDSCALE */
-	/* bin1 value configured in Java layer and passed into fits header list.
-	** Should have been written to file in CCD_Fits_Header_Write_To_Fits.
-	** So retrieve bin1 value using CFITSIO, mod by binning and update value */
-	/* diddly how does this work for non-square binned spectral data? */
-	/*
-	if(ccdxbin != 1)
+	/* RUNNUM */
+	ivalue = CCD_Fits_Filename_Multrun_Get();
+	retval = fits_update_key(fits_fp,TINT,"RUNNUM",&ivalue,NULL,&status);
+	if(retval)
 	{
-		retval = fits_read_key(fits_fp,TDOUBLE,"CCDSCALE",&ccdscale,NULL,&status);
-		if(retval)
-		{
-			fits_get_errstatus(status,buff);
-			fits_report_error(stderr,status);
-			fits_close_file(fits_fp,&status);
-			CCD_Fits_Filename_UnLock(filename);
-			Exposure_Error_Number = ;
-			sprintf(Exposure_Error_String,"Exposure_Save: Retrieving ccdscale failed(%s,%d,%s).",
-				filename,status,buff);
-			return FALSE;
-		}
-	*/
-		/* adjust for binning */
-		/*ccdscale *= ccdxbin;*/ /* assume xbin and ybin are equal - according to CCD_Setup_Dimensions they are */
-		/* write adjusted value back */
-	/*
-		retval = fits_update_key_fixdbl(fits_fp,"CCDSCALE",ccdscale,6,NULL,&status);
-		if(retval)
-		{
-			fits_get_errstatus(status,buff);
-			fits_report_error(stderr,status);
-			fits_close_file(fits_fp,&status);
-			CCD_Fits_Filename_UnLock(filename);
-			Exposure_Error_Number = ;
-			sprintf(Exposure_Error_String,"Exposure_Save: Updating ccdscale failed(%.2f,%s,%d,%s).",
-				ccdscale,filename,status,buff);
-			return FALSE;
-		}
-		}*//* end if ccdxbin != 1 */
+		fits_get_errstatus(status,buff);
+		fits_report_error(stderr,status);
+		fits_close_file(fits_fp,&status);
+		CCD_Fits_Filename_UnLock(filename);
+		Exposure_Error_Number = 45;
+		sprintf(Exposure_Error_String,"Exposure_Save: Updating RUNNUM failed(%s,%d,%s).",filename,
+			status,buff);
+		return FALSE;
+	}
+	/* EXPNUM */
+	ivalue = CCD_Fits_Filename_Run_Get();
+	retval = fits_update_key(fits_fp,TINT,"EXPNUM",&ivalue,NULL,&status);
+	if(retval)
+	{
+		fits_get_errstatus(status,buff);
+		fits_report_error(stderr,status);
+		fits_close_file(fits_fp,&status);
+		CCD_Fits_Filename_UnLock(filename);
+		Exposure_Error_Number = 46;
+		sprintf(Exposure_Error_String,"Exposure_Save: Updating EXPNUM failed(%s,%d,%s).",filename,
+			status,buff);
+		return FALSE;
+	}
 	/* temperature FITS headers */
 	if(!CCD_Temperature_Get_Cached_Temperature(&current_temperature,&temperature_status,
 						   &temperature_time_stamp))

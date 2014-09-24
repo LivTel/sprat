@@ -715,11 +715,12 @@ int Sprat_Multrun_Exposure_Count_Get(void)
 ** 		internal functions 
 ** ---------------------------------------------------------------------------- */
 /**
- * Sets some FITS header values from configured CCD values.
+ * Sets some FITS header values from configured CCD values. Currently OBSTYPE and EXPTOTAL
+ * are set, as they cannot be derived from data within the CCD library.
  * @see #Multrun_Data
- * @see sprat_config.html#Sprat_Config_Get_Double
  * @see sprat_global.html#Sprat_Global_Log_Format
  * @see sprat_global.html#Sprat_Global_Error
+ * @see ../ccd/cdocs/ccd_fits_header.html#CCD_Fits_Header_String_Add
  * @see ../ccd/cdocs/ccd_fits_header.html#CCD_Fits_Header_String_Add
  */
 static void Multrun_Fits_Headers_Set(int exp_type)
@@ -747,6 +748,13 @@ static void Multrun_Fits_Headers_Set(int exp_type)
 						   LOG_VERBOSITY_VERBOSE,"Failed to set OBSTYPE: DARK");
 			}
 			break;
+	}
+	/* EXPTOTAL */
+	if(!CCD_Fits_Header_Add_Int(&(Multrun_Data.Fits_Header),"EXPTOTAL",Multrun_Data.Exposure_Count,
+				    "The total number of exposures in a Multrun."))
+	{
+		Sprat_Global_Error("multrun","sprat_multrun.c","Multrun_Fits_Headers_Set",
+				   LOG_VERBOSITY_VERBOSE,"Failed to set EXPTOTAL.");
 	}
 }
 

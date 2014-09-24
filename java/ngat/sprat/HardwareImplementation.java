@@ -465,6 +465,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * If an error is returned this is thrown as an exception.
 	 * @return The current position is returned as an integer, one of:POSITION_ERROR, POSITION_UNKNOWN, 
 	 *         POSITION_IN, POSITION_OUT.
+	 * @exception Thrown if the command fails in some way, or returns an error.
 	 * @see HardwareImplementation#mechanismHostname
 	 * @see HardwareImplementation#mechanismPortNumber
 	 * @see ngat.sprat.mechanism.command.MirrorCommand
@@ -649,8 +650,9 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * Get a mechanism temperature.
 	 * An instance of TemperatureCommand is "run". If a run exception occurs this is thrown.
 	 * If an error is returned this is thrown as an exception.
-	 * @return The current temeprature as a double, in Kelvin.
 	 * @param sensorNumber Which number temperature sensor to query.
+	 * @return The current temeprature as a double, in Kelvin.
+	 * @exception Thrown if the command fails in some way, or returns an error.
 	 * @see #mechanismHostname
 	 * @see #mechanismPortNumber
 	 * @see Sprat#CENTIGRADE_TO_KELVIN
@@ -692,8 +694,9 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * Get a mechanism humidity measurement.
 	 * An instance of HumidityCommand is "run". If a run exception occurs this is thrown.
 	 * If an error is returned this is thrown as an exception.
-	 * @return The current humidity in percent as a double.
 	 * @param sensorNumber Which number humidity sensor to query.
+	 * @return The current humidity in percent as a double.
+	 * @exception Thrown if the command fails in some way, or returns an error.
 	 * @see HardwareImplementation#mechanismHostname
 	 * @see HardwareImplementation#mechanismPortNumber
 	 * @see ngat.sprat.mechanism.command.HumidityCommand
@@ -729,6 +732,228 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	}
 
  	/**
+	 * Get the gyro's X position in ADUs.
+	 * An instance of GyroCommand is "run". If a run exception occurs this is thrown.
+	 * If an error is returned this is thrown as an exception.
+	 * @return The gyro's X position in ADUs as a double.
+	 * @exception Thrown if the command fails in some way, or returns an error.
+	 * @see HardwareImplementation#mechanismHostname
+	 * @see HardwareImplementation#mechanismPortNumber
+	 * @see ngat.sprat.mechanism.command.GyroCommand
+	 * @see ngat.sprat.mechanism.command.GyroCommand#run
+	 * @see ngat.sprat.mechanism.command.GyroCommand#getRunException
+	 * @see ngat.sprat.mechanism.command.GyroCommand#getIsError
+	 * @see ngat.sprat.mechanism.command.GyroCommand#getErrorString
+	 * @see ngat.sprat.mechanism.command.GyroCommand#getPositionX
+	 */
+ 	protected double getGyroPositionX() throws Exception
+	{
+		GyroCommand command = null;
+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":getGyroPositionX:started.");
+		command = new GyroCommand(mechanismHostname,mechanismPortNumber);
+		command.run();
+		if(command.getRunException() != null)
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getGyroPositionX:command threw exception.",command.getRunException());
+		}
+		if(command.getIsError())
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getGyroPositionX:command returned an error:"+command.getErrorString());
+		}
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			  ":getGyroPositionX:finished with positions X:"+command.getPositionX()+
+			  " Y:"+command.getPositionY()+" Z:"+command.getPositionZ()+".");
+		return command.getPositionX();
+	}
+
+ 	/**
+	 * Get the gyro's Y position in ADUs.
+	 * An instance of GyroCommand is "run". If a run exception occurs this is thrown.
+	 * If an error is returned this is thrown as an exception.
+	 * @return The gyro's Y position in ADUs as a double.
+	 * @exception Thrown if the command fails in some way, or returns an error.
+	 * @see HardwareImplementation#mechanismHostname
+	 * @see HardwareImplementation#mechanismPortNumber
+	 * @see ngat.sprat.mechanism.command.GyroCommand
+	 * @see ngat.sprat.mechanism.command.GyroCommand#run
+	 * @see ngat.sprat.mechanism.command.GyroCommand#getRunException
+	 * @see ngat.sprat.mechanism.command.GyroCommand#getIsError
+	 * @see ngat.sprat.mechanism.command.GyroCommand#getErrorString
+	 * @see ngat.sprat.mechanism.command.GyroCommand#getPositionY
+	 */
+ 	protected double getGyroPositionY() throws Exception
+	{
+		GyroCommand command = null;
+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":getGyroPositionY:started.");
+		command = new GyroCommand(mechanismHostname,mechanismPortNumber);
+		command.run();
+		if(command.getRunException() != null)
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getGyroPositionY:command threw exception.",command.getRunException());
+		}
+		if(command.getIsError())
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getGyroPositionY:command returned an error:"+command.getErrorString());
+		}
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			  ":getGyroPositionY:finished with positions X:"+command.getPositionX()+
+			  " Y:"+command.getPositionY()+" Z:"+command.getPositionZ()+".");
+		return command.getPositionY();
+	}
+
+ 	/**
+	 * Get the gyro's Z position in ADUs.
+	 * An instance of GyroCommand is "run". If a run exception occurs this is thrown.
+	 * If an error is returned this is thrown as an exception.
+	 * @return The gyro's Z position in ADUs as a double.
+	 * @exception Thrown if the command fails in some way, or returns an error.
+	 * @see HardwareImplementation#mechanismHostname
+	 * @see HardwareImplementation#mechanismPortNumber
+	 * @see ngat.sprat.mechanism.command.GyroCommand
+	 * @see ngat.sprat.mechanism.command.GyroCommand#run
+	 * @see ngat.sprat.mechanism.command.GyroCommand#getRunException
+	 * @see ngat.sprat.mechanism.command.GyroCommand#getIsError
+	 * @see ngat.sprat.mechanism.command.GyroCommand#getErrorString
+	 * @see ngat.sprat.mechanism.command.GyroCommand#getPositionZ
+	 */
+ 	protected double getGyroPositionZ() throws Exception
+	{
+		GyroCommand command = null;
+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":getGyroPositionZ:started.");
+		command = new GyroCommand(mechanismHostname,mechanismPortNumber);
+		command.run();
+		if(command.getRunException() != null)
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getGyroPositionZ:command threw exception.",command.getRunException());
+		}
+		if(command.getIsError())
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getGyroPositionZ:command returned an error:"+command.getErrorString());
+		}
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			  ":getGyroPositionZ:finished with positions X:"+command.getPositionX()+
+			  " Y:"+command.getPositionY()+" Z:"+command.getPositionZ()+".");
+		return command.getPositionZ();
+	}
+
+	/**
+	 * Get whether the Arc Lamp is turned on.
+	 * An instance of ArcLampCommand is "run". If a run exception occurs this is thrown.
+	 * If an error is returned this is thrown as an exception.
+	 * @return If the ArcLampCommand returns 'on' then true is returned. 
+	 *         If the ArcLampCommand returns 'off' false is returned. Otherwise an exception is thrown.
+	 * @exception Thrown if the command fails in some way, or returns an error, 
+	 *            or returns a current state that is not 'on' or 'off'.
+	 * @see HardwareImplementation#mechanismHostname
+	 * @see HardwareImplementation#mechanismPortNumber
+	 * @see ngat.sprat.mechanism.command.ArcLampCommand
+	 * @see ngat.sprat.mechanism.command.ArcLampCommand#run
+	 * @see ngat.sprat.mechanism.command.ArcLampCommand#getRunException
+	 * @see ngat.sprat.mechanism.command.ArcLampCommand#getIsError
+	 * @see ngat.sprat.mechanism.command.ArcLampCommand#getErrorString
+	 * @see ngat.sprat.mechanism.command.ArcLampCommand#getCurrentState
+	 * @see ngat.sprat.mechanism.command.ArcLampCommand#STATE_ON
+	 * @see ngat.sprat.mechanism.command.ArcLampCommand#STATE_OFF
+	 */
+ 	protected boolean getArcLampIsOn() throws Exception
+	{
+		ArcLampCommand command = null;
+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":getArcLampIsOn:started.");
+		command = new ArcLampCommand(mechanismHostname,mechanismPortNumber);
+		command.run();
+		if(command.getRunException() != null)
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getArcLampIsOn:command threw exception.",command.getRunException());
+		}
+		if(command.getIsError())
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getArcLampIsOn:command returned an error:"+command.getErrorString());
+		}
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			  ":getArcLampIsOn:finished with lamp state:"+
+			  ArcLampCommand.stateToString(command.getCurrentState())+".");
+		switch(command.getCurrentState())
+		{
+			case ArcLampCommand.STATE_ON:
+				return true;
+			case ArcLampCommand.STATE_OFF:
+				return false;
+			case ArcLampCommand.STATE_ERROR:
+			case ArcLampCommand.STATE_UNKNOWN:
+			default:
+				throw new Exception(this.getClass().getName()+
+						    ":getArcLampIsOn:command returned an unknwon or illegal state:"+
+						    command.getCurrentState());
+		}
+	}
+
+	/**
+	 * Get whether the W (Tungsten) Lamp is turned on.
+	 * An instance of WLampCommand is "run". If a run exception occurs this is thrown.
+	 * If an error is returned this is thrown as an exception.
+	 * @return If the WLampCommand returns 'on' then true is returned. 
+	 *         If the WLampCommand returns 'off' false is returned. Otherwise an exception is thrown.
+	 * @exception Thrown if the command fails in some way, or returns an error, 
+	 *            or returns a current state that is not 'on' or 'off'.
+	 * @see HardwareImplementation#mechanismHostname
+	 * @see HardwareImplementation#mechanismPortNumber
+	 * @see ngat.sprat.mechanism.command.WLampCommand
+	 * @see ngat.sprat.mechanism.command.WLampCommand#run
+	 * @see ngat.sprat.mechanism.command.WLampCommand#getRunException
+	 * @see ngat.sprat.mechanism.command.WLampCommand#getIsError
+	 * @see ngat.sprat.mechanism.command.WLampCommand#getErrorString
+	 * @see ngat.sprat.mechanism.command.WLampCommand#getCurrentState
+	 * @see ngat.sprat.mechanism.command.WLampCommand#STATE_ON
+	 * @see ngat.sprat.mechanism.command.WLampCommand#STATE_OFF
+	 */
+ 	protected boolean getWLampIsOn() throws Exception
+	{
+		WLampCommand command = null;
+
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":getWLampIsOn:started.");
+		command = new WLampCommand(mechanismHostname,mechanismPortNumber);
+		command.run();
+		if(command.getRunException() != null)
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getWLampIsOn:command threw exception.",command.getRunException());
+		}
+		if(command.getIsError())
+		{
+			throw new Exception(this.getClass().getName()+
+					    ":getWLampIsOn:command returned an error:"+command.getErrorString());
+		}
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			  ":getWLampIsOn:finished with lamp state:"+
+			  WLampCommand.stateToString(command.getCurrentState())+".");
+		switch(command.getCurrentState())
+		{
+			case WLampCommand.STATE_ON:
+				return true;
+			case WLampCommand.STATE_OFF:
+				return false;
+			case WLampCommand.STATE_ERROR:
+			case WLampCommand.STATE_UNKNOWN:
+			default:
+				throw new Exception(this.getClass().getName()+
+						    ":getWLampIsOn:command returned an unknwon or illegal state:"+
+						    command.getCurrentState());
+		}
+	}
+
+   	/**
 	 * Get the CCD C layer hostname and port number from the properties into some internal variables.
 	 * <ul>
 	 * <li>"sprat.ccd.c.hostname" contains the hostname of the CCD C layer.
