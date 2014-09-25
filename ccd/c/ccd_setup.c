@@ -183,6 +183,7 @@ int CCD_Setup_Config_Directory_Set(char *directory)
  *     to examine vertical shift speed, and use the fastest possible speed.
  * <li>Calls <b>GetNumberHSSpeeds,GetHSSpeed, SetHSSpeed</b> 
  *         to set the horzontal readout speed.
+ * <li>If baseline_clamp is TRUE, we Call <b>SetBaselineClamp(1)</b> to try and stabilse the bias level.
  * <li>Calls <b>SetPreAmpGain</b> to set the gain.
  * <li>We call <b>SetCoolerMode(1)</b> to set the camera head to maintain temperature on shutdown.
  * </ul>
@@ -195,6 +196,7 @@ int CCD_Setup_Config_Directory_Set(char *directory)
  *        <li>1 = 0.05 MHz.
  *        <li>2 = 0.03 MHz.
  *        </ul>
+ * @param baseline_clamp A boolean, if true turn on the baseline clamp.
  * @param preamp_gain_index The preamp gain index, used (in conjunction with the horizontal shift speed index)
  *        to set the gain of the detector. Legal values for the iDus 420a are:
  *        <ul>
@@ -217,7 +219,8 @@ int CCD_Setup_Config_Directory_Set(char *directory)
  * @see ccd_global.html#CCD_Global_Andor_ErrorCode_To_String
  * @see ccd_global.html#CCD_Global_Log
  */
-int CCD_Setup_Startup(int use_recommended_vs,int vs_speed_index,int hs_speed_index,int preamp_gain_index)
+int CCD_Setup_Startup(int use_recommended_vs,int vs_speed_index,int hs_speed_index,int baseline_clamp,
+		      int preamp_gain_index)
 {
 	long camera_count;
 	unsigned int andor_retval;
@@ -235,6 +238,12 @@ int CCD_Setup_Startup(int use_recommended_vs,int vs_speed_index,int hs_speed_ind
 		Setup_Error_Number = 3;
 		sprintf(Setup_Error_String,"CCD_Setup_Startup: use_recommended_vs not a boolean(%d).",
 			use_recommended_vs);
+		return FALSE;
+	}
+	if(!CCD_GLOBAL_IS_BOOLEAN(baseline_clamp))
+	{
+		Setup_Error_Number = 22;
+		sprintf(Setup_Error_String,"CCD_Setup_Startup: baseline_clamp not a boolean(%d).",baseline_clamp);
 		return FALSE;
 	}
 	/* sort out selected camera. */
@@ -484,6 +493,29 @@ int CCD_Setup_Startup(int use_recommended_vs,int vs_speed_index,int hs_speed_ind
 		sprintf(Setup_Error_String,"CCD_Setup_Startup: SetHSSpeed(0,%d) failed %s(%u).",hs_speed_index,
 			CCD_Global_Andor_ErrorCode_To_String(andor_retval),andor_retval);
 		return FALSE;
+	}
+	/* baseline clamp */
+	if(baseline_clamp)
+	{
+#if LOGGING > 0
+		CCD_Global_Log("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
+			       "CCD_Setup_Startup:SetBaselineClamp(1):Turn baseline clamp on.");
+#endif
+		andor_retval = SetBaselineClamp(1); 
+		if(andor_retval != DRV_SUCCESS)
+		{
+			Setup_Error_Number = 41;
+			sprintf(Setup_Error_String,"CCD_Setup_Startup:SetBaselineClamp(1) failed %s(%u).",
+				CCD_Global_Andor_ErrorCode_To_String(andor_retval),andor_retval);
+			return FALSE;
+		}
+	}
+	else
+	{
+#if LOGGING > 0
+		CCD_Global_Log("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
+			       "CCD_Setup_Startup:Baseline clamp NOT turned on.");
+#endif
 	}
 	/* preamp gain */
 #if LOGGING > 3

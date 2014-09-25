@@ -299,10 +299,18 @@ static int Sprat_Initialise_Logging(void)
  * Initialise the CCD connection, initialise the CCD and set the temperature.
  * <ul>
  * <li>We retrieve the andor config directory from the "ccd.andor.setup.config_directory" config property.
- * <li>We retrieve the target temperature from the "ccd.temperature.target" config property.
  * <li>We retrieve the FITS data directory from the "file.fits.path" config property.
+ * <li>We retrieve the horizontal shift speed index from the "ccd.andor.setup.hs_speed_index" config property.
+ * <li>We retrieve whether to clamp the bias level from the "ccd.andor.setup.baseline_clamp" config property.
+ * <li>We retrieve the preamp gain index from the "ccd.andor.setup.preamp_gain_index" config property.
+ * <li>We call CCD_Setup_Config_Directory_Set to setup where the Andor library config files are.
  * <li>We call CCD_Setup_Startup to initialise the Andor library and CCD.
+ * <li>We call CCD_Setup_Get_Camera_Identification to retrieve Model and Serial number data to log.
+ * <li>We retrieve the target temperature from the "ccd.temperature.target" config property.
  * <li>We call CCD_Temperature_Set to set the CCD temperature.
+ * <li>We retrieve whether to turn the cooler on from the "ccd.temperature.cooler.on" config property.
+ * <li>If we want to turn the coller on, we call CCD_Temperature_Cooler_On to turn the cooler on.
+ * <li>We retrieve the FITS file instrument code from the "file.fits.instrument_code" config property.
  * <li>We call CCD_Fits_Filename_Initialise to initialise FITS filename handling.
  * </ul>
  * @return The routine returns TRUE on success and FALSE on failure.
@@ -326,7 +334,7 @@ static int Sprat_Startup_CCD(void)
 	char head_model_name[256];
 	char instrument_code;
 	double target_temperature;
-	int index,done,serial_number,cooler_on,hs_speed_index,preamp_gain_index;
+	int index,done,serial_number,cooler_on,hs_speed_index,baseline_clamp,preamp_gain_index;
 
 	/* get config */
 	if(!Sprat_Config_Get_String("ccd.andor.setup.config_directory",&andor_dir))
@@ -347,6 +355,12 @@ static int Sprat_Startup_CCD(void)
 		sprintf(Sprat_Global_Error_String,"Sprat_Startup_CCD:Failed to get Andor horizontal speed index.");
 		return FALSE;
 	}
+	if(!Sprat_Config_Get_Boolean("ccd.andor.setup.baseline_clamp",&baseline_clamp))
+	{
+		Sprat_Global_Error_Number = 12;
+		sprintf(Sprat_Global_Error_String,"Sprat_Startup_CCD:Failed to get Andor baseline clamp.");
+		return FALSE;
+	}
 	if(!Sprat_Config_Get_Integer("ccd.andor.setup.preamp_gain_index",&preamp_gain_index))
 	{
 		Sprat_Global_Error_Number = 11;
@@ -362,7 +376,7 @@ static int Sprat_Startup_CCD(void)
 			andor_dir);
 		return FALSE;
 	}
-	if(!CCD_Setup_Startup(TRUE,0,hs_speed_index,preamp_gain_index))
+	if(!CCD_Setup_Startup(TRUE,0,hs_speed_index,baseline_clamp,preamp_gain_index))
 	{
 		Sprat_Global_Error_Number = 9;
 		sprintf(Sprat_Global_Error_String,"Sprat_Startup_CCD:Failed to Initialise camera.");

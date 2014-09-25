@@ -117,6 +117,10 @@ static int VS_Speed_Index = 0;
  */
 static int HS_Speed_Index = 0;
 /**
+ * A boolean, if TRUE CCD_Setup_Startup calls SetBaselineClamp(1) to try and stabilse the bias level.
+ */
+static int Baseline_Clamp = FALSE;
+/**
  * The preamp gain index to use. In conjunction with the horizontal speed index can be used to set the gain.
  */
 static int Preamp_Gain_Index = 0;
@@ -167,6 +171,7 @@ static void Test_Fits_Header_Error(int status);
  * @see #Use_Recommended_VS
  * @see #VS_Speed_Index
  * @see #HS_Speed_Index
+ * @see #Baseline_Clamp
  * @see #Preamp_Gain_Index
  * @see #DEFAULT_CONFIG_DIR
  * @see ../cdocs/ccd_setup.html#CCD_Setup_Config_Directory_Set
@@ -193,9 +198,10 @@ int main(int argc, char *argv[])
 	if(Call_Setup_Startup)
 	{
 		fprintf(stdout,"Calling CCD_Setup_Startup:Use_Recommended_VS = %d, VS_Speed_Index = %d, "
-			"HS_Speed_Index = %d, Preamp_Gain_Index = %d\n",
-			Use_Recommended_VS,VS_Speed_Index,HS_Speed_Index,Preamp_Gain_Index);
-		retval = CCD_Setup_Startup(Use_Recommended_VS,VS_Speed_Index,HS_Speed_Index,Preamp_Gain_Index);
+			"HS_Speed_Index = %d, Baseline_Clamp = %d, Preamp_Gain_Index = %d\n",
+			Use_Recommended_VS,VS_Speed_Index,HS_Speed_Index,Baseline_Clamp,Preamp_Gain_Index);
+		retval = CCD_Setup_Startup(Use_Recommended_VS,VS_Speed_Index,HS_Speed_Index,Baseline_Clamp,
+					   Preamp_Gain_Index);
 		if(retval == FALSE)
 		{
 			CCD_Global_Error();
@@ -311,6 +317,7 @@ static void Help(void)
 	fprintf(stdout,"\t[-vs_speed_index|-vsi <vs speed index>]\n");
 	fprintf(stdout,"\t[-hs_speed_index|-hsi <hs speed index>]\n");
 	fprintf(stdout,"\t[-preamp_gain_index|-gain <gain index>]\n");
+	fprintf(stdout,"\t[-baseline_clamp]\n");
 	fprintf(stdout,"\t[-nostartup][-noshutdown]\n");
 	fprintf(stdout,"\n");
 	fprintf(stdout,"\t-help prints out this message and stops the program.\n");
@@ -350,6 +357,7 @@ static void Help(void)
  * @see #Use_Recommended_VS
  * @see #VS_Speed_Index
  * @see #HS_Speed_Index
+ * @see #Baseline_Clamp
  * @see #Preamp_Gain_Index
  * @see ../cdocs/ccd_global.html#CCD_Global_Set_Log_Filter_Function
  * @see ../cdocs/ccd_global.html#CCD_Global_Set_Log_Filter_Level
@@ -375,6 +383,10 @@ static int Parse_Arguments(int argc, char *argv[])
 				fprintf(stderr,"Parse_Arguments:config dir name required.\n");
 				return FALSE;
 			}
+		}
+		else if(strcmp(argv[i],"-baseline_clamp")==0)
+		{
+			Baseline_Clamp = TRUE;
 		}
 		else if((strcmp(argv[i],"-bias")==0)||(strcmp(argv[i],"-b")==0))
 		{

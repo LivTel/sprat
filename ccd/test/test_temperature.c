@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include "ccd_global.h"
+#include "ccd_setup.h"
 #include "ccd_temperature.h"
 
 /* hash definitions */
@@ -111,7 +112,7 @@ int main(int argc, char *argv[])
 	if(Call_Setup_Startup)
 	{
 		fprintf(stdout,"CCD_Setup_Startup\n");
-		retval = CCD_Setup_Startup(0,TRUE,0);
+		retval = CCD_Setup_Startup(TRUE,0,0,TRUE,0);
 		if(retval == FALSE)
 		{
 			CCD_Global_Error();

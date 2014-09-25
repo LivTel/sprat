@@ -695,7 +695,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * An instance of HumidityCommand is "run". If a run exception occurs this is thrown.
 	 * If an error is returned this is thrown as an exception.
 	 * @param sensorNumber Which number humidity sensor to query.
-	 * @return The current humidity in percent as a double.
+	 * @return The current relative humidity in percent as a double.
 	 * @exception Thrown if the command fails in some way, or returns an error.
 	 * @see HardwareImplementation#mechanismHostname
 	 * @see HardwareImplementation#mechanismPortNumber
