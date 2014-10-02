@@ -16,7 +16,8 @@ MAIN_SRCS 	= SpratConstants.java SpratStatus.java Sprat.java \
 
 IMPL_SRCS = $(BASE_IMPL_SRCS) $(CALIBRATE_IMPL_SRCS) $(EXPOSE_IMPL_SRCS) $(INTERRUPT_IMPL_SRCS) $(SETUP_IMPL_SRCS)
 BASE_IMPL_SRCS		= JMSCommandImplementation.java CommandImplementation.java UnknownCommandImplementation.java \
-			HardwareImplementation.java FITSImplementation.java ACQUIREImplementation.java
+			HardwareImplementation.java FITSImplementation.java ACQUIREImplementation.java \
+			ACQUIREImplementationTweak.java
 CALIBRATE_IMPL_SRCS 	= CALIBRATEImplementation.java ARCImplementation.java \
 			BIASImplementation.java DARKImplementation.java \
 			LAMPFLATImplementation.java MULTBIASImplementation.java MULTDARKImplementation.java \

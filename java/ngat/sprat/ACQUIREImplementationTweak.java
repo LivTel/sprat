@@ -1,5 +1,5 @@
-// ACQUIREImplementation.java
-// $HeadURL$
+// ACQUIREImplementationTweak.java
+// $HeadURL: svn://ltdevsrv/sprat/java/ngat/sprat/ACQUIREImplementationTweak.java $
 package ngat.sprat;
 
 import java.io.*;
@@ -16,16 +16,18 @@ import ngat.util.logging.*;
 
 /**
  * This class provides the implementation for the ACQUIRE command sent to a server using the
- * Java Message System.
+ * Java Message System. This implementation calculates the RA/Dec offset when in Mode WCS_FIT in pixels,
+ * so it can use TWEAK (OFFSET_X_Y) rather than OFFBY ARC (OFFSET_RA_DEC).  TWEAKs can be done whilst
+ * the autoguider is locked, making for a more accurate acquisition. 
  * @author Chris Motram
- * @version $Revision$
+ * @version $Revision: 50 $
  */
-public class ACQUIREImplementation extends FITSImplementation implements JMSCommandImplementation
+public class ACQUIREImplementationTweak extends FITSImplementation implements JMSCommandImplementation
 {
 	/**
 	 * Revision Control System id string, showing the version of the Class.
 	 */
-	public final static String RCSID = new String("$Id$");
+	public final static String RCSID = new String("$Id: ACQUIREImplementationTweak.java 50 2014-09-24 14:57:03Z cjm $");
 	/**
 	 * How many arc-seconds in 1 second of RA. A double, of value 15.
 	 */
@@ -159,7 +161,7 @@ public class ACQUIREImplementation extends FITSImplementation implements JMSComm
 	/**
 	 * Constructor.
 	 */
-	public ACQUIREImplementation()
+	public ACQUIREImplementationTweak()
 	{
 		super();
 	}
