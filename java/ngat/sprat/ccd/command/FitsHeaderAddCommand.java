@@ -93,6 +93,30 @@ public class FitsHeaderAddCommand extends Command implements Runnable
 	}
 
 	/**
+	 * Setup the fitsheader add command, to set a comment string for a pre-existing keyword.
+	 * @param keyword The FITS header keyword - only the first 11 or so letters are used. This keyword
+	 *        should have previously been added with a value.
+	 * @param comment A comment string to append to the FITS header card for the specified keyword.
+	 * @see #commandString
+	 */
+	public void setCommentCommand(String keyword,String comment)
+	{
+		commandString = new String("fitsheader add "+keyword+" comment "+comment);
+	}
+
+	/**
+	 * Setup the fitsheader add command, to set a units string for a pre-existing keyword.
+	 * @param keyword The FITS header keyword - only the first 11 or so letters are used. This keyword
+	 *        should have previously been added with a value.
+	 * @param units A units string to append to the FITS header card for the specified keyword.
+	 * @see #commandString
+	 */
+	public void setUnitsCommand(String keyword,String units)
+	{
+		commandString = new String("fitsheader add "+keyword+" units "+units);
+	}
+
+	/**
 	 * Main test program.
 	 * @param args The argument list.
 	 */
@@ -109,7 +133,7 @@ public class FitsHeaderAddCommand extends Command implements Runnable
 
 		if(args.length < 5)
 		{
-			System.out.println("java ngat.sprat.ccd.command.FitsHeaderAddCommand <hostname> <port number> <keyword> <boolean|float|integer|string> <value> [<string value> ...]");
+			System.out.println("java ngat.sprat.ccd.command.FitsHeaderAddCommand <hostname> <port number> <keyword> <boolean|comment|float|integer|string|units> <value> [<string value> ...]");
 			System.exit(1);
 		}
 		try
@@ -133,6 +157,16 @@ public class FitsHeaderAddCommand extends Command implements Runnable
 									   " actual value found:"+args[4]);
 				command.setCommand(keyword,bvalue);
 			}
+			else if(args[3].equals("comment"))
+			{
+				svalue = args[4];
+				// add any extra arguments as part of the string
+				for(int i=5;i < args.length;i++)
+				{
+					svalue = new String(svalue+" "+args[i]);
+				}
+				command.setCommentCommand(keyword,svalue);
+			}
 			else if(args[3].equals("float"))
 			{
 				dvalue = Double.parseDouble(args[4]);
@@ -152,6 +186,16 @@ public class FitsHeaderAddCommand extends Command implements Runnable
 					svalue = new String(svalue+" "+args[i]);
 				}
 				command.setCommand(keyword,svalue);
+			}
+			else if(args[3].equals("units"))
+			{
+				svalue = args[4];
+				// add any extra arguments as part of the string
+				for(int i=5;i < args.length;i++)
+				{
+					svalue = new String(svalue+" "+args[i]);
+				}
+				command.setUnitsCommand(keyword,svalue);
 			}
 			else
 			{

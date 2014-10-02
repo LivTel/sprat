@@ -454,6 +454,8 @@ int Sprat_Command_Expose(char *command_string,char **reply_string)
  * @see ../ccd/cdocs/ccd_fits_header.html#CCD_Fits_Header_Add_Float
  * @see ../ccd/cdocs/ccd_fits_header.html#CCD_Fits_Header_Add_Int
  * @see ../ccd/cdocs/ccd_fits_header.html#CCD_Fits_Header_Add_String
+ * @see ../ccd/cdocs/ccd_fits_header.html#CCD_Fits_Header_Add_Comment
+ * @see ../ccd/cdocs/ccd_fits_header.html#CCD_Fits_Header_Add_Units
  * @see ../ccd/cdocs/ccd_fits_header.html#CCD_Fits_Header_Clear
  * @see ../ccd/cdocs/ccd_fits_header.html#CCD_Fits_Header_Delete
  */
@@ -573,6 +575,30 @@ int Sprat_Command_Fits_Header(char *command_string,char **reply_string)
 				return TRUE;
 			}
 		}
+		else if(strncmp(type_string,"comment",7)==0)
+		{
+			/* do operation */
+			if(!CCD_Fits_Header_Add_Comment(fits_header,keyword_string,value_string))
+			{
+#if SPRAT_DEBUG > 1
+				Sprat_Global_Log_Format("command","sprat_command.c","Sprat_Command_Fits_Header",
+							  LOG_VERBOSITY_TERSE,"COMMAND",
+							  "Failed to add comment to FITS header.");
+#endif
+				Sprat_Global_Error_Number = 632;
+				sprintf(Sprat_Global_Error_String,"Sprat_Command_Fits_Header:"
+					"Failed to add comment FITS header.");
+				Sprat_Global_Error_And_String("command","sprat_command.c",
+								 "Sprat_Command_Fits_Header",
+								 LOG_VERBOSITY_TERSE,"COMMAND",Command_Error_String,
+								 COMMAND_ERROR_STRING_LENGTH);
+				if(!Sprat_Global_Add_String(reply_string,"1 Failed to add comment fits header:"))
+					return FALSE;
+				if(!Sprat_Global_Add_String(reply_string,Command_Error_String))
+					return FALSE;
+				return TRUE;
+			}
+		}
 		else if(strncmp(type_string,"float",5)==0)
 		{
 			/* parse value */
@@ -684,6 +710,30 @@ int Sprat_Command_Fits_Header(char *command_string,char **reply_string)
 								 LOG_VERBOSITY_TERSE,"COMMAND",Command_Error_String,
 								 COMMAND_ERROR_STRING_LENGTH);
 				if(!Sprat_Global_Add_String(reply_string,"1 Failed to add string fits header:"))
+					return FALSE;
+				if(!Sprat_Global_Add_String(reply_string,Command_Error_String))
+					return FALSE;
+				return TRUE;
+			}
+		}
+		else if(strncmp(type_string,"units",5)==0)
+		{
+			/* do operation */
+			if(!CCD_Fits_Header_Add_Units(fits_header,keyword_string,value_string))
+			{
+#if SPRAT_DEBUG > 1
+				Sprat_Global_Log_Format("command","sprat_command.c","Sprat_Command_Fits_Header",
+							  LOG_VERBOSITY_TERSE,"COMMAND",
+							  "Failed to add units to FITS header.");
+#endif
+				Sprat_Global_Error_Number = 633;
+				sprintf(Sprat_Global_Error_String,"Sprat_Command_Fits_Header:"
+					"Failed to add units FITS header.");
+				Sprat_Global_Error_And_String("command","sprat_command.c",
+								 "Sprat_Command_Fits_Header",
+								 LOG_VERBOSITY_TERSE,"COMMAND",Command_Error_String,
+								 COMMAND_ERROR_STRING_LENGTH);
+				if(!Sprat_Global_Add_String(reply_string,"1 Failed to add units fits header:"))
 					return FALSE;
 				if(!Sprat_Global_Add_String(reply_string,Command_Error_String))
 					return FALSE;

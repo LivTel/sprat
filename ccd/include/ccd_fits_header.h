@@ -34,6 +34,8 @@ extern int CCD_Fits_Header_Add_Int(struct Fits_Header_Struct *header,char *keywo
 extern int CCD_Fits_Header_Add_Float(struct Fits_Header_Struct *header,char *keyword,double value,
 					    char *comment);
 extern int CCD_Fits_Header_Add_Logical(struct Fits_Header_Struct *header,char *keyword,int value,char *comment);
+extern int CCD_Fits_Header_Add_Comment(struct Fits_Header_Struct *header,char *keyword,char *comment);
+extern int CCD_Fits_Header_Add_Units(struct Fits_Header_Struct *header,char *keyword,char *units);
 extern int CCD_Fits_Header_Free(struct Fits_Header_Struct *header);
 
 extern int CCD_Fits_Header_Write_To_Fits(struct Fits_Header_Struct header,fitsfile *fits_fp);

@@ -39,6 +39,10 @@
  */
 #define FITS_HEADER_VALUE_STRING_LENGTH   (71)
 /**
+ * Maximum length of FITS header units (can go from column 10 to column 80 inclusive), plus a '\0' terminator.
+ */
+#define FITS_HEADER_UNITS_STRING_LENGTH   (72) 
+/**
  * Maximum length of FITS header comment (can go from column 10 to column 80 inclusive), plus a '\0' terminator.
  */
 #define FITS_HEADER_COMMENT_STRING_LENGTH (72) 
@@ -78,6 +82,7 @@ enum Fits_Header_Type_Enum
  * </dl>
  * @see #FITS_HEADER_VALUE_STRING_LENGTH
  * @see #FITS_HEADER_KEYWORD_STRING_LENGTH
+ * @see #FITS_HEADER_UNITS_STRING_LENGTH
  * @see #FITS_HEADER_COMMENT_STRING_LENGTH
  */
 struct Fits_Header_Card_Struct
@@ -91,7 +96,8 @@ struct Fits_Header_Card_Struct
 		double Float;
 		int Boolean;
 	} Value;
-	char Comment[FITS_HEADER_COMMENT_STRING_LENGTH]; /* columns 10-80 */
+	char Units[FITS_HEADER_UNITS_STRING_LENGTH]; /* columns 10-80 */
+	char Comment[FITS_HEADER_COMMENT_STRING_LENGTH]; /* columns 10-80  not already units columns */
 };
 
 /* internal data */
@@ -109,6 +115,7 @@ static int Fits_Header_Error_Number = 0;
 static char Fits_Header_Error_String[CCD_GLOBAL_ERROR_STRING_LENGTH] = "";
 
 /* internal functions */
+static int Fits_Header_Find_Card(struct Fits_Header_Struct *header,char *keyword,int *found_index);
 static int Fits_Header_Add_Card(struct Fits_Header_Struct *header,struct Fits_Header_Card_Struct card);
 
 /* ----------------------------------------------------------------------------
@@ -307,6 +314,7 @@ int CCD_Fits_Header_Add_String(struct Fits_Header_Struct *header,char *keyword,c
 	/* the value will be truncated to FITS_HEADER_VALUE_STRING_LENGTH-1 */
 	strncpy(card.Value.String,value,FITS_HEADER_VALUE_STRING_LENGTH-1);
 	card.Value.String[FITS_HEADER_VALUE_STRING_LENGTH-1] = '\0';
+	strcpy(card.Units,"");
 	/* the comment will be truncated to FITS_HEADER_COMMENT_STRING_LENGTH-1 */
 	if(comment != NULL)
 	{
@@ -370,6 +378,7 @@ int CCD_Fits_Header_Add_Int(struct Fits_Header_Struct *header,char *keyword,int 
 	strcpy(card.Keyword,keyword);
 	card.Type = FITS_HEADER_TYPE_INTEGER;
 	card.Value.Int = value;
+	strcpy(card.Units,"");
 	/* the comment will be truncated to FITS_HEADER_COMMENT_STRING_LENGTH-1 */
 	if(comment != NULL)
 	{
@@ -433,6 +442,7 @@ int CCD_Fits_Header_Add_Float(struct Fits_Header_Struct *header,char *keyword,do
 	strcpy(card.Keyword,keyword);
 	card.Type = FITS_HEADER_TYPE_FLOAT;
 	card.Value.Float = value;
+	strcpy(card.Units,"");
 	/* the comment will be truncated to FITS_HEADER_COMMENT_STRING_LENGTH-1 */
 	if(comment != NULL)
 	{
@@ -503,6 +513,7 @@ int CCD_Fits_Header_Add_Logical(struct Fits_Header_Struct *header,char *keyword,
 	strcpy(card.Keyword,keyword);
 	card.Type = FITS_HEADER_TYPE_LOGICAL;
 	card.Value.Boolean = value;
+	strcpy(card.Units,"");
 	/* the comment will be truncated to FITS_HEADER_COMMENT_STRING_LENGTH-1 */
 	if(comment != NULL)
 	{
@@ -519,6 +530,90 @@ int CCD_Fits_Header_Add_Logical(struct Fits_Header_Struct *header,char *keyword,
 	CCD_Global_Log("ccd","ccd_fits_header.c","CCD_Fits_Header_Add_Logical",
 			       LOG_VERBOSITY_INTERMEDIATE,"FITS","CCD_Fits_Header_Add_Logical:finished.");
 #endif
+	return TRUE;
+}
+
+/**
+ * Routine to add a comment section to the header, of a FITS header whoose keyword/value pair already
+ * exists in the list of FITS headers.
+ * @param header The address of a Fits_Header_Struct structure to modify.
+ * @param keyword The keyword string, must be at least 1 character less in length than 
+ *        FITS_HEADER_KEYWORD_STRING_LENGTH. The keyword should already be present in the list of headers.
+ * @param comment A string to put in the comment section of the FITS header.
+ * @return The routine returns TRUE on success, and FALSE on failure. On failure, Fits_Header_Error_Number
+ *         and Fits_Header_Error_String should be filled in with suitable values.
+ * @see #Fits_Header_Struct
+ * @see #Fits_Header_Find_Card
+ * @see #FITS_HEADER_COMMENT_STRING_LENGTH
+ */
+int CCD_Fits_Header_Add_Comment(struct Fits_Header_Struct *header,char *keyword,char *comment)
+{
+	int found_index;
+
+	if(header == NULL)
+	{
+		Fits_Header_Error_Number = 21;
+		sprintf(Fits_Header_Error_String,"CCD_Fits_Header_Add_Comment:Header was NULL.");
+		return FALSE;
+	}
+	if(keyword == NULL)
+	{
+		Fits_Header_Error_Number = 22;
+		sprintf(Fits_Header_Error_String,"CCD_Fits_Header_Add_Comment:Keyword is NULL.");
+		return FALSE;
+	}
+	if(!Fits_Header_Find_Card(header,keyword,&found_index))
+	{
+		Fits_Header_Error_Number = 23;
+		sprintf(Fits_Header_Error_String,"CCD_Fits_Header_Add_Comment:Failed to find keyword '%s' in header.",
+			keyword);
+		return FALSE;
+	}
+	/* the units will be truncated to FITS_HEADER_COMMENT_STRING_LENGTH-1 */
+	strncpy(header->Card_List[found_index].Comment,comment,FITS_HEADER_COMMENT_STRING_LENGTH-1);
+	header->Card_List[found_index].Comment[FITS_HEADER_COMMENT_STRING_LENGTH-1] = '\0';
+	return TRUE;
+}
+
+/**
+ * Routine to add a units section to the header comment, of a FITS header whoose keyword/value pair already
+ * exists in the list of FITS headers.
+ * @param header The address of a Fits_Header_Struct structure to modify.
+ * @param keyword The keyword string, must be at least 1 character less in length than 
+ *        FITS_HEADER_KEYWORD_STRING_LENGTH. The keyword should already be present in the list of headers.
+ * @param units A string to put in the units section of the FITS header.
+ * @return The routine returns TRUE on success, and FALSE on failure. On failure, Fits_Header_Error_Number
+ *         and Fits_Header_Error_String should be filled in with suitable values.
+ * @see #Fits_Header_Struct
+ * @see #Fits_Header_Find_Card
+ * @see #FITS_HEADER_UNITS_STRING_LENGTH
+ */
+int CCD_Fits_Header_Add_Units(struct Fits_Header_Struct *header,char *keyword,char *units)
+{
+	int found_index;
+
+	if(header == NULL)
+	{
+		Fits_Header_Error_Number = 24;
+		sprintf(Fits_Header_Error_String,"CCD_Fits_Header_Add_Units:Header was NULL.");
+		return FALSE;
+	}
+	if(keyword == NULL)
+	{
+		Fits_Header_Error_Number = 25;
+		sprintf(Fits_Header_Error_String,"CCD_Fits_Header_Add_Units:Keyword is NULL.");
+		return FALSE;
+	}
+	if(!Fits_Header_Find_Card(header,keyword,&found_index))
+	{
+		Fits_Header_Error_Number = 26;
+		sprintf(Fits_Header_Error_String,"CCD_Fits_Header_Add_Units:Failed to find keyword '%s' in header.",
+			keyword);
+		return FALSE;
+	}
+	/* the units will be truncated to FITS_HEADER_UNITS_STRING_LENGTH-1 */
+	strncpy(header->Card_List[found_index].Units,units,FITS_HEADER_UNITS_STRING_LENGTH-1);
+	header->Card_List[found_index].Units[FITS_HEADER_UNITS_STRING_LENGTH-1] = '\0';
 	return TRUE;
 }
 
@@ -571,6 +666,7 @@ int CCD_Fits_Header_Write_To_Fits(struct Fits_Header_Struct header,fitsfile *fit
 {
 	int i,status,retval;
 	char buff[32]; /* fits_get_errstatus returns 30 chars max */
+	char *comment = NULL;
 
 #if LOGGING > 1
 	CCD_Global_Log("ccd","ccd_fits_header.c","CCD_Fits_Header_Write_To_Fits",
@@ -579,6 +675,11 @@ int CCD_Fits_Header_Write_To_Fits(struct Fits_Header_Struct header,fitsfile *fit
 	status = 0;
 	for(i=0;i<header.Card_Count;i++)
 	{
+		/* convert empty comment to NULL comment for CFITSIO */
+		if(strlen(header.Card_List[i].Comment) > 0)
+			comment = header.Card_List[i].Comment;
+		else
+			comment = NULL;
 		switch(header.Card_List[i].Type)
 		{
 			case FITS_HEADER_TYPE_STRING:
@@ -590,7 +691,7 @@ int CCD_Fits_Header_Write_To_Fits(struct Fits_Header_Struct header,fitsfile *fit
 						       header.Card_List[i].Keyword,header.Card_List[i].Value.String);
 #endif
 				retval = fits_update_key(fits_fp,TSTRING,header.Card_List[i].Keyword,
-							 header.Card_List[i].Value.String,NULL,&status);
+							 header.Card_List[i].Value.String,comment,&status);
 				break;
 			case FITS_HEADER_TYPE_INTEGER:
 #if LOGGING > 9
@@ -601,7 +702,7 @@ int CCD_Fits_Header_Write_To_Fits(struct Fits_Header_Struct header,fitsfile *fit
 						       header.Card_List[i].Keyword,header.Card_List[i].Value.Int);
 #endif
 				retval = fits_update_key(fits_fp,TINT,header.Card_List[i].Keyword,
-							 &(header.Card_List[i].Value.Int),NULL,&status);
+							 &(header.Card_List[i].Value.Int),comment,&status);
 				break;
 			case FITS_HEADER_TYPE_FLOAT:
 #if LOGGING > 9
@@ -610,7 +711,7 @@ int CCD_Fits_Header_Write_To_Fits(struct Fits_Header_Struct header,fitsfile *fit
 						      header.Card_List[i].Keyword,header.Card_List[i].Value.Float);
 #endif
 				retval = fits_update_key_fixdbl(fits_fp,header.Card_List[i].Keyword,
-								header.Card_List[i].Value.Float,6,NULL,&status);
+								header.Card_List[i].Value.Float,6,comment,&status);
 				/*retval = fits_update_key(fits_fp,TDOUBLE,header.Keyword,header.Value.Float,
 				**NULL,&status);*/
 				break;
@@ -623,7 +724,7 @@ int CCD_Fits_Header_Write_To_Fits(struct Fits_Header_Struct header,fitsfile *fit
 						       header.Card_List[i].Keyword,header.Card_List[i].Value.Boolean);
 #endif
 				retval = fits_update_key(fits_fp,TLOGICAL,header.Card_List[i].Keyword,
-							 &(header.Card_List[i].Value.Boolean),NULL,&status);
+							 &(header.Card_List[i].Value.Boolean),comment,&status);
 				break;
 			default:
 				Fits_Header_Error_Number = 17;
@@ -641,7 +742,21 @@ int CCD_Fits_Header_Write_To_Fits(struct Fits_Header_Struct header,fitsfile *fit
 				"Failed to update %d %s (%s).",i,header.Card_List[i].Keyword,buff);
 			return FALSE;
 		}
-		/* diddly comment */
+		/* units */
+		if(strlen(header.Card_List[i].Units) > 0)
+		{
+			retval = fits_write_key_unit(fits_fp,header.Card_List[i].Keyword,header.Card_List[i].Units,
+						     &status);
+			if(retval)
+			{
+				fits_get_errstatus(status,buff);
+				Fits_Header_Error_Number = 27;
+				sprintf(Fits_Header_Error_String,"CCD_Fits_Header_Write_To_Fits:"
+				     "Failed to update FITS header Units for index='%d' keyword='%s' units='%s' (%s).",
+					i,header.Card_List[i].Keyword,header.Card_List[i].Units,buff);
+				return FALSE;
+			}
+		}
 	}
 #if LOGGING > 1
 	CCD_Global_Log("ccd","ccd_fits_header.c","CCD_Fits_Header_Write_To_Fits",
@@ -702,6 +817,45 @@ void CCD_Fits_Header_Error_String(char *error_string)
 /* ----------------------------------------------------------------------------
 ** 		internal functions 
 ** ---------------------------------------------------------------------------- */
+/**
+ * Find the FITS header card with a specified keyword.
+ * @param header The FITS header data structure to search.
+ * @param keyword A string representing the keyword to search for.
+ * @param found_index The address of an integer. If the routine returns true, found_index will contain
+ *        the index in the header for FITS keyword keyword.
+ * @return The routine returns TRUE if the keyword is found in the header, and FALSE if it is not.
+ */
+static int Fits_Header_Find_Card(struct Fits_Header_Struct *header,char *keyword,int *found_index)
+{
+	int done;
+
+	if(header == NULL)
+	{
+		return FALSE;
+	}
+	if(keyword == NULL)
+	{
+		return FALSE;
+	}
+	if(found_index == NULL)
+	{
+		return FALSE;
+	}
+	/* find keyword in header */
+	(*found_index) = 0;
+	done  = FALSE;
+	while(((*found_index) < header->Card_Count) && (done == FALSE))
+	{
+		if(strcmp(header->Card_List[(*found_index)].Keyword,keyword) == 0)
+		{
+			done = TRUE;
+		}
+		else
+			(*found_index)++;
+	}
+	return done;
+}
+
 /**
  * Routine to add a card to the list. If the keyword already exists, that card will be updated with the new value,
  * otherwise a new card will be allocated (if necessary) and added to the lsit.

@@ -205,7 +205,9 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 	 * is stored under. If getFITSValueKeywordString returns "internal", getFitsKeywordInternalValue is called
 	 * to generate the value from some internal data/mechanism/CCD status.
 	 * addFitsHeader is then called to add the keyword/value to the list.
-	 * @param keyword The FITS header keyword to set.#
+	 * If a comment is found for the keyword addFitsHeaderComment is used to add it to the keyword.
+	 * If a units string is found for the keyword addFitsHeaderUnits is used to add it to the keyword.
+	 * @param keyword The FITS header keyword to set.
 	 * @param isSpectralFitsHeader Whether we are writing FITS headers for Spectral data (true) or imaging data
 	 *        (false).
 	 * @param mirrorPosition The current mirror position. 
@@ -225,6 +227,8 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 	 * @see #getFITSValueKeywordString
 	 * @see #getFitsKeywordInternalValue
 	 * @see #addFitsHeader
+	 * @see #addFitsHeaderComment
+	 * @see #addFitsHeaderUnits
 	 * @see #status
 	 * @see SpratStatus#getProperty
 	 * @see SpratStatus#getPropertyBoolean
@@ -239,6 +243,8 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 		String varyByString  = null;
 		String valueKeywordString = null;
 		String valueString = null;
+		String commentString = null;
+		String unitsString = null;
 		boolean done;
 		double dvalue;
 		int ivalue;
@@ -335,6 +341,18 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 					    " for keyword:"+keyword);
 				throw new Exception(this.getClass().getName()+":setFitsHeaders:Unknown value type "+
 						    typeString+" for keyword:"+keyword);
+			}
+			// comment
+			commentString = status.getProperty("sprat.fits.comment."+keyword);
+			if((commentString != null)&&(commentString.length() > 0))
+			{
+				addFitsHeaderComment(keyword,commentString);
+			}
+			// units
+			unitsString = status.getProperty("sprat.fits.units."+keyword);
+			if((unitsString != null)&&(unitsString.length() > 0))
+			{
+				addFitsHeaderUnits(keyword,unitsString);
 			}
 		}// if keyword should be written
 	}
@@ -671,12 +689,16 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 	 * @param list A Vector of FitsHeaderCardImage instances to pass into the C layer.
 	 * @exception Exception Thrown if addFitsHeader fails.
 	 * @see #addFitsHeader
+	 * @see #addFitsHeaderComment
+	 * @see #addFitsHeaderUnits
 	 * @see ngat.fits.FitsHeaderCardImageKeywordComparator
 	 * @see ngat.fits.FitsHeaderCardImage
 	 */
 	protected void addISSFitsHeaderList(List list) throws Exception
 	{
 		FitsHeaderCardImage cardImage = null;
+		String commentString = null;
+		String unitsString = null;
 
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":addISSFitsHeaderList:started.");
 		// iterate over keywords to copy
@@ -686,7 +708,19 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 			sprat.log(Logging.VERBOSITY_VERBOSE,this.getClass().getName()+
 				  ":addISSFitsHeaderList:Adding "+cardImage.getKeyword()+" to C layer.");
 			addFitsHeader(cardImage.getKeyword(),cardImage.getValue());
-		}
+			// comment
+			commentString = cardImage.getComment();
+			if((commentString != null)&&(commentString.length() > 0))
+			{
+				addFitsHeaderComment(cardImage.getKeyword(),commentString);
+			}
+			// units
+			unitsString = cardImage.getUnits();
+			if((unitsString != null)&&(unitsString.length() > 0))
+			{
+				addFitsHeaderUnits(cardImage.getKeyword(),unitsString);
+			}
+		}// end for
 		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+":addISSFitsHeaderList:finished.");
 	}
 
@@ -788,6 +822,124 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 				  returnCode+" and error string:"+errorString);
 			throw new Exception(this.getClass().getName()+
 					    ":addFitsHeader:Command failed with return code "+returnCode+
+					    " and error string:"+errorString);
+		}
+	}
+
+	/**
+	 * Method to add a comment to a specified FITS header keyword in the C layers list of
+	 * FITS headers. The C layer machine/port specification is retrieved from the "sprat.ccd.c.hostname"
+	 * and "sprat.ccd.c.port_number" properties. An instance of FitsHeaderAddCommand is used to transmit the data.
+	 * @param keyword The FITS headers keyword. This should have previously been added to the C layers list of
+	 *        FITS headers.
+	 * @param comment The comment to associate with the FITS keyword.
+	 * @exception Exception Thrown if the FitsHeaderAddCommand internally errors, or the return code indicates a
+	 *            failure.
+	 * @see #status
+	 * @see ngat.sprat.SpratStatus#getProperty
+	 * @see ngat.sprat.SpratStatus#getPropertyInteger
+	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand
+	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#setAddress
+	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#setPortNumber
+	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#setCommentCommand
+	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#getParsedReplyOK
+	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#getReturnCode
+	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#getParsedReply
+	 */
+	protected void addFitsHeaderComment(String keyword,String comment) throws Exception
+	{
+		FitsHeaderAddCommand addCommand = null;
+		int returnCode;
+		String errorString = null;
+
+		if(keyword == null)
+		{
+			throw new NullPointerException(this.getClass().getName()+
+						       ":addFitsHeaderComment:keyword was null.");
+		}
+		if(comment == null)
+		{
+			throw new NullPointerException(this.getClass().getName()+
+						       ":addFitsHeaderComment:comment was null for keyword:"+keyword);
+		}
+		addCommand = new FitsHeaderAddCommand();
+		// configure C comms
+		addCommand.setAddress(ccdCLayerHostname);
+		addCommand.setPortNumber(ccdCLayerPortNumber);
+		// set command parameters
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			  ":addFitsHeaderComment:Adding comment '"+comment+"' to keyword "+keyword+".");
+		addCommand.setCommentCommand(keyword,comment);
+		// actually send the command to the C layer
+		addCommand.sendCommand();
+		// check the parsed reply
+		if(addCommand.getParsedReplyOK() == false)
+		{
+			returnCode = addCommand.getReturnCode();
+			errorString = addCommand.getParsedReply();
+			sprat.log(Logging.VERBOSITY_TERSE,"addFitsHeaderComment:Command failed with return code "+
+				  returnCode+" and error string:"+errorString);
+			throw new Exception(this.getClass().getName()+
+					    ":addFitsHeaderComment:Command failed with return code "+returnCode+
+					    " and error string:"+errorString);
+		}
+	}
+
+	/**
+	 * Method to add a units string to a specified FITS header keyword in the C layers list of
+	 * FITS headers. The C layer machine/port specification is retrieved from the "sprat.ccd.c.hostname"
+	 * and "sprat.ccd.c.port_number" properties. An instance of FitsHeaderAddCommand is used to transmit the data.
+	 * @param keyword The FITS headers keyword. This should have previously been added to the C layers list of
+	 *        FITS headers.
+	 * @param units The units string to associate with the FITS keyword.
+	 * @exception Exception Thrown if the FitsHeaderAddCommand internally errors, or the return code indicates a
+	 *            failure.
+	 * @see #status
+	 * @see ngat.sprat.SpratStatus#getProperty
+	 * @see ngat.sprat.SpratStatus#getPropertyInteger
+	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand
+	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#setAddress
+	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#setPortNumber
+	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#setUnitsCommand
+	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#getParsedReplyOK
+	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#getReturnCode
+	 * @see ngat.sprat.ccd.command.FitsHeaderAddCommand#getParsedReply
+	 */
+	protected void addFitsHeaderUnits(String keyword,String units) throws Exception
+	{
+		FitsHeaderAddCommand addCommand = null;
+		int returnCode;
+		String errorString = null;
+
+		if(keyword == null)
+		{
+			throw new NullPointerException(this.getClass().getName()+
+						       ":addFitsHeaderUnits:keyword was null.");
+		}
+		if(units == null)
+		{
+			throw new NullPointerException(this.getClass().getName()+
+						       ":addFitsHeaderUnits:units was null for keyword:"+keyword);
+		}
+		addCommand = new FitsHeaderAddCommand();
+		// configure C comms
+		addCommand.setAddress(ccdCLayerHostname);
+		addCommand.setPortNumber(ccdCLayerPortNumber);
+		// set command parameters
+		sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			  ":addFitsHeaderUnits:Adding units '"+units+"' to keyword "+keyword+".");
+		addCommand.setUnitsCommand(keyword,units);
+		// actually send the command to the C layer
+		addCommand.sendCommand();
+		// check the parsed reply
+		if(addCommand.getParsedReplyOK() == false)
+		{
+			returnCode = addCommand.getReturnCode();
+			errorString = addCommand.getParsedReply();
+			sprat.log(Logging.VERBOSITY_TERSE,"addFitsHeaderUnits:Command failed with return code "+
+				  returnCode+" and error string:"+errorString);
+			throw new Exception(this.getClass().getName()+
+					    ":addFitsHeaderUnits:Command failed with return code "+returnCode+
 					    " and error string:"+errorString);
 		}
 	}

@@ -412,7 +412,7 @@ static void Server_Connection_Callback(Command_Server_Handle_T connection_handle
 			   "\tconfig <xbin> <ybin> [<startx> <endx> <starty> <endy>]\n"
 			   "\tdark <ms>\n"
 			   "\texpose <exposure type> <ms>\n"
-			   "\tfitsheader add <keyword> <boolean|float|integer|string> <value>\n"
+			   "\tfitsheader add <keyword> <boolean|float|integer|string|comment|units> <value>\n"
 			   "\tfitsheader delete <keyword>\n"
 			   "\tfitsheader clear\n"
 			   "\thelp\n"

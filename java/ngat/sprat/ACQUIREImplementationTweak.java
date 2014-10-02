@@ -63,23 +63,11 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 */
 	protected double brightestObjectYPixel = 0.0;
 	/**
-	 * The current acquisition offset being applied in RA, in arcseconds. Used when acquisitionMode is
-	 * ACQUIRE_MODE_WCS.
-	 */
-	protected double raOffset = 0.0;
-	/**
-	 * The current acquisition offset being applied in RA, in arcseconds.Used when acquisitionMode is
-	 * ACQUIRE_MODE_WCS.
-	 */
-	protected double decOffset = 0.0;
-	/**
-	 * The current acquisition offset being applied in X, in binned pixels. Used when acquisitionMode is
-	 * ACQUIRE_MODE_BRIGHTEST.
+	 * The current acquisition offset being applied in X, in binned pixels. 
 	 */
 	protected double xPixelOffset = 0.0;
 	/**
-	 * The current acquisition offset being applied in Y, in binned pixels. Used when acquisitionMode is
-	 * ACQUIRE_MODE_BRIGHTEST.
+	 * The current acquisition offset being applied in Y, in binned pixels. 
 	 */
 	protected double yPixelOffset = 0.0;
 	/**
@@ -441,37 +429,6 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	}
 
 	/**
-	 * This method offsets the telescope in RA and Dec using the raOffset and decOffset parameters into
-	 * the OFFSET_RA_DEC command.
-	 * @param id The string id of the command instance we are implementing. Used for generating ISS command id's.
-	 * @param raOffset The offset in RA, in arcseconds.
-	 * @param decOffset The offset in Dec, in arcseconds.
-	 * @exception Exception Thrown if the ISS command OFFSET_RA_DEC fails.
-	 * @see #serverConnectionThread
-	 * @see Sprat#sendISSCommand
-	 * @see ngat.message.ISS_INST.OFFSET_RA_DEC
-	 */
-	protected void doRADecOffset(String id,int raOffset,int decOffset) throws Exception
-	{
-		OFFSET_RA_DEC offsetRaDecCommand = null;
-		INST_TO_ISS_DONE instToISSDone = null;
-
-		// log telescope offset
-		sprat.log(Logging.VERBOSITY_VERBOSE,"Attempting telescope position offset RA:"+raOffset+
-			  ":DEC:"+decOffset+".");
-		// tell telescope of offset RA and DEC
-		offsetRaDecCommand = new OFFSET_RA_DEC(id);
-		offsetRaDecCommand.setRaOffset(raOffset);
-		offsetRaDecCommand.setDecOffset(decOffset);
-		instToISSDone = sprat.sendISSCommand(offsetRaDecCommand,serverConnectionThread);
-		if(instToISSDone.getSuccessful() == false)
-		{
-			throw new Exception(this.getClass().getName()+"ACQUIRE:"+id+"Offset Ra Dec failed:ra = "+
-					    raOffset+", dec = "+decOffset+":"+instToISSDone.getErrorString());
-		}
-	}
-
-	/**
 	 * This method offsets the telescope in X and Y (focal plane geometry) using the 
 	 * xPixelOffset and yPixelOffset parameters. 
 	 * These are converted to arcseconds and sent to the RCS using the OFFSET_X_Y command.
@@ -533,6 +490,7 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * <li><b>testAbort</b> is called to see if this command implementation has been aborted.
 	 * <li>We call <b>computeRADecOffset</b> to check whether we are in the correct position, 
 	 *     and calculate a new offset to apply if necessary.
+diddly
 	 * <li>If a new offset is required <b>doRADecOffset</b> is called.
 	 * <li>We check to see if the loop should be terminated.
 	 * </ul>
@@ -540,11 +498,8 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * @param acquireDone The instance of ACQUIRE_DONE to fill in with errors we receive.
 	 * @exception Exception Thrown if testAbort diddly... failed.	 
 	 * @see #doFrame
-	 * @see #raOffset
-	 * @see #decOffset
 	 * @see #sendAcquireDpAck
 	 * @see #computeRADecOffset
-	 * @see #doRADecOffset
 	 * @see CommandImplementation#testAbort
 	 * @see EXPOSEImplementation#reduceExpose
 	 * @see #exposureLength
@@ -563,8 +518,8 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 		int offsetCount;
 		
 		// initialise offset
-		raOffset = 0.0;
-		decOffset = 0.0;
+		xPixelOffset = 0.0;
+		yPixelOffset = 0.0;
 		// keep track of how many times we attempt to offset
 		offsetCount = 0;
 		// start loop
@@ -600,8 +555,8 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 			done = computeRADecOffset();
 			if(done == false)
 			{
-				// issue new offset
-				doRADecOffset(acquireCommand.getId(),(int)raOffset,(int)decOffset);
+				// issue new XY Pixel offset
+				doXYPixelOffset(acquireCommand.getId(),(int)xPixelOffset,(int)yPixelOffset);
 				offsetCount++;
 			}
 			// Have we taken too many goes to acquire?
@@ -624,9 +579,11 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * <li><b>doFrame</b> is called to take an acquisition frame.
 	 * <li>An instance of ACQUIRE_ACK is sent back to the client using <b>sendAcquireAck</b>.
 	 * <li><b>reduceExpose</b> is called to pass the frame to the Real Time Data Pipeline for processing.
-	 *     WCS fitting is <b>NOT</b> attempted here.
+	 *     WCS fitting is <b>NOT</b> attempted here. brightestObjectXPixel and brightestObjectYPixel are set
+	 *     within reduceExpose to the centroid of the brightest object in the frame.
 	 * <li><b>testAbort</b> is called to see if this command implementation has been aborted.
-	 * <li>We call <b>computeXYPixelOffset</b> to check whether we are in the correct position, 
+	 * <li>We call <b>computeXYPixelOffset</b> with brightestObjectXPixel and brightestObjectYPixel as the 
+	 *     object pixel to check whether we are in the correct position, 
 	 *     and calculate a new offset to apply if necessary.
 	 * <li>If a new offset is required <b>doXYPixelOffset</b> is called.
 	 * <li>We check to see if the loop should be terminated.
@@ -636,6 +593,8 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * @exception Exception Thrown if testAbort/setFitsHeaders/getFitsHeadersFromISS/getFitsHeadersFromBSS/
 	 *            saveFitsHeaders/doXYPixelOffset failed.
 	 * @see #doFrame
+	 * @see #brightestObjectXPixel
+	 * @see #brightestObjectYPixel
 	 * @see #xPixelOffset
 	 * @see #yPixelOffset
 	 * @see #sendAcquireDpAck
@@ -692,7 +651,7 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 				  ":doAcquisitionBrightest:Exposure reduction:filename:"+reducedFITSFilename+".");
 			// Calculate offset
 			// check loop termination - is offset less than threshold?
-			done = computeXYPixelOffset();
+			done = computeXYPixelOffset(brightestObjectXPixel,brightestObjectYPixel);
 			if(done == false)
 			{
 				// issue new XY Pixel offset
@@ -983,35 +942,23 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * Compute the offset needed to get the specified RA and Dec on the specified pixel.
 	 * <ul>
 	 * <li>We call getWCSFITS to get a WCSTools handle for the reduced filename.
-	 * <li>We call wcsToPixel to find the X,Y binned pixel position of the target RA/Dec (for debugging
-	 *     purposes only). If the target is moving there is more debugging printed.
-	 * <li>We call pixelToWCS with the <b>binned</b> acquisition pixel position to find what RA/Dec
-	 *     is at the target pixel location.
-	 * <li>We convert this RA/Dec to radians from the returned degrees.
+	 * <li>We call wcsToPixel to find the X,Y binned pixel position of the target RA/Dec 
 	 * <li>We free the WCSTools handle.
-	 * <li>We calculate the difference between the acuisition RA/Dec and the current target pixel RA/Dec
-	 *     to find the offset needed (in radians).
-	 * <li>The offset is converted into arcseconds.
-	 * <li>We check whether the hypoteneuse of the offset is less than acquireThreshold 
-	 *     i.e. are we close enough.
-	 * <li>If we are close enough we return true.
-	 * <li>If we are <b>not</b> close enough we add the new offset to offsetRA and offsetDec, ready to
-	 *     send in the next OFFSET_RA_DEC command (assuming consecutive OFFSET_RA_DEC are not cumulative).
+	 * <li>We call computeXYPixelOffset with the binned pixel coordinates of the target RA/Dec as the target
+	 *     pixel position.
 	 * </ul>
 	 * @return The method returns true if acquisition has been successful, i.e. the difference between the
-	 *         RA/Dec at the target pixel position, and the acquisition RA/Dec is less than  acquireThreshold
-	 *         arcseconds. Otherwise false is returned.
+	 *         target pixel position, and the pixel position containing ther acquisition RA/Dec 
+	 *         is less than acquireThreshold arcseconds. Otherwise false is returned.
 	 * @exception Exception Thrown if the WCSTools methods fail (getWCSFITS,wcsfree), or binning was zero.
 	 * @see #reducedFITSFilename
-	 * @see #raOffset
-	 * @see #decOffset
 	 * @see #acquireXPixel
 	 * @see #acquireYPixel
 	 * @see #acquireRARads
 	 * @see #acquireDecRads
 	 * @see #acquireRAString
 	 * @see #acquireDecString
-	 * @see #acquireThreshold
+	 * @see #computeXYPixelOffset
 	 * @see #moving
 	 * @see #rateTime
 	 * @see #raRateRadPerSec
@@ -1040,122 +987,43 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 		handle = WCSTools.getWCSFITS(reducedFITSFilename,3);
 		try
 		{
-			try
+			// get pixel of Target
+			acquireRAString = Position.formatHMSString(acquireRARads,":");
+			acquireDecString = Position.formatDMSString(acquireDecRads,":");
+			sprat.log(Logging.VERBOSITY_VERBOSE,
+				  ":computeRADecOffset: Target original position: at T=0.0s: "+
+				  acquireRAString+", "+acquireDecString);
+			double checkRARads = acquireRARads;
+			double checkDecRads = acquireDecRads;
+			long timeElapsed = timeStartExposure - rateTime;
+			if(moving) 
 			{
-				// debug only - get pixel of Target
-				acquireRAString = Position.formatHMSString(acquireRARads,":");
-				acquireDecString = Position.formatDMSString(acquireDecRads,":");
+				// Add offset = rate(rad/sec) * timediff to mid-exposure from start (sec)
+				checkRARads =  acquireRARads + raRateRadPerSec*((double)timeStartExposure + 
+					       (double)exposureLength/2.0 - (double)rateTime)/1000.0;
+				checkDecRads = acquireDecRads + decRateRadPerSec*((double)timeStartExposure + 
+					       (double)exposureLength/2.0 - (double)rateTime)/1000.0;
+				acquireRAString = Position.formatHMSString(checkRARads,":");
+				acquireDecString = Position.formatDMSString(checkDecRads,":");
 				sprat.log(Logging.VERBOSITY_VERBOSE,
-					  ":computeRADecOffset: Target original position: at T=0.0s: "+
-					  acquireRAString+", "+acquireDecString);
-				double checkRARads = acquireRARads;
-				double checkDecRads = acquireDecRads;
-				long timeElapsed = timeStartExposure - rateTime;
-				if (moving) 
-				{
-					// Add offset = rate(rad/sec) * timediff to mid-exposure from start (sec)
-					checkRARads =  acquireRARads + raRateRadPerSec*((double)timeStartExposure + 
-						       (double)exposureLength/2.0 - (double)rateTime)/1000.0;
-					checkDecRads = acquireDecRads + decRateRadPerSec*((double)timeStartExposure + 
-						       (double)exposureLength/2.0 - (double)rateTime)/1000.0;
-					acquireRAString = Position.formatHMSString(checkRARads,":");
-					acquireDecString = Position.formatDMSString(checkDecRads,":");
-					sprat.log(Logging.VERBOSITY_VERBOSE,
-					      ":computeRADecOffset: Moving target position mid-exposure at T="+
-					      ((double)timeElapsed/1000.0)+"s: "+acquireRAString+", "+
-						  acquireDecString);
-				}
-				coordinate = WCSTools.wcsToPixel(handle,checkRARads*180.0/Math.PI,
-								 checkDecRads*180.0/Math.PI);
-				sprat.log(Logging.VERBOSITY_VERBOSE,
-					  ":computeRADecOffset:Target Position at mid-exposure at T=:"+
-					  ((double)timeElapsed/1000.0)+"s: "+acquireRAString+","+acquireDecString+
-					  ") currently at binned pixel position : X:"+
-					  coordinate.getXCoordinate()+":Y:"+coordinate.getYCoordinate()+".");
+					  ":computeRADecOffset: Moving target position mid-exposure at T="+
+					  ((double)timeElapsed/1000.0)+"s: "+acquireRAString+", "+
+					  acquireDecString);
 			}
-			catch(Exception e)
-			{
-				sprat.log(Logging.VERBOSITY_VERBOSE,
-					  ":computeRADecOffset:Could not compute pixel of Target Position:"+
-					  acquireRAString+","+acquireDecString+", this is a non fatal error:"+e);
-				sprat.error(this.getClass().getName()+
-					    ":computeRADecOffset:Could not compute pixel of Target Position"+
-					    acquireRAString+","+acquireDecString+":Non fatal error:",e);
-			}
-			// get RA/Dec at target pixel.
-			coordinate = WCSTools.pixelToWCS(handle,acquireXPixel/bin,acquireYPixel/bin);
-			// convert results from decimal degrees to radians
-			raRads = coordinate.getXCoordinate()*Math.PI/180.0;
-			decRads = coordinate.getYCoordinate()*Math.PI/180.0;
+			coordinate = WCSTools.wcsToPixel(handle,checkRARads*180.0/Math.PI,
+							 checkDecRads*180.0/Math.PI);
+			sprat.log(Logging.VERBOSITY_VERBOSE,
+				  ":computeRADecOffset:Target Position at mid-exposure at T=:"+
+				  ((double)timeElapsed/1000.0)+"s: "+acquireRAString+","+acquireDecString+
+				  ") currently at binned pixel position : X:"+
+				  coordinate.getXCoordinate()+":Y:"+coordinate.getYCoordinate()+".");
 		}
-		catch(Exception e)
+		finally
 		{
 			WCSTools.wcsFree(handle);
-			throw e;
 		}
-		// free wcstools handle
-		WCSTools.wcsFree(handle);
-		// string for debug
-		raString = Position.formatHMSString(raRads,":");
-		decString = Position.formatDMSString(decRads,":");
-		sprat.log(Logging.VERBOSITY_VERBOSE,
-			  "computeRADecOffset: unbinned ("+acquireXPixel+","+acquireYPixel+
-			  "), binned ("+(acquireXPixel/bin)+","+(acquireYPixel/bin)+
-			  ") currently is position : RA:"+raString+":Dec:"+decString+".");
-		// compute offset from raRads,decRads to acquireRARads,acquireDecRads
-		// try to allow for RA wrap
-		if (moving) 
-		{
-			offsetRARads = acquireRARads + raRateRadPerSec*((double)timeStartExposure + 
-				       (double)exposureLength/2.0 - (double)rateTime)/1000.0 - raRads;
-		}
-		else
-			offsetRARads = acquireRARads-raRads;     
-		if(offsetRARads > 2.0*Math.PI)
-			offsetRARads -= 2.0*Math.PI;
-		if(offsetRARads < -(2.0*Math.PI))
-			offsetRARads += 2.0*Math.PI;
-		// RA offset is cos(declination/90) due to spherical trig.
-		offsetRARads = offsetRARads*Math.cos(decRads);
-		if(moving)
-		{
-			offsetDecRads = acquireDecRads + decRateRadPerSec*((double)timeStartExposure + 
-					(double)exposureLength/2.0 - (double)rateTime)/1000.0 - decRads;
-		}
-		else
-			offsetDecRads = acquireDecRads-decRads;
-		sprat.log(Logging.VERBOSITY_VERBOSE,
-			  "computeRADecOffset:Offset in RA/Dec Radians ("+offsetRARads+","+offsetDecRads+").");
-		// convert offset to arcseconds
-		// RA offset is cos(declination/90) due to spherical trig.
-		offsetRADegs = offsetRARads*180.0/Math.PI;
-		offsetRAArcSecs = offsetRADegs * 3600.0;
-		offsetDecArcSecs = (90.0*60.0*60.0 * offsetDecRads)/(Math.PI/2.0);
-		sprat.log(Logging.VERBOSITY_VERBOSE,
-			  "computeRADecOffset:Offset in RA/Dec Arcseconds ("+offsetRAArcSecs+","+
-			  offsetDecArcSecs+").");
-		// How far away are we in arcseconds?
-		distance = Math.sqrt((offsetRAArcSecs*offsetRAArcSecs)+(offsetDecArcSecs*offsetDecArcSecs));
-		sprat.log(Logging.VERBOSITY_VERBOSE,
-			  "computeRADecOffset:We are "+distance+" arcseconds away from the correct position.");
-		if(distance < acquireThreshold)
-		{
-			sprat.log(Logging.VERBOSITY_VERBOSE,
-				  "computeRADecOffset:Finish acquisition: "+distance+
-				  " arcseconds  < threshold "+acquireThreshold+" arcseconds.");
-			done = true;
-		}
-		else
-		{
-			done = false;
-			// add new offset into next RA_DEC_OFFSET
-			// OFFSET_RA_DEC is non cumulative, therefore add new offset onto the current offset.
-			raOffset += offsetRAArcSecs;
-			decOffset += offsetDecArcSecs;
-			sprat.log(Logging.VERBOSITY_VERBOSE,
-				  "computeRADecOffset:new RA/Dec offset: ("+raOffset+","+decOffset+") arcseconds.");
-		}
-		return done;
+		// compute offset in pixels with object pixel position target RA/Dec
+		return computeXYPixelOffset(coordinate.getXCoordinate(),coordinate.getYCoordinate());
 	}
 
 	/**
@@ -1163,20 +1031,24 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * pixel position. The computation is done in binned pixels.
 	 * The plate scale is currently retrieved from the FITS property file value:"sprat.fits.value.CCDSCALE."+bin.
 	 * It is not clear how non-square binning is supported yet, or whether this is the right thing to do.
+	 * @param objectXPixel The X Pixel position of the object/position we are trying to acquire onto the 
+	 *        acquisition pixel, in binned pixels. This is the brightestObjectXPixel for 
+	 *        BRIGHTEST mode acquisitions, and the binned X pixel of the target RA/Dec for WCS mode acuisitions.
+	 * @param objectYPixel The Y Pixel position of the object/position we are trying to acquire onto the 
+	 *        acquisition pixel, in binned pixels. This is the brightestObjectYPixel for 
+	 *        BRIGHTEST mode acquisitions, and the binned Y pixel of the target RA/Dec for WCS mode acuisitions.
 	 * @return The method returns true if acquisition has been successful, i.e. the difference between the
 	 *         two pixel positions is less than  acquireThreshold
 	 *         arcseconds (after taking the plate scale into account). Otherwise false is returned.
 	 * @see #acquireXPixel
 	 * @see #acquireYPixel
-	 * @see #brightestObjectXPixel
-	 * @see #brightestObjectYPixel
 	 * @see #xPixelOffset
 	 * @see #yPixelOffset
 	 * @see #bin
 	 * @see #status
 	 * @see SpratStatus#getPropertyDouble
 	 */
-	protected boolean computeXYPixelOffset() throws Exception
+	protected boolean computeXYPixelOffset(double objectXPixel,double objectYPixel) throws Exception
 	{
 		boolean done;
 		double plateScale;
@@ -1190,10 +1062,9 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 		plateScale = status.getPropertyDouble("sprat.fits.value.CCDSCALE."+bin);
 		sprat.log(Logging.VERBOSITY_VERBOSE,
 			  "computeXYPixelOffset:Target Pixel(binned): ("+(acquireXPixel/bin)+", "+(acquireYPixel/bin)+
-			  "):Brightest Object Pixel(binned): ("+brightestObjectXPixel+", "+brightestObjectYPixel+
-			  "):Plate Scale"+plateScale+".");
-		offsetXPixel = brightestObjectXPixel-(acquireXPixel/bin);
-		offsetYPixel = brightestObjectYPixel-(acquireYPixel/bin);
+			  "):Object Pixel(binned): ("+objectXPixel+", "+objectYPixel+"):Plate Scale"+plateScale+".");
+		offsetXPixel = objectXPixel-(acquireXPixel/bin);
+		offsetYPixel = objectYPixel-(acquireYPixel/bin);
 		sprat.log(Logging.VERBOSITY_VERBOSE,
 			  "computeXYPixelOffset:We are ("+offsetXPixel+","+offsetYPixel+
 			  ") binned pixels away from the correct position.");
