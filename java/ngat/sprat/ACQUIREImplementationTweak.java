@@ -220,6 +220,17 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 		// get parameters
 		acquisitionMode = acquireCommand.getAcquisitionMode();
 		acquireThreshold = acquireCommand.getThreshold();
+		if(acquireThreshold < 0.1)
+		{
+			String errorString = new String(acquireCommand.getId()+
+							":processCommand:Acquire threshold is too small:"+
+							acquireThreshold);
+			sprat.error(this.getClass().getName()+":"+errorString);
+			acquireDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+2903);
+			acquireDone.setErrorString(errorString);
+			acquireDone.setSuccessful(false);
+			return acquireDone;
+		}
 		acquireRARads = acquireCommand.getRA();
 		acquireDecRads = acquireCommand.getDec();
 		acquireRAString = Position.formatHMSString(acquireRARads,":");
