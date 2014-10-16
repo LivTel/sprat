@@ -446,8 +446,8 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * The plate scale is currently retrieved from the FITS property file value:"sprat.fits.value.CCDSCALE."+bin.
 	 * It is not clear how non-square binning is supported yet, or whether this is the right thing to do.
 	 * @param id The string id of the command instance we are implementing. Used for generating ISS command id's.
-	 * @param xPixelOffset The offset in X binned pixels in the focal plane of the acquisition instrument.
-	 * @param yPixelOffset The offset in Y binned pixels in the focal plane of the acquisition instrument.
+	 * @param xPixelOffset The offset in X binned decimal pixels in the focal plane of the acquisition instrument.
+	 * @param yPixelOffset The offset in Y binned decimal pixels in the focal plane of the acquisition instrument.
 	 * @exception Exception Thrown if the ISS command OFFSET_RA_DEC fails.
 	 * @see #sprat
 	 * @see #serverConnectionThread
@@ -457,7 +457,7 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * @see Sprat#sendISSCommand
 	 * @see ngat.message.ISS_INST.OFFSET_X_Y
 	 */
-	protected void doXYPixelOffset(String id,int xPixelOffset,int yPixelOffset) throws Exception
+	protected void doXYPixelOffset(String id,double xPixelOffset,double yPixelOffset) throws Exception
 	{
 		OFFSET_X_Y offsetXYCommand = null;
 		INST_TO_ISS_DONE instToISSDone = null;
@@ -501,13 +501,16 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * <li><b>testAbort</b> is called to see if this command implementation has been aborted.
 	 * <li>We call <b>computeRADecOffset</b> to check whether we are in the correct position, 
 	 *     and calculate a new offset to apply if necessary.
-diddly
-	 * <li>If a new offset is required <b>doRADecOffset</b> is called.
-	 * <li>We check to see if the loop should be terminated.
+	 * <li>If a new offset is required we call <b>doXYPixelOffset</b>, with the 
+	 *     <b>xPixelOffset</b> and <b>yPixelOffset</b> computed by <b>computeRADecOffset</b>. 
+	 *     The <b>offsetCount</b> is incremented.
+	 * <li>We check to see if the loop should be terminated. If the <b>offsetCount</b> is greater than 
+	 *     <b>maximumOffsetCount</b> we throw an exception.
 	 * </ul>
 	 * @param acquireCommand The instance of ACQUIRE we are currently running.
 	 * @param acquireDone The instance of ACQUIRE_DONE to fill in with errors we receive.
-	 * @exception Exception Thrown if testAbort diddly... failed.	 
+	 * @exception Exception Thrown if testAbort/sendBasicAck failed, or if we issued more than
+	 *            maximumOffsetCount offsets.	 
 	 * @see #doFrame
 	 * @see #sendAcquireDpAck
 	 * @see #computeRADecOffset
@@ -520,6 +523,9 @@ diddly
 	 * @see #sendBasicAck
 	 * @see #sendAcquireAck
 	 * @see #reduceExpose
+	 * @see #xPixelOffset
+	 * @see #yPixelOffset
+	 * @see #doXYPixelOffset
 	 */
 	protected void doAcquisitionWCS(ACQUIRE acquireCommand,ACQUIRE_DONE acquireDone) throws Exception
 	{
@@ -567,7 +573,7 @@ diddly
 			if(done == false)
 			{
 				// issue new XY Pixel offset
-				doXYPixelOffset(acquireCommand.getId(),(int)xPixelOffset,(int)yPixelOffset);
+				doXYPixelOffset(acquireCommand.getId(),xPixelOffset,yPixelOffset);
 				offsetCount++;
 			}
 			// Have we taken too many goes to acquire?
@@ -666,7 +672,7 @@ diddly
 			if(done == false)
 			{
 				// issue new XY Pixel offset
-				doXYPixelOffset(acquireCommand.getId(),(int)xPixelOffset,(int)yPixelOffset);
+				doXYPixelOffset(acquireCommand.getId(),xPixelOffset,yPixelOffset);
 				offsetCount++;
 			}
 			// Have we taken too many goes to acquire?
