@@ -99,7 +99,6 @@ public class ARCImplementation extends CALIBRATEImplementation implements JMSCom
 	 * <li>A FILENAME_ACK is sent back to the client with the new filename.
 	 * <li>reduceCalibrate is called to reduce the arc.
 	 * </ul>
-	 * @see #getLampExposureLength
 	 * @see #setArcLamp
 	 * @see #arcFilename
 	 * @see CommandImplementation#testAbort
@@ -109,6 +108,7 @@ public class ARCImplementation extends CALIBRATEImplementation implements JMSCom
 	 * @see FITSImplementation#sendBasicAck
 	 * @see FITSImplementation#objectName
 	 * @see FITSImplementation#addFitsHeader
+	 * @see HardwareImplementation#getLampExposureLength
 	 * @see HardwareImplementation#getMechanismConfig
 	 * @see HardwareImplementation#getSlitPosition
 	 * @see HardwareImplementation#getGrismPosition
@@ -126,7 +126,7 @@ public class ARCImplementation extends CALIBRATEImplementation implements JMSCom
 		FitsHeaderCardImage objectCardImage = null;
 		String lampsString = null;
 		String arcObjectName = null;
-		int slitPosition,grismPosition,rotationPosition,exposureLength,readoutAckTime,warmupLengthMS;
+		int slitPosition,grismPosition,rotationPosition,exposureLength,readoutAckTime,warmupLengthMS,binx,biny;
 
 		if(testAbort(command,arcDone) == true)
 			return arcDone;
@@ -152,6 +152,20 @@ public class ARCImplementation extends CALIBRATEImplementation implements JMSCom
 			arcDone.setSuccessful(false);
 			return arcDone;
 		}
+		// get ccd binning
+		try
+		{
+			binx = getStatusMultrunBinX();
+			biny = getStatusMultrunBinY();
+		}
+		catch(Exception e)
+		{
+			sprat.error(this.getClass().getName()+":processCommand:Failed to get CCD binning.",e);
+			arcDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+1508);
+			arcDone.setErrorString("processCommand:Failed to get CCD binning:"+e.toString());
+			arcDone.setSuccessful(false);
+			return arcDone;
+		}
 		// move the sprat calibration mirror into the beam
 		sprat.log(Logging.VERBOSITY_TERSE,this.getClass().getName()+
 			  ":processCommand:Moving calibration mirror.");
@@ -174,7 +188,7 @@ public class ARCImplementation extends CALIBRATEImplementation implements JMSCom
 		try
 		{
 			exposureLength = getLampExposureLength(lampsString,slitPosition,grismPosition,
-							       rotationPosition);
+							       rotationPosition,binx,biny);
 		}
 		catch(Exception e)
 		{

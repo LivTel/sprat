@@ -117,6 +117,12 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 	 * @return The routine returns a boolean to indicate whether the operation was completed
 	 *  	successfully.
 	 * @see #setFitsHeader
+	 * @see HardwareImplementation#getMirrorPosition
+	 * @see HardwareImplementation#getSlitPosition
+	 * @see HardwareImplementation#getGrismPosition
+	 * @see HardwareImplementation#getRotationPosition
+	 * @see FITSImplementation#getStatusMultrunBinX
+	 * @see FITSImplementation#getStatusMultrunBinY
 	 */
 	public boolean setFitsHeaders(COMMAND command,COMMAND_DONE commandDone)
 	{

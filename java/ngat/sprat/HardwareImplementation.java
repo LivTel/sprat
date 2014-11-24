@@ -194,22 +194,25 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * @param slitPosition The position of the slit, one of POSITION_IN | POSITION_OUT.
 	 * @param grismPosition The position of the grism, one of POSITION_IN | POSITION_OUT.
 	 * @param rotationPosition The rotation position of the grism, one of 0 | 1.
+	 * @param binx The X binning factor.
+	 * @param biny The Y binning factor.
 	 * @return The exposure length in milliseconds.
 	 * @see #status
 	 * @see SpratStatus#getPropertyInteger
 	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_IN
 	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_OUT
 	 */
-	protected int getLampExposureLength(String lampString,int slitPosition,int grismPosition,int rotationPosition)
+	protected int getLampExposureLength(String lampString,int slitPosition,int grismPosition,int rotationPosition,
+					    int binx,int biny)
 	{
 		int exposureLength;
 		String keywordString = null;
 
-		// sprat.lamp.slit position[in|out].grism position[in|out].rotation position[0|1].
+		// sprat.lamp.slit position[in|out].grism position[in|out].rotation position[0|1].binx.biny.
 		// lamp name.exposure_length
 		keywordString = new String("sprat.lamp."+InOutReplyCommand.positionToLowerCaseString(slitPosition)+"."+
 					   InOutReplyCommand.positionToLowerCaseString(grismPosition)+"."+
-					   rotationPosition+"."+lampString+".exposure_length");
+					   rotationPosition+"."+binx+"."+biny+"."+lampString+".exposure_length");
 		sprat.log(Logging.VERBOSITY_VERBOSE,this.getClass().getName()+
 			  ":getLampExposureLength:Trying to retrieve exposure length from property keyword:"+
 			  keywordString);

@@ -108,6 +108,9 @@ public class LAMPFLATImplementation extends CALIBRATEImplementation implements J
 	 * @see FITSImplementation#clearFitsHeaders
 	 * @see FITSImplementation#setFitsHeaders
 	 * @see FITSImplementation#getFitsHeadersFromISS
+	 * @see FITSImplementation#getStatusMultrunBinX
+	 * @see FITSImplementation#getStatusMultrunBinY
+	 * @see HardwareImplementation#getLampExposureLength
 	 * @see HardwareImplementation#getMechanismConfig
 	 * @see HardwareImplementation#getSlitPosition
 	 * @see HardwareImplementation#getGrismPosition
@@ -126,7 +129,7 @@ public class LAMPFLATImplementation extends CALIBRATEImplementation implements J
 		FitsHeaderCardImage objectCardImage = null;
 		String lampsString = null;
 		String lampFlatObjectName = null;
-		int slitPosition,grismPosition,rotationPosition,exposureLength,readoutAckTime,warmupLengthMS;
+		int slitPosition,grismPosition,rotationPosition,exposureLength,readoutAckTime,warmupLengthMS,binx,biny;
 
 		if(testAbort(command,lampFlatDone) == true)
 			return lampFlatDone;
@@ -152,6 +155,20 @@ public class LAMPFLATImplementation extends CALIBRATEImplementation implements J
 			lampFlatDone.setSuccessful(false);
 			return lampFlatDone;
 		}
+		// get ccd binning
+		try
+		{
+			binx = getStatusMultrunBinX();
+			biny = getStatusMultrunBinY();
+		}
+		catch(Exception e)
+		{
+			sprat.error(this.getClass().getName()+":processCommand:Failed to get CCD binning.",e);
+			lampFlatDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_BASE+2708);
+			lampFlatDone.setErrorString("processCommand:Failed to get CCD binning:"+e.toString());
+			lampFlatDone.setSuccessful(false);
+			return lampFlatDone;
+		}
 		// move the sprat calibration mirror into the beam
 		sprat.log(Logging.VERBOSITY_TERSE,this.getClass().getName()+
 			  ":processCommand:Moving calibration mirror.");
@@ -174,7 +191,7 @@ public class LAMPFLATImplementation extends CALIBRATEImplementation implements J
 		try
 		{
 			exposureLength = getLampExposureLength(lampsString,slitPosition,grismPosition,
-							       rotationPosition);
+							       rotationPosition,binx,biny);
 		}
 		catch(Exception e)
 		{
