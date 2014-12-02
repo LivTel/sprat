@@ -4,18 +4,18 @@
 # By $Author: cjm $
 # Install a deployment tar created by sprat_make_deployment
 # Usage:
-#	sprat_tar_install [-help] [-nodelbin] <machine>
-set delbin = 1
+#	sprat_tar_install [-help] [-delbin] <machine>
+set delbin = 0
 set machine_name = ""
 foreach arg ( $argv )
 	switch ( $arg )
-		case "-nodelbin":
-		    set delbin = 0
+		case "-delbin":
+		    set delbin = 1
 	     	    breaksw
 		case "-help":
-		    echo "$0 [-help] [-nodelbin] <machine>"
-		    echo "\t -nodelbin does not delete the binary directory before installation,"
-		    echo "\t\tfor multiple instrument installations."
+		    echo "$0 [-help] [-delbin] <machine>"
+		    echo "\t -delbin deletes the binary directory before installation."
+		    echo "\t\tNormally this installer does not delete the binary directory as Sprat shares a machine with IO:I."
 		    exit 0
 	     	    breaksw
 		default:
@@ -24,9 +24,9 @@ foreach arg ( $argv )
 	endsw	   
 end
 if ( "${machine_name}" == "") then
-	echo "$0 [-help] [-nodelbin] <machine>"
-	echo "\t-nodelbin does not delete the binary directory before installation, "
-	echo "\t\tfor multiple instrument installations."
+	echo "$0 [-help] [-delbin] <machine>"
+	echo "\t -delbin deletes the binary directory before installation."
+	echo "\t\tNormally this installer does not delete the binary directory as Sprat shares a machine with IO:I."
 	exit 0
 endif
 set current_dir         = `pwd`
