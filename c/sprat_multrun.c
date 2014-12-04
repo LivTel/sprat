@@ -35,14 +35,19 @@
 /**
  * Exposure type enumeration.
  * <ul>
+ * <li>MULTRUN_OBSTYPE_ARC
  * <li>MULTRUN_OBSTYPE_BIAS
- * <li>MULTRUN_OBSTYPE_EXPOSE
  * <li>MULTRUN_OBSTYPE_DARK
+ * <li>MULTRUN_OBSTYPE_EXPOSE
+ * <li>MULTRUN_OBSTYPE_LAMPFLAT
+ * <li>MULTRUN_OBSTYPE_STANDARD
+ * <li>MULTRUN_OBSTYPE_SKYFLAT
  * </ul>
  */
 enum MULTRUN_OBSTYPE
 {
-	MULTRUN_OBSTYPE_EXPOSE=0,MULTRUN_OBSTYPE_BIAS=1,MULTRUN_OBSTYPE_DARK=2
+	MULTRUN_OBSTYPE_ARC=0,MULTRUN_OBSTYPE_BIAS,MULTRUN_OBSTYPE_DARK,MULTRUN_OBSTYPE_EXPOSE,
+	MULTRUN_OBSTYPE_LAMPFLAT,MULTRUN_OBSTYPE_STANDARD,MULTRUN_OBSTYPE_SKYFLAT
 };
 
 /* structures */
@@ -97,7 +102,7 @@ static struct Multrun_Struct Multrun_Data =
 };
 
 /* internal functions */
-static void Multrun_Fits_Headers_Set(int exp_type);
+static void Multrun_Fits_Headers_Set(enum MULTRUN_OBSTYPE exp_type);
 
 /* ----------------------------------------------------------------------------
 ** 		external functions 
@@ -505,6 +510,7 @@ int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,enum CCD_FITS_F
 	char filename[256];
 	unsigned short *buffer_ptr = NULL;
 	int retval,i;
+	enum MULTRUN_OBSTYPE obstype;
 
 #if SPRAT_DEBUG > 1
 	Sprat_Global_Log("multrun","sprat_multrun.c","Sprat_Multrun_Multrun",LOG_VERBOSITY_TERSE,"MULTRUN",
@@ -579,6 +585,27 @@ int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,enum CCD_FITS_F
 			exposure_type);
 		return FALSE;
 	}
+	switch(exposure_type)
+	{
+		case CCD_FITS_FILENAME_EXPOSURE_TYPE_ACQUIRE:
+			obstype = MULTRUN_OBSTYPE_EXPOSE; /* Is there an OBSTYPE for ACQUIRE? */
+			break;
+		case CCD_FITS_FILENAME_EXPOSURE_TYPE_ARC:
+			obstype = MULTRUN_OBSTYPE_ARC;
+			break;
+		case CCD_FITS_FILENAME_EXPOSURE_TYPE_EXPOSURE:
+			obstype = MULTRUN_OBSTYPE_EXPOSE;
+			break;
+		case CCD_FITS_FILENAME_EXPOSURE_TYPE_LAMPFLAT:
+			obstype = MULTRUN_OBSTYPE_LAMPFLAT;
+			break;
+		case CCD_FITS_FILENAME_EXPOSURE_TYPE_SKYFLAT:
+			obstype = MULTRUN_OBSTYPE_SKYFLAT;
+			break;
+		case CCD_FITS_FILENAME_EXPOSURE_TYPE_STANDARD:
+			obstype = MULTRUN_OBSTYPE_STANDARD; 
+			break;
+	}
 	/* increment filename */
 	if(!CCD_Fits_Filename_Next_Multrun())
 	{
@@ -609,7 +636,7 @@ int Sprat_Multrun_Multrun(int exposure_length,int exposure_count,enum CCD_FITS_F
 			Multrun_Data.Is_Active = FALSE;
 			return FALSE;
 		}
-		Multrun_Fits_Headers_Set(MULTRUN_OBSTYPE_EXPOSE);
+		Multrun_Fits_Headers_Set(obstype);
 		/* do an exposure */
 		start_time.tv_sec = 0;
 		start_time.tv_nsec = 0;
@@ -717,21 +744,23 @@ int Sprat_Multrun_Exposure_Count_Get(void)
 /**
  * Sets some FITS header values from configured CCD values. Currently OBSTYPE and EXPTOTAL
  * are set, as they cannot be derived from data within the CCD library.
+ * @param exp_type The exposure type, used for determining the value of the OBSTYPE keyword.
+ * @see #MULTRUN_OBSTYPE
  * @see #Multrun_Data
  * @see sprat_global.html#Sprat_Global_Log_Format
  * @see sprat_global.html#Sprat_Global_Error
  * @see ../ccd/cdocs/ccd_fits_header.html#CCD_Fits_Header_String_Add
  * @see ../ccd/cdocs/ccd_fits_header.html#CCD_Fits_Header_String_Add
  */
-static void Multrun_Fits_Headers_Set(int exp_type)
+static void Multrun_Fits_Headers_Set(enum MULTRUN_OBSTYPE exp_type)
 {
 	switch(exp_type)
 	{
-		case  MULTRUN_OBSTYPE_EXPOSE:
-			if(!CCD_Fits_Header_Add_String(&(Multrun_Data.Fits_Header),"OBSTYPE","EXPOSE",NULL))
+		case  MULTRUN_OBSTYPE_ARC:
+			if(!CCD_Fits_Header_Add_String(&(Multrun_Data.Fits_Header),"OBSTYPE","ARC",NULL))
 			{
 				Sprat_Global_Error("multrun","sprat_multrun.c","Multrun_Fits_Headers_Set",
-						   LOG_VERBOSITY_VERBOSE,"Failed to set OBSTYPE: EXPOSE");
+						   LOG_VERBOSITY_VERBOSE,"Failed to set OBSTYPE: ARC");
 			}
 			break;
 		case  MULTRUN_OBSTYPE_BIAS:
@@ -746,6 +775,41 @@ static void Multrun_Fits_Headers_Set(int exp_type)
 			{
 				Sprat_Global_Error("multrun","sprat_multrun.c","Multrun_Fits_Headers_Set",
 						   LOG_VERBOSITY_VERBOSE,"Failed to set OBSTYPE: DARK");
+			}
+			break;
+		case  MULTRUN_OBSTYPE_EXPOSE:
+			if(!CCD_Fits_Header_Add_String(&(Multrun_Data.Fits_Header),"OBSTYPE","EXPOSE",NULL))
+			{
+				Sprat_Global_Error("multrun","sprat_multrun.c","Multrun_Fits_Headers_Set",
+						   LOG_VERBOSITY_VERBOSE,"Failed to set OBSTYPE: EXPOSE");
+			}
+			break;
+		case  MULTRUN_OBSTYPE_LAMPFLAT:
+			if(!CCD_Fits_Header_Add_String(&(Multrun_Data.Fits_Header),"OBSTYPE","LAMP-FLAT",NULL))
+			{
+				Sprat_Global_Error("multrun","sprat_multrun.c","Multrun_Fits_Headers_Set",
+						   LOG_VERBOSITY_VERBOSE,"Failed to set OBSTYPE: LAMP-FLAT");
+			}
+			break;
+		case  MULTRUN_OBSTYPE_STANDARD:
+			if(!CCD_Fits_Header_Add_String(&(Multrun_Data.Fits_Header),"OBSTYPE","STANDARD",NULL))
+			{
+				Sprat_Global_Error("multrun","sprat_multrun.c","Multrun_Fits_Headers_Set",
+						   LOG_VERBOSITY_VERBOSE,"Failed to set OBSTYPE: STANDARD");
+			}
+			break;
+		case  MULTRUN_OBSTYPE_SKYFLAT:
+			if(!CCD_Fits_Header_Add_String(&(Multrun_Data.Fits_Header),"OBSTYPE","SKY-FLAT",NULL))
+			{
+				Sprat_Global_Error("multrun","sprat_multrun.c","Multrun_Fits_Headers_Set",
+						   LOG_VERBOSITY_VERBOSE,"Failed to set OBSTYPE: SKY-FLAT");
+			}
+			break;
+		default:
+			if(!CCD_Fits_Header_Add_String(&(Multrun_Data.Fits_Header),"OBSTYPE","UNKNOWN",NULL))
+			{
+				Sprat_Global_Error("multrun","sprat_multrun.c","Multrun_Fits_Headers_Set",
+						   LOG_VERBOSITY_VERBOSE,"Failed to set OBSTYPE: UNKNOWN");
 			}
 			break;
 	}
