@@ -569,7 +569,7 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 			// Extract WCS information from reducedFITSFilename
 			// Calculate offset
 			// check loop termination - is offset less than threshold?
-			done = computeRADecOffset();
+			done = computeRADecOffset(offsetCount);
 			if(done == false)
 			{
 				// issue new XY Pixel offset
@@ -668,7 +668,7 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 				  ":doAcquisitionBrightest:Exposure reduction:filename:"+reducedFITSFilename+".");
 			// Calculate offset
 			// check loop termination - is offset less than threshold?
-			done = computeXYPixelOffset(brightestObjectXPixel,brightestObjectYPixel);
+			done = computeXYPixelOffset(brightestObjectXPixel,brightestObjectYPixel,offsetCount);
 			if(done == false)
 			{
 				// issue new XY Pixel offset
@@ -964,6 +964,8 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * <li>We call computeXYPixelOffset with the binned pixel coordinates of the target RA/Dec as the target
 	 *     pixel position.
 	 * </ul>
+	 * @param offsetCount The number of offsets we have currently done whilst trying to acquire.
+	 *        Used by computeXYPixelOffset as part of the algorithm to determine whether we are close enough yet.
 	 * @return The method returns true if acquisition has been successful, i.e. the difference between the
 	 *         target pixel position, and the pixel position containing ther acquisition RA/Dec 
 	 *         is less than acquireThreshold arcseconds. Otherwise false is returned.
@@ -986,7 +988,7 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * @see ngat.astrometry.WCSTools#pixelToWCS
 	 * @see ngat.astrometry.WCSTools#wcsfree
 	 */
-	protected boolean computeRADecOffset() throws Exception
+	protected boolean computeRADecOffset(int offsetCount) throws Exception
 	{
 		WCSToolsWorldCoorHandle handle = null;
 		WCSToolsCoordinate coordinate = null;
@@ -1040,7 +1042,7 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 			WCSTools.wcsFree(handle);
 		}
 		// compute offset in pixels with object pixel position target RA/Dec
-		return computeXYPixelOffset(coordinate.getXCoordinate(),coordinate.getYCoordinate());
+		return computeXYPixelOffset(coordinate.getXCoordinate(),coordinate.getYCoordinate(),offsetCount);
 	}
 
 	/**
@@ -1048,12 +1050,22 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * pixel position. The computation is done in binned pixels.
 	 * The plate scale is currently retrieved from the FITS property file value:"sprat.fits.value.CCDSCALE."+bin.
 	 * It is not clear how non-square binning is supported yet, or whether this is the right thing to do.
+	 * If we are doing the first offset we check whether we are close enough based on the difference 
+	 * in X and Y, otherwise X only. This gets Y into roughly the right place, it doesn't
+	 *  have to be too accurate as the slit is in the Y direction. 
+	 * We now decide whether we are close enough based on the difference in X only, as the Y direction
+	 * runs down the slit in Y, this only needs to be approximately right (for the data pipeline to find
+	 * the target correctly).
 	 * @param objectXPixel The X Pixel position of the object/position we are trying to acquire onto the 
 	 *        acquisition pixel, in binned pixels. This is the brightestObjectXPixel for 
 	 *        BRIGHTEST mode acquisitions, and the binned X pixel of the target RA/Dec for WCS mode acuisitions.
 	 * @param objectYPixel The Y Pixel position of the object/position we are trying to acquire onto the 
 	 *        acquisition pixel, in binned pixels. This is the brightestObjectYPixel for 
 	 *        BRIGHTEST mode acquisitions, and the binned Y pixel of the target RA/Dec for WCS mode acuisitions.
+	 * @param offsetCount The number of offsets we have currently done whilst trying to acquire.
+	 *        If we are doing the first offset we check whether we are close enough based on the difference 
+	 *        in X and Y, otherwise X only. This gets Y into roughly the right place, it doesn't
+	 *        have to be too accurate as the slit is in the Y direction.
 	 * @return The method returns true if acquisition has been successful, i.e. the difference between the
 	 *         two pixel positions is less than  acquireThreshold
 	 *         arcseconds (after taking the plate scale into account). Otherwise false is returned.
@@ -1065,7 +1077,8 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * @see #status
 	 * @see SpratStatus#getPropertyDouble
 	 */
-	protected boolean computeXYPixelOffset(double objectXPixel,double objectYPixel) throws Exception
+	protected boolean computeXYPixelOffset(double objectXPixel,double objectYPixel,int offsetCount) 
+		throws Exception
 	{
 		boolean done;
 		double plateScale;
@@ -1085,7 +1098,28 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 		sprat.log(Logging.VERBOSITY_VERBOSE,
 			  "computeXYPixelOffset:We are ("+offsetXPixel+","+offsetYPixel+
 			  ") binned pixels away from the correct position.");
-		distancePixels = Math.sqrt((offsetXPixel*offsetXPixel)+(offsetYPixel*offsetYPixel));
+		// If we are the first time round the acquire loop, compute the distance away in X and Y,
+		// otherwise X only. This ensures the y position is roughly right before we are acquired,
+		// but concentrates on the X difference in subsequent attempts..
+		if(offsetCount == 0)
+		{
+			// This calculates the distance away from the target in both X and Y.
+			distancePixels = Math.sqrt((offsetXPixel*offsetXPixel)+(offsetYPixel*offsetYPixel));
+			sprat.log(Logging.VERBOSITY_VERBOSE,
+				  "computeXYPixelOffset:First acquisition attempt, using X and Y offsets: We are ("+
+				  distancePixels+") binned pixels away from the correct position.");
+		}
+		else
+		{
+			// To calculate the distance away from the target in X only, do this
+			distancePixels = offsetXPixel;
+			if(distancePixels < 0.0)
+				distancePixels = -distancePixels;
+			sprat.log(Logging.VERBOSITY_VERBOSE,
+				  "computeXYPixelOffset:Acquisition attempt "+offsetCount+
+				  ", using X offset only: We are ("+
+				  distancePixels+") binned pixels away from the correct position.");
+		}
 		distanceArcsecs = distancePixels*plateScale;
 		sprat.log(Logging.VERBOSITY_VERBOSE,
 			  "computeXYPixelOffset:We are "+distancePixels+" binned pixels and "+
