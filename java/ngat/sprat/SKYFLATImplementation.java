@@ -17,7 +17,7 @@ import ngat.util.logging.*;
  * This class provides the implementation for the SKYFLAT command sent to a server using the
  * Java Message System.
  * @author Chris Motram
- * @version $Revision: 36 $
+ * @version $Revision$
  */
 public class SKYFLATImplementation extends CALIBRATEImplementation implements JMSCommandImplementation
 {

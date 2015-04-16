@@ -12,7 +12,7 @@ import java.io.*;
  * This is used in, for instance, the REBOOTImplementation, so that the 
  * REBOOT's DONE mesage is returned to the client before the Sprat is terminated.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class SpratREBOOTQuitThread extends Thread
 {

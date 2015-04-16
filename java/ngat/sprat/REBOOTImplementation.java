@@ -17,7 +17,7 @@ import ngat.util.*;
  * This class provides the implementation for the REBOOT command sent to a server using the
  * Java Message System.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision$
  */
 public class REBOOTImplementation extends HardwareImplementation implements JMSCommandImplementation
 {

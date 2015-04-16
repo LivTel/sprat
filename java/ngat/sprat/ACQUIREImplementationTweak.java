@@ -1,5 +1,5 @@
 // ACQUIREImplementationTweak.java
-// $HeadURL: svn://ltdevsrv/sprat/java/ngat/sprat/ACQUIREImplementationTweak.java $
+// $HeadURL$
 package ngat.sprat;
 
 import java.io.*;
@@ -20,14 +20,14 @@ import ngat.util.logging.*;
  * so it can use TWEAK (OFFSET_X_Y) rather than OFFBY ARC (OFFSET_RA_DEC).  TWEAKs can be done whilst
  * the autoguider is locked, making for a more accurate acquisition. 
  * @author Chris Motram
- * @version $Revision: 50 $
+ * @version $Revision$
  */
 public class ACQUIREImplementationTweak extends FITSImplementation implements JMSCommandImplementation
 {
 	/**
 	 * Revision Control System id string, showing the version of the Class.
 	 */
-	public final static String RCSID = new String("$Id: ACQUIREImplementationTweak.java 50 2014-09-24 14:57:03Z cjm $");
+	public final static String RCSID = new String("$Id$");
 	/**
 	 * How many arc-seconds in 1 second of RA. A double, of value 15.
 	 */
