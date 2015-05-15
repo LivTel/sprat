@@ -89,14 +89,6 @@ tidy:
 backup: tidy
 	$(RM) $(RM_OPTIONS) $(OBJS)
 
-checkin:
-	-$(CI) $(CI_OPTIONS) $(SRCS) $(CONFIG_SRCS)
-	-(cd $(INCDIR); $(CI) $(CI_OPTIONS) $(HEADERS);)
-
-checkout:
-	-$(CO) $(CO_OPTIONS) $(SRCS) $(CONFIG_SRCS)
-	-(cd $(INCDIR); $(CO) $(CO_OPTIONS) $(HEADERS);)
-
 # DO NOT DELETE
 
 /home/dev/bin/sprat/c/i386-linux/sprat_main.o: /usr/include/signal.h

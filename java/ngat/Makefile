@@ -14,18 +14,6 @@ dirs:
 		(echo making in $$i...; cd $$i; $(MAKE) ); \
 	done;
 
-checkin:
-	-@for i in $(DIRS); \
-	do \
-		(echo checkin in $$i...; cd $$i; $(MAKE) checkin; $(CI) $(CI_OPTIONS) Makefile); \
-	done;
-
-checkout:
-	@for i in $(DIRS); \
-	do \
-		(echo checkout in $$i...; cd $$i; $(CO) $(CO_OPTIONS) Makefile; $(MAKE) checkout); \
-	done;
-
 depend:
 	echo no depend in ngat directory.
 
@@ -44,7 +32,7 @@ tidy:
 		(echo tidy in $$i...; cd $$i; $(MAKE) tidy); \
 	done;
 
-backup: checkin
+backup: 
 	@for i in $(DIRS); \
 	do \
 		(echo backup in $$i...; cd $$i; $(MAKE) backup); \

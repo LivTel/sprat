@@ -22,12 +22,6 @@ $(BINDIR)/%.class:%.java
 	$(JAVAC) -sourcepath .:/home/dev/src:/home/dev/src/sprat/java \
 		-classpath $(SPRAT_BIN_HOME)/java:$(CLASSPATH) $(JAVAC_OPTIONS) -d $(SPRAT_BIN_HOME)/java $<
 
-checkout:
-	$(CO) $(CO_OPTIONS) $(SRCS)
-
-checkin:
-	-$(CI) $(CI_OPTIONS) $(SRCS)
-
 clean: tidy
 	-$(RM) $(RM_OPTIONS) $(OBJS)
 

@@ -50,14 +50,6 @@ $(DOCS): $(SRCS)
 
 $(DOCS) : $(SRCS)
 
-checkout:
-	-$(CO) $(CO_OPTIONS) $(SRCS)
-	-(cd $(INCDIR); $(CO) $(CO_OPTIONS) $(HEADERS);)
-
-checkin:
-	-$(CI) $(CI_OPTIONS) $(SRCS)
-	-(cd $(INCDIR); $(CI) $(CI_OPTIONS) $(HEADERS);)
-
 staticdepend:
 	makedepend $(MAKEDEPENDFLAGS) -- $(CFLAGS) -- $(SRCS)
 
