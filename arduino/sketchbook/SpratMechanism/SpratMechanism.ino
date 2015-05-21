@@ -14,6 +14,8 @@
 #include "I2Cdev.h"
 #include "MPU6050.h"
 #include "Wire.h"
+// hardware watchdog
+#include <avr/wdt.h>
 
 // length of string used for command parsing.
 #define STRING_LENGTH                  (16)
@@ -121,8 +123,15 @@ int gyroZ = 0.0;
 unsigned long lastTimeRead[LAST_TIME_READ_COUNT];
 
 // setup
+// * The hardware watchdog is setup
+// * The IO pins are configured 
+// * The humidity sensors are configured
+// * We setup the MPU6050 gyro/accelerometer
+// * We setup the ethernet connection.
+// * We attach the message handler.
 // @see #dht0
 // @see #dht1
+// @see #wdt_enable
 // @see #setupMPU6050
 // @see #lastTimeRead
 // @see #LAST_TIME_READ_COUNT
@@ -130,11 +139,18 @@ void setup()
 {
   int i;
   
+  // Robs hardware watchdog code. See fault #2238
+  wdt_clear();
+  // Switch on WDT and set the timeout to 8sec. 8sec is max available.
+  // If the watchdog is not stroked for >8sec then MCU will reset
+  wdt_enable(WDTO_8S);
   // configure pins
   //PIN_HUMIDITY_0
   dht0.begin();
+  wdt_reset(); // hardware watchdog 
   //PIN_HUMIDITY_1
   dht1.begin();
+  wdt_reset();  // hardware watchdog 
   pinMode(PIN_ARC_LAMP_OUTPUT,OUTPUT);
   pinMode(PIN_MIRROR_OUTPUT,OUTPUT);
   pinMode(PIN_SLIT_OUTPUT,OUTPUT);
@@ -161,13 +177,30 @@ void setup()
   }
   // configure serial
   Serial.begin(9600);
+  wdt_reset();  // hardware watchdog 
   // setup MPU6050 gyro/accelerometer
   setupMPU6050();
+  wdt_reset();  // hardware watchdog 
   // configure ethernet and callback routine
   Ethernet.begin(mac,ip,gateway,subnet);
+  wdt_reset();  // hardware watchdog 
   server.begin();
   // messenger callback function
   message.attach(messageReady);
+  wdt_reset();  // hardware watchdog 
+}
+
+// Robs hardware watchdog code from Fault #2238
+// See atmel doc 2551 section 2.4
+// If you don't reset the timer on startup you can get in a horrible mess
+// with the watchdog tripping instantly on power up before you can do
+// anything
+uint8_t wdt_clear(void)
+{
+    uint8_t nResetReg = MCUSR;
+    MCUSR = 0;
+    wdt_disable();
+    return nResetReg;
 }
 
 // Setup the MPU6050 gyro/accelerometer
@@ -192,6 +225,7 @@ void setupMPU6050()
 // @see #monitorSensors
 void loop()
 {
+  wdt_reset();  // hardware watchdog 
   // check if new connecion available
   if(server.available() && !connectFlag)
   {
@@ -210,11 +244,13 @@ void loop()
         ch = client.read();
         Serial.print(ch);
         message.process(ch);
+        wdt_reset();  // hardware watchdog 
       }
       Serial.println();
   }
   // do other stuff here
   monitorSensors();
+  wdt_reset();  // hardware watchdog 
   // wait a bit to stop the arduino locking up
   delay(10);
 }
@@ -263,6 +299,7 @@ void monitorSensors()
   // However this is not available external to the library, so we have our own external clock here.
   if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_HUMIDITY0]) > 58000)
   {
+    wdt_reset();  // hardware watchdog 
     printTime(); Serial.println("monitorSensors:Reading dht0.");
     retval = dht0.read();
     if(retval)
@@ -277,6 +314,7 @@ void monitorSensors()
   }
   if((nowTime - lastTimeRead[LAST_TIME_READ_INDEX_HUMIDITY1]) > 59000)
   {
+    wdt_reset();  // hardware watchdog 
     printTime(); Serial.println("monitorSensors:Reading dht1.");
     retval = dht1.read();
     if(retval)
@@ -303,6 +341,7 @@ void monitorSensors()
     totalGZ = 0;
     for(i = 0; i < MPU6050_SAMPLE_COUNT; i++)
     {
+      wdt_reset();  // hardware watchdog 
       mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
       printTime(); Serial.print("monitorSensors:MPU6050: reading ");
       Serial.print(i);
@@ -942,11 +981,13 @@ double getHumidity(int sensorNumber)
   Serial.println(".");
   if(sensorNumber == 0)
   {
+    wdt_reset();  // hardware watchdog 
     fvalue = dht0.readHumidity();
     dvalue = (double)fvalue;
   }
   else if(sensorNumber == 1)
   {
+    wdt_reset();  // hardware watchdog 
     fvalue = dht1.readHumidity();
     dvalue = (double)fvalue;
   }
@@ -977,10 +1018,12 @@ float getTemperature(int sensorNumber)
   Serial.println(".");
   if(sensorNumber == 0)
   {
-    fvalue = dht0.readTemperature();
+   wdt_reset();  // hardware watchdog 
+   fvalue = dht0.readTemperature();
   }
   else if(sensorNumber == 1)
   {
+    wdt_reset();  // hardware watchdog 
     fvalue = dht1.readTemperature();
   }
   else
