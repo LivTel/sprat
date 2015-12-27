@@ -18,8 +18,8 @@ import ngat.sprat.mechanism.command.*;
 import ngat.util.logging.*;
 
 /**
- * This class provides the implementation for the MULTRUN command sent to a server using the
- * Java Message System.
+ * This class provides a base implementation for commands sent to a server using the
+ * Java Message System that communicate with a piece of hardware.
  * @author Chris Motram
  * @version $Revision$
  */
