@@ -553,6 +553,8 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 	 * Get the value for a FITS header keyword that has a "varyby" setting of "internal".
 	 * Current keywords supported: CONFIGID | CONFNAME | CCDATEMP | ENVTEMP0 | ENVTEMP1 | ENVHUM0 | ENVHUM1 |
 	 * ORIENT1 | ORIENT2 | ORIENT3 | LAMP1SET | LAMP2SET.
+	 * ENVTEMP0 | ENVTEMP1 | ENVHUM0 | ENVHUM1 now return -1.0 if the sensor returns a NaN, so that a failed sensor
+	 * still allows us to write FITS images.
 	 * @param keyword The keyword to retrieve a value for.
 	 * @return An internally generated value.
 	 * @exception Exception Thrown if the keyword is not known to have an internal value by this method.
@@ -570,6 +572,8 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 	 */
 	protected Object getFitsKeywordInternalValue(String keyword) throws Exception
 	{
+		double dValue;
+
 		if(keyword.equals("CONFIGID"))
 		{
 			return new Integer(status.getConfigId());
@@ -584,19 +588,55 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 		}
 		else if(keyword.equals("ENVTEMP0"))
 		{
-			return new Double(getMechanismTemperature(0));
+			// if the sensor returns NaN, just return an impossible Kelvin temperature
+			try
+			{
+				dValue = getMechanismTemperature(0);
+			}
+			catch(Exception e)
+			{
+				dValue = -1.0;
+			}
+			return new Double(dValue);
 		}
 		else if(keyword.equals("ENVTEMP1"))
 		{
-			return new Double(getMechanismTemperature(1));
+			// if the sensor returns NaN, just return an impossible Kelvin temperature
+			try
+			{
+				dValue = getMechanismTemperature(1);
+			}
+			catch(Exception e)
+			{
+				dValue = -1.0;
+			}
+			return new Double(dValue);
 		}
 		else if(keyword.equals("ENVHUM0"))
 		{
-			return new Double(getHumidity(0));
+			// if the sensor returns NaN, just return an impossible humidity
+			try
+			{
+				dValue = getHumidity(0);
+			}
+			catch(Exception e)
+			{
+				dValue = -1.0;
+			}
+			return new Double(dValue);
 		}
 		else if(keyword.equals("ENVHUM1"))
 		{
-			return new Double(getHumidity(1));
+			// if the sensor returns NaN, just return an impossible humidity
+			try
+			{
+				dValue = getHumidity(1);
+			}
+			catch(Exception e)
+			{
+				dValue = -1.0;
+			}
+			return new Double(dValue);
 		}
 		else if(keyword.equals("ORIENT1"))
 		{

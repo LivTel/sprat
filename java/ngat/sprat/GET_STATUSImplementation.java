@@ -610,6 +610,7 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * @see #setInstrumentStatus
 	 * @see #commsInstrumentStatus
 	 * @see ngat.message.ISS_INST.GET_STATUS_DONE#VALUE_STATUS_OK
+	 * @see ngat.message.ISS_INST.GET_STATUS_DONE#VALUE_STATUS_WARN
 	 * @see ngat.message.ISS_INST.GET_STATUS_DONE#VALUE_STATUS_FAIL
 	 */
 	private void getIntermediateStatus()
@@ -651,6 +652,20 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 				      MirrorCommand.positionToString(currentPosition));
 			getArcLampState();
 			getWLampState();
+			commsInstrumentStatus[COMMS_INSTRUMENT_STATUS_MECHANISM] = GET_STATUS_DONE.
+				VALUE_STATUS_OK;
+		}
+		catch(Exception e)
+		{
+			sprat.error(this.getClass().getName()+
+				    ":getIntermediateStatus:Retrieving arduino mechanism status failed.",e);
+			commsInstrumentStatus[COMMS_INSTRUMENT_STATUS_MECHANISM] = GET_STATUS_DONE.
+				VALUE_STATUS_FAIL;
+		}
+		// get temperature and humidity values
+		// These are non-critical, so don't fail the instrument if the sensor is broken
+		try
+		{
 			temperatureSensorCount = status.getPropertyInteger(
 							 "sprat.mechanism.temperature.sensor.count");
 			for(int i = 0; i < temperatureSensorCount; i++)
@@ -667,15 +682,17 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 				hashTable.put("Mechanism.Humidity."+i,new Double(humidity));
 			}
 			getGyroPosition();
-			commsInstrumentStatus[COMMS_INSTRUMENT_STATUS_MECHANISM] = GET_STATUS_DONE.
-				VALUE_STATUS_OK;
 		}
 		catch(Exception e)
 		{
 			sprat.error(this.getClass().getName()+
-				    ":getIntermediateStatus:Retrieving arduino mechanism status failed.",e);
-			commsInstrumentStatus[COMMS_INSTRUMENT_STATUS_MECHANISM] = GET_STATUS_DONE.
-				VALUE_STATUS_FAIL;
+				    ":getIntermediateStatus:Retrieving arduino enviromental status failed.",e);
+			if(commsInstrumentStatus[COMMS_INSTRUMENT_STATUS_MECHANISM] == GET_STATUS_DONE.
+			   VALUE_STATUS_OK)
+			{
+				commsInstrumentStatus[COMMS_INSTRUMENT_STATUS_MECHANISM] = GET_STATUS_DONE.
+					VALUE_STATUS_WARN;
+			}
 		}
 		hashTable.put("CCD.Comms.Status",commsInstrumentStatus[COMMS_INSTRUMENT_STATUS_CCD]);
 		hashTable.put("Mechanism.Comms.Status",
