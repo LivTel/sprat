@@ -1,0 +1,54 @@
+#!/bin/csh
+# test_spratmechanism
+if ( -x /home/dev/bin/arduino/commandserver/test/i386-linux/send_command ) then
+	alias send_command '/home/dev/bin/arduino/commandserver/test/i386-linux/send_command'
+else
+	echo "send_command not found."
+	exit 1
+endif
+set date_iso = `/bin/date +"%Y-%m-%dT%H:%M:%S"`
+set csv_file = "test_spratmechanism_${date_iso}.csv"
+set done = 0
+while( ${done} == 0)
+	# date
+	set date_s = `/bin/date +"%s"`
+	set date_iso = `/bin/date +"%Y-%m-%dT%H:%M:%S"`
+	# gyro
+	# echo "Get gyro..."
+	set gyro_output = `send_command -h spratmechanism -p 23 -c "gyro"`
+	set gyro_ok = `echo "${gyro_output}" | awk ' { print $1} '`
+	if( "${gyro_ok}" != "ok" ) then
+		echo "gyro command failed: ${gyro_output}."
+		set done = 1
+	endif
+	set gyro_x = `echo "${gyro_output}" | awk ' { print $2} '`
+	set gyro_y = `echo "${gyro_output}" | awk ' { print $3} '`
+	set gyro_z = `echo "${gyro_output}" | awk ' { print $4} '`
+	#humidity
+	# echo "Get humidity..."
+	set humidity_output = `send_command -h spratmechanism -p 23 -c "humidity 0"`
+	set humidity_ok = `echo "${humidity_output}" | awk ' { print $1} '`
+	if( "${humidity_ok}" != "ok" ) then
+		echo "humidity command failed: ${humidity_output}."
+		set done = 1
+	endif
+	set humidity_0 = `echo "${humidity_output}" | awk ' { print $2} '`
+	# temperature
+	set sensor_number = 0
+	set temperature_reading_string = ""
+	while ( ${sensor_number} < 3 )
+		# echo "Get temperature ${sensor_number}..."
+		set temp_output = `send_command -h spratmechanism -p 23 -c "temperature ${sensor_number}"`
+		set temp_ok = `echo "${temp_output}" | awk ' { print $1} '`
+		if( "${temp_ok}" != "ok" ) then
+			echo "temperature command failed: ${temp_output}."
+			set done = 1
+		endif
+		set temp = `echo "${temp_output}" | awk ' { print $2} '`
+		set temperature_reading_string = "${temperature_reading_string},${temp}"
+		@ sensor_number ++
+	end
+	# output csv line
+	echo "${date_s},${date_iso},${gyro_x},${gyro_y},${gyro_z},${humidity_0}${temperature_reading_string}" >> ${csv_file}
+end
+echo "Finished."

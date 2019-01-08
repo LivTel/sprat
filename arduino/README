@@ -1,0 +1,16 @@
+DHT library installed for SPRAT mechanism control. I think this is the default library (adafruit/DHT-sensor-library-master), rather than Zej's modified version.
+Messenger library modified with alternate cr/lf software for use with SPRAT mechanism control.
+i2cdevlib library installed for SPRAT mechanism control from jrowberg's tarball:
+cp -R ~dev/src/sprat/arduino/jrowberg-i2cdevlib-b6836bb /home/cjm/cjm/arduino/arduino-1.0.5/libraries/i2cdevlib
+cd ~/cjm/arduino/arduino-1.0.5/libraries
+ln -s i2cdevlib/Arduino/I2Cdev
+ln -s i2cdevlib/Arduino/MPU6050/
+Also change MPU6050_6Axis_MotionApps20.h:
+// We also get FIFO overflows and lockups if we use 'D_0_22 inv_set_fifo_rate' = 0x01 
+// Therefore change 'D_0_22 inv_set_fifo_rate' in MPU6050_6Axis_MotionApps20.h from 0x01 to 0x09
+
+sprat_libraries_dht_20140827.tar.gz a copy of ltobs9:~/cjm/arduino/arduino-1.0.5/libraries/DHT
+
+cd ~/cjm/arduino/arduino-1.0.5/libraries
+tar cvfz ~dev/src/sprat/arduino/sprat_libraries_i2cdev_20140827.tar.gz I2Cdev/
+tar cvfz ~dev/src/sprat/arduino/sprat_libraries_mpu6050_20140827.tar.gz MPU6050/
