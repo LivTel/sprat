@@ -381,13 +381,14 @@ void monitorSensors()
 // grism [in|out]
 // gyro
 // humidity <n>
+// input <mirrorout|mirrorin|slitout|slitin|grismout|grismin|rotpos0|rotpos1>
 // mirror [in|out]
 // rotation [0|1]
 // slit [in|out]
 // temperature <n>
 // wlamp [on|off]
 // Engineering commands:
-// relay <n> [on|off]
+// relay <n> <on|off>
 // @see #arcLampOn
 // @see #arcLampOff
 // @see #getArcLampStatus
@@ -533,14 +534,14 @@ void messageReady()
       client.println("grism [in|out]");
       client.println("gyro");
       client.println("humidity <n>");
-      client.println("input [mirrorout|mirrorin|slitout|slitin|grismout|grismin|rotpos0|rotpos1]");
+      client.println("input <mirrorout|mirrorin|slitout|slitin|grismout|grismin|rotpos0|rotpos1>");
       client.println("mirror [in|out]");
       client.println("rotation [0|1]");
       client.println("slit [in|out]");
       client.println("temperature <n>");
       client.println("wlamp [on|off]");
       client.println("Engineering commands:");
-      client.println("relay <n> [on|off]");
+      client.println("relay <n> <on|off>");
     }   
     else if(message.checkString("humidity"))
     {

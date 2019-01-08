@@ -429,15 +429,15 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * @see ngat.phase2.SpratConfig#POSITION_OUT
 	 * @see ngat.phase2.SpratConfig#positionToString
 	 * @see ngat.sprat.mechanism.command.SlitCommand
-	 * @see ngat.sprat.mechanism.MoveInOutMechanism
-	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setCommand
-	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setSleepTime
-	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setTimeoutTime
-	 * @see ngat.sprat.mechanism.MoveInOutMechanism#moveInOutMechanism
+	 * @see ngat.sprat.mechanism.MoveBrokenSlitMechanism
+	 * @see ngat.sprat.mechanism.MoveBrokenSlitMechanism#setCommand
+	 * @see ngat.sprat.mechanism.MoveBrokenSlitMechanism#setSleepTime
+	 * @see ngat.sprat.mechanism.MoveBrokenSlitMechanism#setTimeoutTime
+	 * @see ngat.sprat.mechanism.MoveBrokenSlitMechanism#moveBrokenSlitMechanism
 	 */
 	protected void moveSlit(int position) throws Exception
 	{
-		MoveInOutMechanism mechanismMover = null;
+		MoveBrokenSlitMechanism mechanismMover = null;
 		SlitCommand command = null;
 		int sleepTime,timeoutTime;
 		String errorString = null;
@@ -451,14 +451,14 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 		sprat.log(Logging.VERBOSITY_VERBOSE,"moveSlit:Creating SlitCommand to send to "+
 			  mechanismHostname+":"+mechanismPortNumber+".");
 		command = new SlitCommand(mechanismHostname,mechanismPortNumber);
-		mechanismMover = new MoveInOutMechanism();
+		mechanismMover = new MoveBrokenSlitMechanism();
 		mechanismMover.setCommand(command,position);
 		sprat.log(Logging.VERBOSITY_VERBOSE,"moveSlit:Setting mover sleep time to "+sleepTime+
 			  " and timeout time to "+timeoutTime+".");
 		mechanismMover.setSleepTime(sleepTime);
 		mechanismMover.setTimeoutTime(timeoutTime);
 		sprat.log(Logging.VERBOSITY_TERSE,"moveSlit:Starting move.");
-		mechanismMover.moveInOutMechanism();
+		mechanismMover.moveBrokenSlitMechanism();
 		sprat.log(Logging.VERBOSITY_TERSE,"moveSlit:Finished move.");
 	}
 

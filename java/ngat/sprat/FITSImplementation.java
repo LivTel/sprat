@@ -123,6 +123,8 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 	 * @see HardwareImplementation#getRotationPosition
 	 * @see FITSImplementation#getStatusMultrunBinX
 	 * @see FITSImplementation#getStatusMultrunBinY
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_UNKNOWN
+	 * @see ngat.sprat.mechanism.command.InOutReplyCommand#POSITION_IN
 	 */
 	public boolean setFitsHeaders(COMMAND command,COMMAND_DONE commandDone)
 	{
@@ -139,6 +141,13 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 			mirrorPosition = getMirrorPosition();
 		// where is the slit?
 			slitPosition = getSlitPosition();
+			// The slit "in" sensor is broken, so when we get "unknown", assume "in"
+			if(slitPosition == InOutReplyCommand.POSITION_UNKNOWN)
+			{
+				sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			      ":setFitsHeaders:Slit position reporting as 'unknown', lets pretend it's 'in' (fault #2222).");
+				slitPosition = InOutReplyCommand.POSITION_IN;
+			}
 		// where is the grism?
 			grismPosition = getGrismPosition();
 		// what is the grism rotation position?
