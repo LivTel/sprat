@@ -1,0 +1,42 @@
+#!/usr/bin/expect -f
+# https://likegeeks.com/expect-command/
+# Expect script to turn on power to the Sprat camera PSU using instaps http://192.168.1.45/
+# Using the instaps telnet socket
+# Assumes:
+# Socket 7: [B1] 	 SPRAT Panel 
+# Socket 13: [B2] 	 SPRAT shutter PSU 
+# Socket 15: [B2] 	 SPRAT Camera PSU 
+# We therefore turn socket 15 on
+# See fault #2500
+set timeout -1
+spawn telnet 192.168.1.45
+#Trying 192.168.1.45...
+#Connected to instaps.lt.com (192.168.1.45).
+#Escape character is '^]'.
+
+expect "User Name :"
+send -- "eng\r"
+expect "Password  :"
+send -- "ng@teng\r"
+# Main menu
+expect ">"
+# Select 1- Device Manager
+send -- "1\r"
+expect ">"
+# Select 2- Outlet Management
+send -- "2\r"
+expect ">"
+# Select 1- Outlet Control/Configuration
+send -- "1\r"
+expect ">"
+# Select 15- SPRAT Camera PSU         ON
+send -- "15\r"
+expect ">"
+# Select 1- Control Outlet
+send -- "1\r"
+expect ">"
+# Select 1- Immediate On
+# Don't Select 2- Immediate Off
+#send -- "1\r"
+#expect ">"
+#interact ++ return
