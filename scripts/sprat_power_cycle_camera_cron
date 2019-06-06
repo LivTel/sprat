@@ -1,0 +1,98 @@
+#!/bin/csh
+# sprat_power_cycle_camera_cron
+# cron job script to power cycle the camera and restart the robotic software
+# We want to do this to remove persistence from the CCD
+# See fault #2500 for details
+# Script does the following:
+# - send "temperature set 20.0" to warm up CCD
+# - Wait 10 minutes for the CCD to warm up
+# - Turn power off to the Sprat camera PSU using the expect script: sprat_camera_psu_power_off.expect
+# - Wait 10 minutes
+# - Turn power on to the Sprat camera PSU using the expect script: sprat_camera_psu_power_on.expect
+# - Level 2 reboot the Sprat robotic software using SendISSCommandFile TestReboot2.obj
+#
+# The expect scripts sprat_camera_psu_power_off.expect and sprat_camera_psu_power_on.expect turn the Sprat camera PSU
+# power on and off. They assume:
+# - the instaps can be contected on 192.168.1.45 by telnet
+# - The Sprat camera PSU is on the following port: Socket 15: [B2]        SPRAT Camera PSU 
+#
+set now_date = `/bin/date`
+echo "${now_date} Starting sprat_power_cycle_camera_cron..."
+#
+# - send "temperature set 20.0" to warm up CCD
+#
+set now_date = `/bin/date`
+echo "${now_date} Setting Sprat Camera CCD temperature to 20C."
+/icc/bin/commandserver/test/i386-linux/send_command -h ioi1 -p 8367 -c "temperature set 20.0"
+set return_status = $status
+if( ${return_status} != 0 ) then
+	set now_date = `/bin/date`
+	echo "${now_date} Failed to set Sprat Camera CCD temperature to 20C (${return_status})."
+	exit 1
+endif
+#
+# - Wait 10 minutes for the CCD to warm up
+#
+set i = 0
+while ( ${i} < 10 )
+	set now_date = `/bin/date`
+	echo "${now_date} Waiting for the Sprat Camera to warm up ($i) ..."
+	/icc/bin/commandserver/test/i386-linux/send_command -h ioi1 -p 8367 -c "status temperature get"
+	/bin/sleep 60
+	@ i ++
+end
+set now_date = `/bin/date`
+echo "${now_date} Finished waiting for the Sprat Camera to warm up..."
+#
+# - Turn power off to the Sprat camera PSU using the expect script: sprat_camera_psu_power_off.expect
+#
+set now_date = `/bin/date`
+echo "${now_date} Turning power off to the Sprat camera PSU..."
+/icc/bin/sprat/scripts/sprat_camera_psu_power_off.expect
+set return_status = $status
+if( ${return_status} != 0 ) then
+	set now_date = `/bin/date`
+	echo "${now_date} Failed to Turn power off to the Sprat camera PSU (${return_status})."
+	exit 2
+endif
+set now_date = `/bin/date`
+echo "${now_date} Sprat camera PSU power now off..."
+#
+# - Wait 10 minutes
+#
+set now_date = `/bin/date`
+echo "${now_date} Waiting 10 minutes..."
+/bin/sleep 600
+set now_date = `/bin/date`
+echo "${now_date} Finished waiting 10 minutes..."
+#
+# - Turn power on to the Sprat camera PSU using the expect script: sprat_camera_psu_power_on.expect
+#
+set now_date = `/bin/date`
+echo "${now_date} Turning power back on to the Sprat camera PSU..."
+/icc/bin/sprat/scripts/sprat_camera_psu_power_on.expect
+set return_status = $status
+if( ${return_status} != 0 ) then
+	set now_date = `/bin/date`
+	echo "${now_date} Failed to Turn power on to the Sprat camera PSU (${return_status})."
+	exit 3
+endif
+set now_date = `/bin/date`
+echo "${now_date} Sprat camera PSU power now on..."
+#
+# - Level 2 reboot the Sprat robotic software using SendISSCommandFile TestReboot2.obj
+#
+set now_date = `/bin/date`
+echo "${now_date} Level 2 Reboot of the Sprat robotic software so it reconnects to the camera head..."
+cd /icc/bin/sprat/test/
+java SendISSCommandFile -ip ioi1 -ccsport 8374 -file TestReboot2.obj
+set return_status = $status
+if( ${return_status} != 0 ) then
+	set now_date = `/bin/date`
+	echo "${now_date} Failed to Level 2 Reboot the Sprat robotic software (${return_status})."
+	exit 3
+endif
+set now_date = `/bin/date`
+echo "${now_date} Finished Level 2 Reboot of the Sprat robotic software so it reconnects to the camera head..."
+set now_date = `/bin/date`
+echo "${now_date} Finished sprat_power_cycle_camera_cron..."

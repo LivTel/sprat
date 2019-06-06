@@ -22,21 +22,26 @@ send -- "ng@teng\r"
 expect ">"
 # Select 1- Device Manager
 send -- "1\r"
-expect ">"
+expect "<ESC>- Back, <ENTER>- Refresh, <CTRL-L>- Event Log"
 # Select 2- Outlet Management
 send -- "2\r"
-expect ">"
+expect "<ESC>- Back, <ENTER>- Refresh, <CTRL-L>- Event Log"
 # Select 1- Outlet Control/Configuration
 send -- "1\r"
-expect ">"
+expect "<ESC>- Back, <ENTER>- Refresh, <CTRL-L>- Event Log"
 # Select 15- SPRAT Camera PSU         ON
 send -- "15\r"
-expect ">"
+expect "?- Help, <ESC>- Back, <ENTER>- Refresh, <CTRL-L>- Event Log"
 # Select 1- Control Outlet
 send -- "1\r"
-expect ">"
+expect "?- Help, <ESC>- Back, <ENTER>- Refresh, <CTRL-L>- Event Log"
 # Don't Select 1- Immediate On
 # Select 2- Immediate Off
-#send -- "2\r"
-#expect ">"
+send -- "2\r"
+expect "Enter 'YES' to continue or <ENTER> to cancel :"
+# Select YES
+send -- "YES\r"
+expect "Press <ENTER> to continue..."
+send -- "\r"
+expect "State        : OFF"
 #interact ++ return

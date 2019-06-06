@@ -114,7 +114,7 @@ echo "${jar_count} jars copied."
 # Java classes
 #
 echo "Copying Java class directories..."
-set java_class_dir_list = "autobooter/java dprt/test dprt/java/ngat/dprt dprt/java/ngat/dprt/sprat ccs_gui/java"
+set java_class_dir_list = "autobooter/java dprt/test dprt/java/ngat/dprt dprt/java/ngat/dprt/sprat ccs_gui/java sprat/test"
 set java_class_dir_count = 0
 set java_class_file_count = 0
 foreach java_class_dir ( ${java_class_dir_list} )
@@ -240,7 +240,7 @@ echo "${dir_count} C test program directories copied, containg ${file_count} C t
 # Scripts
 #
 echo "Copying scripts..."
-set file_list = "bin/scripts/configure_tai_data.csh bin/scripts/delete_log_files.csh bin/scripts/killhup.csh bin/scripts/fuser_check bin/sprat/c/${HOSTTYPE}/start_sprat_sprat1.csh bin/ccs_gui/java/spratgui bin/sprat/scripts/sprat_engineering_mode bin/sprat/scripts/soak_test bin/sprat/scripts/sprat_monitor_machine"
+set file_list = "bin/scripts/configure_tai_data.csh bin/scripts/delete_log_files.csh bin/scripts/killhup.csh bin/scripts/fuser_check bin/sprat/c/${HOSTTYPE}/start_sprat_sprat1.csh bin/ccs_gui/java/spratgui bin/sprat/scripts/sprat_engineering_mode bin/sprat/scripts/soak_test bin/sprat/scripts/sprat_monitor_machine bin/sprat/scripts/sprat_camera_psu_power_off.expect bin/sprat/scripts/sprat_camera_psu_power_on.expect bin/sprat/scripts/sprat_power_cycle_camera_cron"
 set file_count = 0
 cd ${dev_dir}
 foreach file ( ${file_list} )
@@ -283,6 +283,23 @@ if( ${cp_status} != 0 ) then
     echo "Copy failed: ${from_file} to ${to_file}"
     exit 6
 endif
+#
+# serialized Java message classes : .obj
+#
+echo "Copying serialized Java message files..."
+set dir = "sprat/test"
+set file_count = 0
+cd ${dev_bin_dir}/${dir}
+foreach file ( *.obj )
+    cp ${dev_bin_dir}/${dir}/${file} ${deployment_bin_dir}/${dir}/${file}
+    set cp_status = $status
+    if( ${cp_status} != 0 ) then
+	echo "Copy failed: ${dev_bin_dir}/${dir}/${file} to ${deployment_bin_dir}/${dir}/${file}"
+	exit 14
+    endif
+    @ file_count ++
+end
+echo "${file_count} serialized Java message files copied."
 #
 # gif files
 #
