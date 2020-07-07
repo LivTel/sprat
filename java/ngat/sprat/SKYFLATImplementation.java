@@ -90,8 +90,6 @@ public class SKYFLATImplementation extends CALIBRATEImplementation implements JM
 
 	/**
 	 * This method implements the SKYFLAT command. 
-	 * <ul>
-	 * </ul>
 	 * @see #testAbort
 	 * @see #sendMultrunCommand
 	 * @see HardwareImplementation#moveFold

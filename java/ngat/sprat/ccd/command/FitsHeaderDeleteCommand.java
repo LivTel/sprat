@@ -8,7 +8,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * The "fitsheader delete <keyword>" command is an extension of the Command, and 
+ * The "fitsheader delete &lt;keyword&gt;" command is an extension of the Command, and 
  * deletes the keyword value combination from the list of keywords to be included in the header of saved images.
  * @author Chris Mottram
  * @version $Revision$
@@ -102,6 +102,5 @@ public class FitsHeaderDeleteCommand extends Command implements Runnable
 			System.exit(1);
 		}
 		System.exit(0);
-
 	}
 }

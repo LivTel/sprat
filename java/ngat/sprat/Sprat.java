@@ -1,5 +1,5 @@
 // Sprat.java
-// $HeadURL$
+// $Id$
 package ngat.sprat;
 
 import java.lang.*;
@@ -111,6 +111,10 @@ public class Sprat
 	 * <li>Get ISS address from properties.
 	 * <li>Configure acknowledge time from properties.
 	 * </ul>
+	 * @exception FileNotFoundException Thrown if an error occurs.
+	 * @exception IOException Thrown if an error occurs.
+	 * @exception NumberFormatException Thrown if an error occurs.
+	 * @exception Exception Thrown if an error occurs.
 	 * @see #error
 	 * @see #initLoggers
 	 * @see #setLogLevel
@@ -741,6 +745,7 @@ public class Sprat
 	/**
 	 * Method to shutdown the low level software.
 	 * This does nothing at the moment.
+	 * @exception Exception Thrown if an error occurs.
 	 */
 	public void shutdownController() throws Exception
 	{
@@ -1177,6 +1182,7 @@ public class Sprat
 	 * <li>startupController.
 	 * <li>run.
 	 * </ul>
+	 * @param args The command line arguments.
 	 * @see #init
 	 * @see #parseArguments
 	 * @see #run

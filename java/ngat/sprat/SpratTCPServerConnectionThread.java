@@ -74,6 +74,7 @@ public class SpratTCPServerConnectionThread extends TCPServerConnectionThread
 
 	/**
 	 * Class method to set the value of <a href="#defaultAcknowledgeTime">defaultAcknowledgeTime</a>. 
+	 * @param m The default acknowledge time in milliseconds.
 	 * @see #defaultAcknowledgeTime
 	 */
 	public static void setDefaultAcknowledgeTime(int m)
@@ -83,6 +84,7 @@ public class SpratTCPServerConnectionThread extends TCPServerConnectionThread
 
 	/**
 	 * Class method to get the value set for the <a href="#defaultAcknowledgeTime">defaultAcknowledgeTime</a>. 
+	 * @return The default acknowledge time in milliseconds.
 	 * @see #defaultAcknowledgeTime
 	 */
 	public static int getDefaultAcknowledgeTime()
@@ -92,6 +94,7 @@ public class SpratTCPServerConnectionThread extends TCPServerConnectionThread
 
 	/**
 	 * Class method to set the value of <a href="#minAcknowledgeTime">minAcknowledgeTime</a>. 
+	 * @param m The minimum acknowledge time in milliseconds.
 	 * @see #minAcknowledgeTime
 	 */
 	public static void setMinAcknowledgeTime(int m)
@@ -101,6 +104,7 @@ public class SpratTCPServerConnectionThread extends TCPServerConnectionThread
 
 	/**
 	 * Class method to get the value set for the <a href="#minAcknowledgeTime">minAcknowledgeTime</a>. 
+	 * @return The minimum acknowledge time in milliseconds.
 	 * @see #minAcknowledgeTime
 	 */
 	public static int getMinAcknowledgeTime()
@@ -134,6 +138,7 @@ public class SpratTCPServerConnectionThread extends TCPServerConnectionThread
 
 	/**
 	 * Method to return whether this thread has been requested to stop what it is processing.
+	 * @return A boolean, if true the thread has been requested to stop processing the command.
 	 * @see #abortProcessCommand
 	 */
 	public synchronized boolean getAbortProcessCommand()

@@ -70,7 +70,7 @@ public class StatusTemperatureGetCommand extends Command implements Runnable
 
 	/**
 	 * Parse a string returned from the server over the telnet connection.
-	 * In this case it is of the form: '<n> %Y-%m-%dT%H:%M:%S.sss <n.nnn>'
+	 * In this case it is of the form: '&lt;n&gt; %Y-%m-%dT%H:%M:%S.sss &lt;n.nnn&gt;'
 	 * The first number is a success failure code, if it is zero a timestamp and temperature follows.
 	 * @exception Exception Thrown if a parse error occurs.
 	 * @see #logger

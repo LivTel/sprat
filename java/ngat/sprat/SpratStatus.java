@@ -1,5 +1,5 @@
 // SpratStatus.java
-// $HeadURL$
+// $Id$
 package ngat.sprat;
 
 import java.lang.*;

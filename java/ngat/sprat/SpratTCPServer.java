@@ -26,6 +26,8 @@ public class SpratTCPServer extends TCPServer
 
 	/**
 	 * The constructor.
+	 * @param name The name.
+	 * @param portNumber The port number to run the server on.
 	 */
 	public SpratTCPServer(String name,int portNumber)
 	{

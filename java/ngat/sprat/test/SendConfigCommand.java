@@ -1,5 +1,5 @@
 // SendConfigCommand.java
-// $HeadURL$
+// $Id$
 package ngat.sprat.test;
 
 import java.lang.*;
@@ -219,6 +219,7 @@ public class SendConfigCommand
 
 	/**
 	 * This routine parses arguments passed into SendConfigCommand.
+	 * @param args Command line arguments.
 	 * @see #spratPortNumber
 	 * @see #address
 	 * @see #slitPosition
@@ -369,6 +370,7 @@ public class SendConfigCommand
 	/**
 	 * The main routine, called when SendConfigCommand is executed. This initialises the object, parses
 	 * it's arguments, opens the filename, runs the run routine, and then closes the file.
+	 * @param args Command line arguments.
 	 * @see #parseArgs
 	 * @see #init
 	 * @see #run

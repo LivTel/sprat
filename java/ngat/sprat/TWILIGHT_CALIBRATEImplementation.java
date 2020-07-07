@@ -315,14 +315,12 @@ public class TWILIGHT_CALIBRATEImplementation extends CALIBRATEImplementation im
 	 * 	the result of the command implementation.
 	 * @see #implementationStartTime
 	 * @see #exposureLength
-	 * @see #lastFilterSensitivity
 	 * @see #setTimeOfNight
 	 * @see #addSavedStateToCalibration
 	 * @see FITSImplementation#moveFold
 	 * @see FITSImplementation#clearFitsHeaders
 	 * @see #doCalibration
 	 * @see #frameOverhead
-	 * @see CALIBRATEImplementation#makeMasterFlat
 	 */
 	public COMMAND_DONE processCommand(COMMAND command)
 	{
@@ -524,7 +522,6 @@ public class TWILIGHT_CALIBRATEImplementation extends CALIBRATEImplementation im
 	 * @return The method returns true if it succeeds, false if it fails. If false is returned the error
 	 * 	data in twilightCalibrateDone is filled in.
 	 * @see #calibrationList
-	 * @see #getFilterSensitivity
 	 * @see #LIST_KEY_STRING
 	 * @see #LIST_KEY_CALIBRATION_STRING
 	 * @see #LIST_KEY_BINX_STRING
@@ -822,11 +819,8 @@ public class TWILIGHT_CALIBRATEImplementation extends CALIBRATEImplementation im
 	 * @param calibration The calibration to do.
 	 * @return The method returns true if the calibration was done successfully, false if an error occured.
 	 * @see #doConfig
-	 * @see #doOffsetList
 	 * @see #sendBasicAck
 	 * @see #stateFilename
-	 * @see #lastFilterSensitivity
-	 * @see #lastBin
 	 * @see #calibrationFrameCount
 	 * @see #meanCounts
 	 * @see ngat.phase2.SpratConfig#positionToString

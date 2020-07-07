@@ -298,6 +298,8 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	/**
 	 * Internal method to get the current mode, the GET_STATUS command will return.
 	 * This is derived from the exposureStatus which should have previously been retrieved.
+	 * @return An integer, describing the current mode, one of: GET_STATUS_DONE.MODE_IDLE, 
+	 *         GET_STATUS_DONE.MODE_EXPOSING, GET_STATUS_DONE.MODE_READING_OUT, GET_STATUS_DONE.MODE_ERROR.
 	 * @see #exposureStatus
 	 * @see ngat.sprat.ccd.command.StatusExposureStatusCommand#CCD_EXPOSURE_STATUS_NONE
 	 * @see ngat.sprat.ccd.command.StatusExposureStatusCommand#CCD_EXPOSURE_STATUS_WAIT_START
@@ -765,6 +767,7 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * An instance of ArcLampCommand is "run". If a run exception occurs this is thrown.
 	 * If an error is returned this is thrown as an exception.
 	 * The current state is stored in the GET_STATUS hashtable as an integer and a string.
+	 * @exception Exception Thrown if an error occurs.
 	 * @see HardwareImplementation#mechanismHostname
 	 * @see HardwareImplementation#mechanismPortNumber
 	 * @see #hashTable
@@ -807,6 +810,7 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * An instance of WLampCommand is "run". If a run exception occurs this is thrown.
 	 * If an error is returned this is thrown as an exception.
 	 * The current state is stored in the GET_STATUS hashtable as an integer and a string.
+	 * @exception Exception Thrown if an error occurs.
 	 * @see HardwareImplementation#mechanismHostname
 	 * @see HardwareImplementation#mechanismPortNumber
 	 * @see #hashTable
@@ -850,6 +854,7 @@ public class GET_STATUSImplementation extends HardwareImplementation implements 
 	 * If an error is returned this is thrown as an exception.
 	 * The current gyro orientation position is stored in the GET_STATUS hashtable as a series of 
 	 * doubles, each axis represented by an ADU number.
+	 * @exception Exception Thrown if an error occurs.
 	 * @see HardwareImplementation#mechanismHostname
 	 * @see HardwareImplementation#mechanismPortNumber
 	 * @see #hashTable

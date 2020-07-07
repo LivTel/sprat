@@ -1,5 +1,5 @@
 // SendMultrunCommand.java 
-// $HeadURL$
+// $Id$
 package ngat.sprat.test;
 
 import java.lang.*;
@@ -177,6 +177,7 @@ public class SendMultrunCommand
 
 	/**
 	 * This routine parses arguments passed into SendMultrunCommand.
+	 * @param args Command line arguments.
 	 * @see #exposureLength
 	 * @see #exposureCount
 	 * @see #standard
@@ -286,6 +287,7 @@ public class SendMultrunCommand
 	/**
 	 * The main routine, called when SendMultrunCommand is executed. This initialises the object, parses
 	 * it's arguments, opens the filename, runs the run routine, and then closes the file.
+	 * @param args Command line arguments.
 	 * @see #parseArgs
 	 * @see #init
 	 * @see #run

@@ -8,7 +8,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * The "fitsheader add <keyword> <boolean|float|integer|string> <value>" command is an extension of the Command, and 
+ * The "fitsheader add &lt;keyword&gt; &lt;boolean|float|integer|string&gt; &lt;value&gt;" command is an extension of the Command, and 
  * adds a keyword value combination to a list of keywords to be included in the header of saved images.
  * @author Chris Mottram
  * @version $Revision$

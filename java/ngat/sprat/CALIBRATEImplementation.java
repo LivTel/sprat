@@ -182,6 +182,7 @@ public class CALIBRATEImplementation extends FITSImplementation implements JMSCo
 	 * 	for error logging.
 	 * @param done A COMMAND_DONE subclass specific to the command being implemented. If an
 	 * 	error occurs the relevant fields are filled in with the error.
+	 * @param filename The filename of the FITS image filename to reduce.
 	 * @return The routine returns a boolean to indicate whether the operation was completed
 	 *  	successfully.
 	 * @see Sprat#sendDpRtCommand

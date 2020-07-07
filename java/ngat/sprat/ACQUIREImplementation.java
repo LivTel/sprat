@@ -730,7 +730,6 @@ public class ACQUIREImplementation extends FITSImplementation implements JMSComm
 	 * @param acquireCommand The instance of ACQUIRE we are currently running.
 	 * @param acquireDone The instance of ACQUIRE_DONE to fill in with errors we receive.
 	 * @return A string, the filename taken by the imager.
-	 * @exception CCDLibraryNativeException Thrown if the exposure failed.
 	 * @exception Exception Thrown if testAbort/setFitsHeaders/getFitsHeadersFromISS/getFitsHeadersFromBSS/
 	 *            saveFitsHeaders failed.
 	 * @see #status
@@ -1176,6 +1175,7 @@ public class ACQUIREImplementation extends FITSImplementation implements JMSComm
 	 * @return The method returns true if acquisition has been successful, i.e. the difference between the
 	 *         two pixel positions is less than  acquireThreshold
 	 *         arcseconds (after taking the plate scale into account). Otherwise false is returned.
+	 * @exception Exception Thrown if an error occurs.
 	 * @see #acquireXPixel
 	 * @see #acquireYPixel
 	 * @see #brightestObjectXPixel

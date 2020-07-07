@@ -20,6 +20,9 @@ public class SicfTCPClientConnectionThread extends TCPClientConnectionThreadMA
 {
 	/**
 	 * A constructor for this class. Currently just calls the parent class's constructor.
+	 * @param address The internet address to send the command to.
+	 * @param portNumber The port number to send the command to.
+	 * @param c The command to send.
 	 */
 	public SicfTCPClientConnectionThread(InetAddress address,int portNumber,COMMAND c)
 	{

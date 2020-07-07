@@ -29,6 +29,8 @@ public class SicfTCPServer extends TCPServer
 
 	/**
 	 * The constructor.
+	 * @param name The name of the server.
+	 * @param portNumber The port number the server sits on.
 	 */
 	public SicfTCPServer(String name,int portNumber)
 	{

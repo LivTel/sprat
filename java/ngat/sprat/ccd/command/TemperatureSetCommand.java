@@ -10,7 +10,7 @@ import java.util.*;
 import ngat.util.logging.*;
 
 /**
- * The "temperature set <c>" command is an extension of the Command, and sets the 
+ * The "temperature set &lt;c&gt;" command is an extension of the Command, and sets the 
  * current target temperature of the CCD camera.
  * @author Chris Mottram
  * @version $Revision$

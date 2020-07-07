@@ -66,7 +66,7 @@ public class StatusExposureStartTimeCommand extends Command implements Runnable
 
 	/**
 	 * Parse a string returned from the server over the telnet connection.
-	 * In this case it is of the form: '<n> %Y-%m-%dT%H:%M:%S.sss'
+	 * In this case it is of the form: '&lt;n&gt; %Y-%m-%dT%H:%M:%S.sss'
 	 * The first number is a success failure code, if it is zero a timestamp follows.
 	 * @exception Exception Thrown if a parse error occurs.
 	 * @see #replyString

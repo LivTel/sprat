@@ -204,6 +204,7 @@ public class SendGetStatusCommand
 
 	/**
 	 * This routine parses arguments passed into SendGetStatusCommand.
+	 * @param args Command line arguments.
 	 * @see #level
 	 * @see #spratPortNumber
 	 * @see #address
@@ -289,6 +290,7 @@ public class SendGetStatusCommand
 	/**
 	 * The main routine, called when SendGetStatusCommand is executed. This initialises the object, parses
 	 * it's arguments, opens the filename, runs the run routine, and then closes the file.
+	 * @param args Command line arguments.
 	 * @see #parseArgs
 	 * @see #init
 	 * @see #run

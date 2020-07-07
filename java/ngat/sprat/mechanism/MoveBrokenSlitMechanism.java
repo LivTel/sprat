@@ -155,6 +155,7 @@ public class MoveBrokenSlitMechanism implements Runnable
 	 *     <li>Otherwise, we sleep for a bit (sleepTime) until re-querying the mechanism.
 	 *     </ul>
 	 * </ul>
+	 * @exception Exception Thrown when an error occurs.
 	 * @see #logger
 	 * @see #command
 	 * @see #targetPosition
