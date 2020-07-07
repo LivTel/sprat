@@ -27,7 +27,7 @@ top: $(OBJS)
 	done;
 
 $(BINDIR)/%.class:%.java
-	$(JAVAC) -sourcepath .:$(SPRAT_SRC_HOME)/java \
+	$(JAVAC) $(JAVAC_FLAGS) -sourcepath .:$(SPRAT_SRC_HOME)/java \
 		-classpath $(SPRAT_BIN_HOME)/java:$(CLASSPATH) $(JAVAC_OPTIONS) -d $(SPRAT_BIN_HOME)/java $<
 
 clean: tidy

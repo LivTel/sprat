@@ -19,6 +19,10 @@ LOG_UDP_CFLAGS		= -I$(LOG_UDP_SRC_HOME)/include
 COMMANDSERVER_HOME	= 	commandserver
 COMMANDSERVER_SRC_HOME	= 	$(LT_SRC_HOME)/$(COMMANDSERVER_HOME)
 
+# javac options
+# ioi1 is current running Java 1.6
+JAVAC_FLAGS	  	= -source 1.6 -target 1.6
+
 #
 # $Log$
 #

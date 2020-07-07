@@ -105,9 +105,9 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 
 	/**
 	 * This routine gets a set of FITS header from a config file. The retrieved FITS headers are added to the 
-	 * C layer. The "sprat.fits.keyword.<n>" properties is queried in ascending order of <n> to find keywords.
-	 * The "sprat.fits.value.<keyword>" property contains the value of the keyword.
-	 * The value's type is retrieved from the property "sprat.fits.value.type.<keyword>", 
+	 * C layer. The "sprat.fits.keyword.&lt;n&gt;" properties is queried in ascending order of &lt;n&gt; to find keywords.
+	 * The "sprat.fits.value.&lt;keyword&gt;" property contains the value of the keyword.
+	 * The value's type is retrieved from the property "sprat.fits.value.type.&lt;keyword&gt;", 
 	 * which should comtain one of the following values: boolean|float|integer|string.
 	 * The addFitsHeader method is then called to actually add the FITS header to the C layer.
 	 * @param command The command being implemented that made this call to the ISS. This is used
@@ -150,6 +150,13 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 			}
 		// where is the grism?
 			grismPosition = getGrismPosition();
+			// The grism "in" sensor is broken, so when we get "unknown", assume "in"
+			if(grismPosition == InOutReplyCommand.POSITION_UNKNOWN)
+			{
+				sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			   ":setFitsHeaders:Grism position reporting as 'unknown', lets pretend it's 'in' (fault #2222).");
+				grismPosition = InOutReplyCommand.POSITION_IN;
+			}
 		// what is the grism rotation position?
 			rotationPosition = getRotationPosition();
 		}
@@ -378,7 +385,7 @@ public class FITSImplementation extends HardwareImplementation implements JMSCom
 	 * given the specified list of things it can vary by.
 	 * @param keyword The FITS header keyword.
 	 * @param varyByString A string (which may be null or blank), describing what things cause the value of the 
-	 *        specified FITS keyword to change.  Legal values : <blank> | mirror | grism | grismrot | slit | 
+	 *        specified FITS keyword to change.  Legal values : &lt;blank&gt; | mirror | grism | grismrot | slit | 
 	 *        slit.grism.grismrot | binx | biny | binxbiny | internal.
 	 * @param mirrorPosition The current mirror position. 
 	 *        One of MirrorCommand.POSITION_IN | MirrorCommand.POSITION_OUT | MirrorCommand.POSITION_ERROR | 

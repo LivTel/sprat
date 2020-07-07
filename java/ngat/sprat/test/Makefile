@@ -19,7 +19,7 @@ DOCS 		= $(SRCS:%.java=$(DOCSDIR)/%.html)
 top: $(OBJS)
 
 $(BINDIR)/%.class:%.java
-	$(JAVAC) -sourcepath .:/home/dev/src:/home/dev/src/sprat/java \
+	$(JAVAC) $(JAVAC_FLAGS) -sourcepath .:/home/dev/src:/home/dev/src/sprat/java \
 		-classpath $(SPRAT_BIN_HOME)/java:$(CLASSPATH) $(JAVAC_OPTIONS) -d $(SPRAT_BIN_HOME)/java $<
 
 clean: tidy

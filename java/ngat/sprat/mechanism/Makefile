@@ -7,7 +7,8 @@ MAKE 		= make
 PACKAGEDIR	= ngat/sprat/mechanism
 DIRS 		= command
 BINDIR 		= $(SPRAT_BIN_HOME)/java/$(PACKAGEDIR)
-SRCS 		= MoveInOutMechanism.java MoveRotationMechanism.java MoveBrokenSlitMechanism.java
+SRCS 		= MoveInOutMechanism.java MoveRotationMechanism.java MoveBrokenSlitMechanism.java \
+		MoveBrokenGrismMechanism.java
 OBJS 		= $(SRCS:%.java=$(BINDIR)/%.class)
 
 
@@ -22,7 +23,7 @@ dirs:
 objs: $(OBJS)
 
 $(BINDIR)/%.class:%.java
-	$(JAVAC) -sourcepath .:$(SPRAT_SRC_HOME)/java \
+	$(JAVAC) $(JAVAC_FLAGS) -sourcepath .:$(SPRAT_SRC_HOME)/java \
 		-classpath $(SPRAT_BIN_HOME)/java:$(CLASSPATH) $(JAVAC_OPTIONS) -d $(SPRAT_BIN_HOME)/java $<
 
 depend:

@@ -147,6 +147,13 @@ public class ARCImplementation extends CALIBRATEImplementation implements JMSCom
 			}
 		// where is the grism?
 			grismPosition = getGrismPosition();
+			// The grism "in" sensor is broken, so when we get "unknown", assume "in"
+			if(grismPosition == InOutReplyCommand.POSITION_UNKNOWN)
+			{
+				sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+		      ":processCommand:Grism position reporting as 'unknown', lets pretend it's 'in' (fault #2222).");
+				grismPosition = InOutReplyCommand.POSITION_IN;
+			}
 		// what is the grism rotation position?
 			rotationPosition = getRotationPosition();
 		}

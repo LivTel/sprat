@@ -155,7 +155,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * <ul>
 	 * <li>The instrument's offset with respect to the telescope's natural offset (in the configuration
 	 *     property 'sprat.focus.offset'.
-	 * <ul>
+	 * </ul>
 	 * This method sends a OFFSET_FOCUS command to
 	 * the ISS. 
 	 * @param id The Id is used as the OFFSET_FOCUS command's id.
@@ -227,6 +227,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * <li><b>sprat.mechanism.hostname</b>
 	 * <li><b>sprat.mechanism.port_number</b>
 	 * </ul>
+	 * @exception Exception Thrown when an error occurs.
 	 * @see #status
 	 * @see #mechanismHostname
 	 * @see #mechanismPortNumber
@@ -321,15 +322,15 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * @see ngat.phase2.SpratConfig#POSITION_OUT
 	 * @see ngat.phase2.SpratConfig#positionToString
 	 * @see ngat.sprat.mechanism.command.GrismCommand
-	 * @see ngat.sprat.mechanism.MoveInOutMechanism
-	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setCommand
-	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setSleepTime
-	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setTimeoutTime
-	 * @see ngat.sprat.mechanism.MoveInOutMechanism#moveInOutMechanism
+	 * @see ngat.sprat.mechanism.MoveBrokenGrismMechanism
+	 * @see ngat.sprat.mechanism.MoveBrokenGrismMechanism#setCommand
+	 * @see ngat.sprat.mechanism.MoveBrokenGrismMechanism#setSleepTime
+	 * @see ngat.sprat.mechanism.MoveBrokenGrismMechanism#setTimeoutTime
+	 * @see ngat.sprat.mechanism.MoveBrokenGrismMechanism#moveBrokenGrismMechanism
 	 */
 	protected void moveGrism(int position) throws Exception
 	{
-		MoveInOutMechanism mechanismMover = null;
+		MoveBrokenGrismMechanism mechanismMover = null;
 		GrismCommand command = null;
 		int sleepTime,timeoutTime,returnCode;
 		String errorString = null;
@@ -343,14 +344,14 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 		sprat.log(Logging.VERBOSITY_VERBOSE,"moveGrism:Creating GrismCommand to send to "+
 			  mechanismHostname+":"+mechanismPortNumber+".");
 		command = new GrismCommand(mechanismHostname,mechanismPortNumber);
-		mechanismMover = new MoveInOutMechanism();
+		mechanismMover = new MoveBrokenGrismMechanism();
 		mechanismMover.setCommand(command,position);
 		sprat.log(Logging.VERBOSITY_VERBOSE,"moveGrism:Setting mover sleep time to "+sleepTime+
 			  " and timeout time to "+timeoutTime+".");
 		mechanismMover.setSleepTime(sleepTime);
 		mechanismMover.setTimeoutTime(timeoutTime);
 		sprat.log(Logging.VERBOSITY_TERSE,"moveGrism:Starting move.");
-		mechanismMover.moveInOutMechanism();
+		mechanismMover.moveBrokenGrismMechanism();
 		sprat.log(Logging.VERBOSITY_TERSE,"moveGrism:Finished move.");
 	}
 
@@ -468,7 +469,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * If an error is returned this is thrown as an exception.
 	 * @return The current position is returned as an integer, one of:POSITION_ERROR, POSITION_UNKNOWN, 
 	 *         POSITION_IN, POSITION_OUT.
-	 * @exception Thrown if the command fails in some way, or returns an error.
+	 * @exception Exception Thrown if the command fails in some way, or returns an error.
 	 * @see HardwareImplementation#mechanismHostname
 	 * @see HardwareImplementation#mechanismPortNumber
 	 * @see ngat.sprat.mechanism.command.MirrorCommand
@@ -655,7 +656,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * If an error is returned this is thrown as an exception.
 	 * @param sensorNumber Which number temperature sensor to query.
 	 * @return The current temeprature as a double, in Kelvin.
-	 * @exception Thrown if the command fails in some way, or returns an error.
+	 * @exception Exception Thrown if the command fails in some way, or returns an error.
 	 * @see #mechanismHostname
 	 * @see #mechanismPortNumber
 	 * @see Sprat#CENTIGRADE_TO_KELVIN
@@ -699,7 +700,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * If an error is returned this is thrown as an exception.
 	 * @param sensorNumber Which number humidity sensor to query.
 	 * @return The current relative humidity in percent as a double.
-	 * @exception Thrown if the command fails in some way, or returns an error.
+	 * @exception Exception Thrown if the command fails in some way, or returns an error.
 	 * @see HardwareImplementation#mechanismHostname
 	 * @see HardwareImplementation#mechanismPortNumber
 	 * @see ngat.sprat.mechanism.command.HumidityCommand
@@ -739,7 +740,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * An instance of GyroCommand is "run". If a run exception occurs this is thrown.
 	 * If an error is returned this is thrown as an exception.
 	 * @return The gyro's X position in ADUs as a double.
-	 * @exception Thrown if the command fails in some way, or returns an error.
+	 * @exception Exception Thrown if the command fails in some way, or returns an error.
 	 * @see HardwareImplementation#mechanismHostname
 	 * @see HardwareImplementation#mechanismPortNumber
 	 * @see ngat.sprat.mechanism.command.GyroCommand
@@ -777,7 +778,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * An instance of GyroCommand is "run". If a run exception occurs this is thrown.
 	 * If an error is returned this is thrown as an exception.
 	 * @return The gyro's Y position in ADUs as a double.
-	 * @exception Thrown if the command fails in some way, or returns an error.
+	 * @exception Exception Thrown if the command fails in some way, or returns an error.
 	 * @see HardwareImplementation#mechanismHostname
 	 * @see HardwareImplementation#mechanismPortNumber
 	 * @see ngat.sprat.mechanism.command.GyroCommand
@@ -815,7 +816,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * An instance of GyroCommand is "run". If a run exception occurs this is thrown.
 	 * If an error is returned this is thrown as an exception.
 	 * @return The gyro's Z position in ADUs as a double.
-	 * @exception Thrown if the command fails in some way, or returns an error.
+	 * @exception Exception Thrown if the command fails in some way, or returns an error.
 	 * @see HardwareImplementation#mechanismHostname
 	 * @see HardwareImplementation#mechanismPortNumber
 	 * @see ngat.sprat.mechanism.command.GyroCommand
@@ -854,7 +855,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * If an error is returned this is thrown as an exception.
 	 * @return If the ArcLampCommand returns 'on' then true is returned. 
 	 *         If the ArcLampCommand returns 'off' false is returned. Otherwise an exception is thrown.
-	 * @exception Thrown if the command fails in some way, or returns an error, 
+	 * @exception Exception Thrown if the command fails in some way, or returns an error, 
 	 *            or returns a current state that is not 'on' or 'off'.
 	 * @see HardwareImplementation#mechanismHostname
 	 * @see HardwareImplementation#mechanismPortNumber
@@ -908,7 +909,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * If an error is returned this is thrown as an exception.
 	 * @return If the WLampCommand returns 'on' then true is returned. 
 	 *         If the WLampCommand returns 'off' false is returned. Otherwise an exception is thrown.
-	 * @exception Thrown if the command fails in some way, or returns an error, 
+	 * @exception Exception Thrown if the command fails in some way, or returns an error, 
 	 *            or returns a current state that is not 'on' or 'off'.
 	 * @see HardwareImplementation#mechanismHostname
 	 * @see HardwareImplementation#mechanismPortNumber
@@ -961,6 +962,8 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * <ul>
 	 * <li>"sprat.ccd.c.hostname" contains the hostname of the CCD C layer.
 	 * <li>"sprat.ccd.c.port_number" contains the port number of the CCD C layer.
+	 * </ul>
+	 * @exception Exception Thrown when an error occurs.
 	 * @see #status
 	 * @see #ccdCLayerHostname
 	 * @see #ccdCLayerPortNumber
