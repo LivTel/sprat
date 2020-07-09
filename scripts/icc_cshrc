@@ -25,7 +25,7 @@ foreach dir ( ${LT_BIN_HOME}/lib/${HOSTTYPE} )
 end
 
 # Useful command aliass
-alias spratgui                          '/icc/bin/ccs_gui/java/spratgui'
+alias spratgui                          '/icc/bin/ics_gui/java/spratgui'
 alias sprat_engineering_mode   		'/icc/bin/scripts/sprat_engineering_mode'
 alias myps             			'ps -e -o pid,pcpu,vsz,ruser,args'
 alias send_command			'/icc/bin/commandserver/test/i386-linux/send_command'
