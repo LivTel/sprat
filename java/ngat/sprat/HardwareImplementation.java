@@ -322,6 +322,11 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * @see ngat.phase2.SpratConfig#POSITION_OUT
 	 * @see ngat.phase2.SpratConfig#positionToString
 	 * @see ngat.sprat.mechanism.command.GrismCommand
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setCommand
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setSleepTime
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setTimeoutTime
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#moveInOutMechanism
 	 * @see ngat.sprat.mechanism.MoveBrokenGrismMechanism
 	 * @see ngat.sprat.mechanism.MoveBrokenGrismMechanism#setCommand
 	 * @see ngat.sprat.mechanism.MoveBrokenGrismMechanism#setSleepTime
@@ -330,7 +335,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 */
 	protected void moveGrism(int position) throws Exception
 	{
-		MoveBrokenGrismMechanism mechanismMover = null;
+		MoveInOutMechanism mechanismMover = null;
 		GrismCommand command = null;
 		int sleepTime,timeoutTime,returnCode;
 		String errorString = null;
@@ -344,14 +349,14 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 		sprat.log(Logging.VERBOSITY_VERBOSE,"moveGrism:Creating GrismCommand to send to "+
 			  mechanismHostname+":"+mechanismPortNumber+".");
 		command = new GrismCommand(mechanismHostname,mechanismPortNumber);
-		mechanismMover = new MoveBrokenGrismMechanism();
+		mechanismMover = new MoveInOutMechanism();
 		mechanismMover.setCommand(command,position);
 		sprat.log(Logging.VERBOSITY_VERBOSE,"moveGrism:Setting mover sleep time to "+sleepTime+
 			  " and timeout time to "+timeoutTime+".");
 		mechanismMover.setSleepTime(sleepTime);
 		mechanismMover.setTimeoutTime(timeoutTime);
 		sprat.log(Logging.VERBOSITY_TERSE,"moveGrism:Starting move.");
-		mechanismMover.moveBrokenGrismMechanism();
+		mechanismMover.moveInOutMechanism();
 		sprat.log(Logging.VERBOSITY_TERSE,"moveGrism:Finished move.");
 	}
 
@@ -430,6 +435,11 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 * @see ngat.phase2.SpratConfig#POSITION_OUT
 	 * @see ngat.phase2.SpratConfig#positionToString
 	 * @see ngat.sprat.mechanism.command.SlitCommand
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setCommand
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setSleepTime
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#setTimeoutTime
+	 * @see ngat.sprat.mechanism.MoveInOutMechanism#moveInOutMechanism
 	 * @see ngat.sprat.mechanism.MoveBrokenSlitMechanism
 	 * @see ngat.sprat.mechanism.MoveBrokenSlitMechanism#setCommand
 	 * @see ngat.sprat.mechanism.MoveBrokenSlitMechanism#setSleepTime
@@ -438,7 +448,7 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 	 */
 	protected void moveSlit(int position) throws Exception
 	{
-		MoveBrokenSlitMechanism mechanismMover = null;
+		MoveInOutMechanism mechanismMover = null;
 		SlitCommand command = null;
 		int sleepTime,timeoutTime;
 		String errorString = null;
@@ -452,14 +462,14 @@ public class HardwareImplementation extends CommandImplementation implements JMS
 		sprat.log(Logging.VERBOSITY_VERBOSE,"moveSlit:Creating SlitCommand to send to "+
 			  mechanismHostname+":"+mechanismPortNumber+".");
 		command = new SlitCommand(mechanismHostname,mechanismPortNumber);
-		mechanismMover = new MoveBrokenSlitMechanism();
+		mechanismMover = new MoveInOutMechanism();
 		mechanismMover.setCommand(command,position);
 		sprat.log(Logging.VERBOSITY_VERBOSE,"moveSlit:Setting mover sleep time to "+sleepTime+
 			  " and timeout time to "+timeoutTime+".");
 		mechanismMover.setSleepTime(sleepTime);
 		mechanismMover.setTimeoutTime(timeoutTime);
 		sprat.log(Logging.VERBOSITY_TERSE,"moveSlit:Starting move.");
-		mechanismMover.moveBrokenSlitMechanism();
+		mechanismMover.moveInOutMechanism();
 		sprat.log(Logging.VERBOSITY_TERSE,"moveSlit:Finished move.");
 	}
 

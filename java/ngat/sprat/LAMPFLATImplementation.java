@@ -142,20 +142,20 @@ public class LAMPFLATImplementation extends CALIBRATEImplementation implements J
 			// where is the slit?
 			slitPosition = getSlitPosition();
 			// The slit "in" sensor is broken, so when we get "unknown", assume "in"
-			if(slitPosition == InOutReplyCommand.POSITION_UNKNOWN)
-			{
-				sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
-			      ":processCommand:Slit position reporting as 'unknown', lets pretend it's 'in' (fault #2222).");
-				slitPosition = InOutReplyCommand.POSITION_IN;
-			}
+			//if(slitPosition == InOutReplyCommand.POSITION_UNKNOWN)
+			//{
+			//	sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			//      ":processCommand:Slit position reporting as 'unknown', lets pretend it's 'in' (fault #2222).");
+			//	slitPosition = InOutReplyCommand.POSITION_IN;
+			//}
 			// where is the grism?
 			grismPosition = getGrismPosition();
-			if(grismPosition == InOutReplyCommand.POSITION_UNKNOWN)
-			{
-				sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
-		       ":processCommand:Grism position reporting as 'unknown', lets pretend it's 'in' (fault #2222).");
-				grismPosition = InOutReplyCommand.POSITION_IN;
-			}
+			//if(grismPosition == InOutReplyCommand.POSITION_UNKNOWN)
+			//{
+			//	sprat.log(Logging.VERBOSITY_INTERMEDIATE,this.getClass().getName()+
+			//":processCommand:Grism position reporting as 'unknown', lets pretend it's 'in' (fault #2222).");
+			//	grismPosition = InOutReplyCommand.POSITION_IN;
+			//}
 			// what is the grism rotation position?
 			rotationPosition = getRotationPosition();
 		}
