@@ -15,6 +15,7 @@
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes.
  */
 #define _POSIX_C_SOURCE 199309L
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -223,7 +224,7 @@ int CCD_Fits_Header_Delete(struct Fits_Header_Struct *header,char *keyword)
 	}
 	if(strlen(keyword) > (FITS_HEADER_KEYWORD_STRING_LENGTH-1))
 	{
-		Fits_Header_Error_Number = ;
+		Fits_Header_Error_Number = 28;
 		sprintf(Fits_Header_Error_String,"CCD_Fits_Header_Delete:Keyword '%s' is too long (%ld vs %d).",
 			keyword,strlen(keyword),FITS_HEADER_KEYWORD_STRING_LENGTH);
 		return FALSE;
