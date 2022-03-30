@@ -5,8 +5,8 @@
 # Assumes:
 # Socket 7: [B1] 	 SPRAT Panel 
 # Socket 13: [B2] 	 SPRAT shutter PSU 
-# Socket 15: [B2] 	 SPRAT Camera PSU 
-# We therefore turn socket 15 on
+# Socket 16: [B2] 	 SPRAT Camera PSU 
+# We therefore turn socket 16 on
 # See fault #2500
 set timeout -1
 spawn telnet 192.168.1.45
@@ -29,8 +29,8 @@ expect "<ESC>- Back, <ENTER>- Refresh, <CTRL-L>- Event Log"
 # Select 1- Outlet Control/Configuration
 send -- "1\r"
 expect "<ESC>- Back, <ENTER>- Refresh, <CTRL-L>- Event Log"
-# Select 15- SPRAT Camera PSU         ON
-send -- "15\r"
+# Select 16- SPRAT Camera PSU         ON
+send -- "16\r"
 expect "?- Help, <ESC>- Back, <ENTER>- Refresh, <CTRL-L>- Event Log"
 # Select 1- Control Outlet
 send -- "1\r"
