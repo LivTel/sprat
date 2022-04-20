@@ -64,7 +64,7 @@ public class ABORTImplementation extends HardwareImplementation implements JMSCo
 	 * <li>We send a C layer abort command.
 	 * <li>We get the current command thread using status.getCurrentThread.
 	 * <li>If the current thread is non-null, we call setAbortProcessCommand to tell the thread it is 
-	 *     being aborted. When the command implemented in the running thread nect calls 'testAbort' this will
+	 *     being aborted. When the command implemented in the running thread next calls 'testAbort' this will
 	 *     inform the command it has been aborted.
 	 * <li>We send the DpRt an abort command.
 	 * </ul>
