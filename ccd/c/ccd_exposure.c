@@ -57,6 +57,7 @@
 /**
  * Structure used to hold local data to ccd_exposure.
  * <dl>
+ * <dt>Set_Shutter_Type</dt> <dd>Used to configure the shutter TTL signal used to command the shutter open.</dd>
  * <dt>Exposure_Status</dt> <dd>Whether an operation is being performed to CLEAR, EXPOSE or READOUT the CCD.</dd>
  * <dt>Start_Time</dt> <dd>The time stamp when an exposure was started.</dd>
  * <dt>Exposure_Length</dt> <dd>The last exposure length to be set (ms).</dd>
@@ -67,10 +68,12 @@
  * <dt>Exposure_Loop_Pause_Length</dt> <dd>An amount of time to pause/sleep, in milliseconds, each time
  *     round the loop whilst waiting for an exposure to be done (DRV_ACQUIRING -> DRV_IDLE).
  * </dl>
+ * @see #CCD_EXPOSURE_SHUTTER_OUTPUT
  * @see #CCD_EXPOSURE_STATUS
  */
 struct Exposure_Struct
 {
+	enum CCD_EXPOSURE_SHUTTER_OUTPUT Set_Shutter_Type;
 	enum CCD_EXPOSURE_STATUS Exposure_Status;
 	struct timespec Start_Time;
 	volatile int Exposure_Length;
@@ -91,10 +94,12 @@ static char rcsid[] = "$Id$";
 /**
  * Data holding the current status of ccd_exposure.
  * @see #Exposure_Struct
+ * @see #CCD_EXPOSURE_SHUTTER_OUTPUT
  * @see #CCD_EXPOSURE_STATUS
  */
 static struct Exposure_Struct Exposure_Data = 
 {
+	CCD_EXPOSURE_SHUTTER_OUTPUT_TTL_HIGH,
 	CCD_EXPOSURE_STATUS_NONE,
 	{0L,0L},
 	0,0,FALSE,
@@ -130,6 +135,32 @@ void CCD_Exposure_Initialise(void)
 	Exposure_Error_Number = 0;
 /* print some compile time information to stdout */
 	fprintf(stdout,"CCD_Exposure_Initialise:%s.\n",rcsid);
+}
+
+/**
+ * Routine to set the shutter type. This is passed into SetShutter calls, to determine whether to output a TTL low signal 
+ * to open the shutter, or a TTL high signal to open the shutter. The Set_Shutter_Type in Exposure_Data is set  here,
+ * and read in the exposure code to configure SetShutter.
+ * @param set_shutter_type A variable of type CCD_EXPOSURE_SHUTTER_OUTPUT. 
+ * @return Returns TRUE if the type is set correctly, returns FALSE if the requested type is illegal.
+ * @see #CCD_EXPOSURE_SHUTTER_OUTPUT
+ * @see #Exposure_Data
+ */
+int CCD_Exposure_Set_Shutter_Type(enum CCD_EXPOSURE_SHUTTER_OUTPUT set_shutter_type)
+{
+	Exposure_Error_Number = 0;
+#if LOGGING > 1
+	CCD_Global_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Set_Shutter_Type",LOG_VERBOSITY_INTERMEDIATE,"CCD",
+			      "CCD_Exposure_Set_Shutter_Type started with set_shutter_type = %d.",set_shutter_type);
+#endif
+	if(!CCD_EXPOSURE_IS_SHUTTER_OUTPUT(set_shutter_type))
+	{
+		Exposure_Error_Number = 47;
+		sprintf(Exposure_Error_String,"CCD_Exposure_Set_Shutter_Type: shutter type %d is an illegal value.",set_shutter_type);
+		return FALSE;
+	}
+	Exposure_Data.Set_Shutter_Type = set_shutter_type;
+	return TRUE;
 }
 
 /**
@@ -191,10 +222,10 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 	if(open_shutter)
 	{
 #if LOGGING > 5
-		CCD_Global_Log("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_INTERMEDIATE,"CCD",
-				"SetShutter(1,0,0,0).");
+		CCD_Global_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_INTERMEDIATE,"CCD",
+				      "SetShutter(%d,0,0,0).",Exposure_Data.Set_Shutter_Type);
 #endif
-		andor_retval = SetShutter(1,0,0,0);
+		andor_retval = SetShutter(Exposure_Data.Set_Shutter_Type,0,0,0);
 		if(andor_retval != DRV_SUCCESS)
 		{
 			Exposure_Error_Number = 1;
@@ -206,10 +237,10 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 	else
 	{
 #if LOGGING > 5
-		CCD_Global_Log("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_INTERMEDIATE,"CCD",
-				"SetShutter(1,2,0,0).");
+		CCD_Global_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_INTERMEDIATE,"CCD",
+				      "SetShutter(%d,2,0,0).",Exposure_Data.Set_Shutter_Type);
 #endif
-		andor_retval = SetShutter(1,2,0,0);/* 2 means close */
+		andor_retval = SetShutter(Exposure_Data.Set_Shutter_Type,2,0,0);/* 2 means close */
 		if(andor_retval != DRV_SUCCESS)
 		{
 			Exposure_Error_Number = 2;

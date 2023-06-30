@@ -22,6 +22,30 @@
 #include "ccd_fits_header.h"
 
 /**
+ * Enum describing what TTL signal to send to the external shutter when it is commanded to open. 
+ * This is the typ parameter to SetShutter.
+ * <dl>
+ * <dt>CCD_EXPOSURE_SHUTTER_OUTPUT_TTL_LOW</dt> <dd>Set the shutter to output a TTL low signal 
+ *                                                  when the shutter is commanded to open.</dd>
+ * <dt>CCD_EXPOSURE_SHUTTER_OUTPUT_TTL_HIGH</dt> <dd>Set the shutter to output a TTL high signal 
+ *                                                   when the shutter is commanded to open.</dd>
+ * </dl>
+ */
+enum CCD_EXPOSURE_SHUTTER_OUTPUT
+{
+	CCD_EXPOSURE_SHUTTER_OUTPUT_TTL_LOW = 0,
+	CCD_EXPOSURE_SHUTTER_OUTPUT_TTL_HIGH = 1
+	
+};
+
+/**
+ * Macro to check whether the shutter output is a legal value.
+ * @see #CCD_EXPOSURE_SHUTTER_OUTPUT
+ */
+#define CCD_EXPOSURE_IS_SHUTTER_OUTPUT(output)	(((output) == CCD_EXPOSURE_SHUTTER_OUTPUT_TTL_LOW)|| \
+						 ((output) == CCD_EXPOSURE_SHUTTER_OUTPUT_TTL_HIGH))
+
+/**
  * Return value from CCD_Exposure_Get_Exposure_Status. 
  * <ul>
  * <li>CCD_EXPOSURE_STATUS_NONE means the library is not currently performing an exposure.
@@ -54,6 +78,7 @@ enum CCD_EXPOSURE_STATUS
 
 
 extern void CCD_Exposure_Initialise(void);
+extern int CCD_Exposure_Set_Shutter_Type(enum CCD_EXPOSURE_SHUTTER_OUTPUT set_shutter_type);
 extern int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure_length_ms,
 			       struct Fits_Header_Struct header,char *filename);
 extern int CCD_Exposure_Bias(struct Fits_Header_Struct header,char *filename);
