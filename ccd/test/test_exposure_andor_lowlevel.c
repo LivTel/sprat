@@ -232,6 +232,7 @@ static int Save(int do_dark,int do_exposure,unsigned short *image_data,int pixel
  * @see #HS_Speed_Index
  * @see #Baseline_Clamp
  * @see #Current_Temperature
+ * @see #Set_Shutter_Type
  */
 int main(int argc, char *argv[])
 {
@@ -1375,6 +1376,7 @@ static void Help(void)
 	fprintf(stdout,"\t[-xs[ize] <no. of pixels>][-ys[ize] <no. of pixels>]\n");
 	fprintf(stdout,"\t[-xb[in] <binning factor>][-yb[in] <binning factor>]\n");
 	fprintf(stdout,"\t-e[xpose] <exposure length ms>\n");
+	fprintf(stdout,"\t-d[ark] <dark length ms>\n");
 	fprintf(stdout,"\t-f[ilename] <FITS filename>\n");
 	fprintf(stdout,"\t[-andor_dir <directory>][-data_dir <directory>]\n");
 	fprintf(stdout,"\t[-vsa|-vertical_shift_amplitude <0..4>]\n");
@@ -1384,6 +1386,8 @@ static void Help(void)
 	fprintf(stdout,"\t[-frame_transfer_mode|-ft <0|1>]\n");
 	fprintf(stdout,"\t[-baseline_clamp|-bc <0|1>]\n");
 	fprintf(stdout,"\t[-shutter_output|-so <low|high>]\n");
+	fprintf(stdout,"\n");
+	fprintf(stdout,"Select one of -dark or -expose\n");
 }
 
 /**
