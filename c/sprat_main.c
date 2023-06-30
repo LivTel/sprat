@@ -16,6 +16,7 @@
 
 #include "command_server.h"
 
+#include "ccd_exposure.h"
 #include "ccd_fits_filename.h"
 #include "ccd_global.h"
 #include "ccd_setup.h"
@@ -306,6 +307,8 @@ static int Sprat_Initialise_Logging(void)
  * <li>We call CCD_Setup_Config_Directory_Set to setup where the Andor library config files are.
  * <li>We call CCD_Setup_Startup to initialise the Andor library and CCD.
  * <li>We call CCD_Setup_Get_Camera_Identification to retrieve Model and Serial number data to log.
+ * <li>We retrieve the shutter output configuration from the "ccd.andor.exposure.shutter.output" config property.
+ * <li>We call CCD_Exposure_Set_Shutter_Type to configure the shutter output to TTL low or TTL high.
  * <li>We retrieve the target temperature from the "ccd.temperature.target" config property.
  * <li>We call CCD_Temperature_Set to set the CCD temperature.
  * <li>We retrieve whether to turn the cooler on from the "ccd.temperature.cooler.on" config property.
@@ -319,6 +322,7 @@ static int Sprat_Initialise_Logging(void)
  * @see sprat_config.html#Sprat_Config_Get_Double
  * @see sprat_config.html#Sprat_Config_Get_String
  * @see sprat_config.html#Sprat_Config_Get_Character
+ * @see ../ccd/cdocs/ccd_exposure.html#CCD_Exposure_Set_Shutter_Type
  * @see ../ccd/cdocs/ccd_setup.html#CCD_Setup_Startup
  * @see ../ccd/cdocs/ccd_setup.html#CCD_Setup_Config_Directory_Set
  * @see ../ccd/cdocs/ccd_setup.html#CCD_Setup_Get_Camera_Identification
@@ -328,6 +332,8 @@ static int Sprat_Initialise_Logging(void)
  */
 static int Sprat_Startup_CCD(void)
 {
+	enum CCD_EXPOSURE_SHUTTER_OUTPUT set_shutter_type;
+	char *shutter_output_string = NULL;
 	char *andor_dir = NULL;
 	char *data_dir = NULL;
 	char key_string[32];
@@ -376,6 +382,8 @@ static int Sprat_Startup_CCD(void)
 			andor_dir);
 		return FALSE;
 	}
+	if(andor_dir != NULL)
+		free(andor_dir);
 	if(!CCD_Setup_Startup(TRUE,0,hs_speed_index,baseline_clamp,preamp_gain_index))
 	{
 		Sprat_Global_Error_Number = 9;
@@ -395,6 +403,37 @@ static int Sprat_Startup_CCD(void)
 				 "STARTUP","SPRAT using andor CCD Model '%s' serial number %d.",
 				 head_model_name,serial_number);
 #endif
+	/* exposure shutter output type */
+	if(!Sprat_Config_Get_String("ccd.andor.exposure.shutter.output",&shutter_output_string))
+	{
+		Sprat_Global_Error_Number = 14;
+		sprintf(Sprat_Global_Error_String,"Sprat_Startup_CCD:Failed to get exposure shutter output type.");
+		return FALSE;
+	}
+	if(strcmp(shutter_output_string,"low") == 0)
+	{
+		set_shutter_type = CCD_EXPOSURE_SHUTTER_OUTPUT_TTL_LOW;
+	}
+	else if(strcmp(shutter_output_string,"high") == 0)
+	{
+		set_shutter_type = CCD_EXPOSURE_SHUTTER_OUTPUT_TTL_HIGH;
+	}
+	else
+	{
+		Sprat_Global_Error_Number = 15;
+		sprintf(Sprat_Global_Error_String,"Sprat_Startup_CCD:Illegal exposure shutter output type '%s'.",
+			shutter_output_string);
+		return FALSE;
+	}
+	if(shutter_output_string != NULL)
+		free(shutter_output_string);
+	if(!CCD_Exposure_Set_Shutter_Type(set_shutter_type))
+	{
+		Sprat_Global_Error_Number = 16;
+		sprintf(Sprat_Global_Error_String,
+			"Sprat_Startup_CCD:Failed to set exposure shutter output type to '%d'.",set_shutter_type);
+		return FALSE;
+	}
 	/* set CCD target temperature */
 	if(!Sprat_Config_Get_Double("ccd.temperature.target",&target_temperature))
 	{
@@ -451,6 +490,8 @@ static int Sprat_Startup_CCD(void)
 		sprintf(Sprat_Global_Error_String,"Sprat_Startup_CCD:Failed to Initialise FITS filenames for camera.");
 		return FALSE;
 	}
+	if(data_dir != NULL)
+		free(data_dir);
 	return TRUE;
 }
 
