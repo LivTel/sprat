@@ -79,6 +79,14 @@
  * True.
  */
 /*#define TRUE (1)*/
+/**
+ * Parameter to the SetShutter type parameter, to set the shutter to open using a TTL Low signal.
+ */
+#define OUTPUT_TTL_LOW   (0)
+/**
+ * Parameter to the SetShutter type parameter, to set the shutter to open using a TTL High signal.
+ */
+#define OUTPUT_TTL_HIGH  (1)
 
 /* internal variables */
 /**
@@ -187,6 +195,13 @@ static char Filename[MAX_STRING_LENGTH];
  * The current CCD temperature in degrees C.
  */
 static double Current_Temperature;
+/**
+ * Variable used to configure whether we output a TTL low signal to open the shutter, or a TTL high signal.
+ * Defaults to OUTPUT_TTL_HIGH, which corresponds to NC (normally closed) on the shutter controller.
+ * @see #OUTPUT_TTL_HIGH
+ * @see #OUTPUT_TTL_LOW
+ */
+static int Set_Shutter_Type = OUTPUT_TTL_HIGH;
 
 /* internal routines */
 static int Parse_Arguments(int argc, char *argv[]);
@@ -538,8 +553,8 @@ int main(int argc, char *argv[])
 	/* exposure */
 	if(Do_Dark)
 	{
-		fprintf(stdout,"SetShutter(1,2,0,0) : shutter closed.\n");
-		andor_retval = SetShutter(1,2,0,0);
+		fprintf(stdout,"SetShutter(%d,2,0,0) : shutter closed.\n",Set_Shutter_Type);
+		andor_retval = SetShutter(Set_Shutter_Type,2,0,0);
 		if(andor_retval != DRV_SUCCESS)
 		{
 			fprintf(stderr,"SetShutter (closed) failed : %u : %s.\n",andor_retval,
@@ -549,8 +564,8 @@ int main(int argc, char *argv[])
 	}
 	if(Do_Exposure)
 	{
-		fprintf(stdout,"SetShutter(1,0,0,0) : shutter auto.\n");
-		andor_retval = SetShutter(1,0,0,0);
+		fprintf(stdout,"SetShutter(%d,0,0,0) : shutter auto.\n",Set_Shutter_Type);
+		andor_retval = SetShutter(Set_Shutter_Type,0,0,0);
 		if(andor_retval != DRV_SUCCESS)
 		{
 			fprintf(stderr,"SetShutter failed : %u : %s.\n",andor_retval,
@@ -667,7 +682,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr,"GetStatus failed : %u : %s.\n",andor_retval,
 				Andor_Error_Code_To_String(andor_retval));
 			/* diddly SetShutterEx(1,2,0,0,2); */ /* internal close, external close */
-			SetShutter(1,2,0,0); /* close shutter */
+			SetShutter(Set_Shutter_Type,2,0,0); /* close shutter */
 			return 1;
 		}
 		fprintf(stdout,"GetStatus() returned exposure status %d.\n",exposure_status);		
@@ -928,6 +943,9 @@ static int Save(int do_dark,int do_exposure,unsigned short *image_data,int pixel
  * @see #Baseline_Clamp
  * @see #Filename
  * @see #Preamp_Gain_Index
+ * @see #Set_Shutter_Type
+ * @see #OUTPUT_TTL_LOW
+ * @see #OUTPUT_TTL_HIGH
  */
 static int Parse_Arguments(int argc, char *argv[])
 {
@@ -1168,6 +1186,33 @@ static int Parse_Arguments(int argc, char *argv[])
 				return FALSE;
 			}
 		}
+		else if((strcmp(argv[i],"-shutter_output")==0)||(strcmp(argv[i],"-so")==0))
+		{
+			if((i+1)<argc)
+			{
+				if(strcmp(argv[i+1],"low")==0)
+				{
+					Set_Shutter_Type = OUTPUT_TTL_LOW;
+				}
+				else if(strcmp(argv[i+1],"high")==0)
+				{
+					Set_Shutter_Type = OUTPUT_TTL_HIGH;
+				}
+				else
+				{
+					fprintf(stderr,
+						"Parse_Arguments:Parsing Shutter Output '%s' failed: Should be 'low' or 'high'.\n",
+						argv[i+1]);
+					return FALSE;
+				}
+				i++;
+			}
+			else
+			{
+				fprintf(stderr,"Parse_Arguments:Shutter Output requires a 'low' or 'high' argument.\n");
+				return FALSE;
+			}
+		}
 		else if(strcmp(argv[i],"-target_temperature")==0)
 		{
 			if((i+1)<argc)
@@ -1338,6 +1383,7 @@ static void Help(void)
 	fprintf(stdout,"\t[-gain|-preamp_gain_index <n>]\n");
 	fprintf(stdout,"\t[-frame_transfer_mode|-ft <0|1>]\n");
 	fprintf(stdout,"\t[-baseline_clamp|-bc <0|1>]\n");
+	fprintf(stdout,"\t[-shutter_output|-so <low|high>]\n");
 }
 
 /**
