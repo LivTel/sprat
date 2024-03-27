@@ -138,6 +138,12 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 */
 	protected int maximumOffsetCount = 10;
 	/**
+	 * The number of times to retry taking a frame and WCS fitting it when a single WCS fit reduction fails.
+	 * This has been added to stop long acquisitions failing on a single WCS fit failure (due to a tracking glitch for example).
+	 * Obviously only used for WCS fit acquisitions.
+	 */
+	protected int maxFrameReductionRetryCount = 2;
+	/**
 	 * The list of FITS filenames returned by the multbias command.
 	 */
 	protected List<String> filenameList = null;
@@ -335,11 +341,12 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	/**
 	 * Load some configuration.
 	 * <dl>
-	 * <dt>bin</dt><dd>Loaded from the <b>sprat.acquire.bin</b></dd>
+	 * <dt>bin</dt><dd>Loaded from the <b>sprat.acquire.bin</b> property.</dd>
 	 * <dt>exposureLength</dt><dd>Loaded from the <b>sprat.acquire.exposure_length.brightest</b> or 
-	 *     <b>sprat.acquire.exposure_length.wcs</b> depending on <i>acquisitionMode</i></dd>
-	 * <dt>frameOverhead</dt><dd>Loaded from the <b>sprat.acquire.frame_overhead</b></dd>
-	 * <dt>maximumOffsetCount</dt><dd>Loaded from the <b>sprat.acquire.offset.count.maximum</b></dd>
+	 *     <b>sprat.acquire.exposure_length.wcs</b> property depending on <i>acquisitionMode</i>.</dd>
+	 * <dt>frameOverhead</dt><dd>Loaded from the <b>sprat.acquire.frame_overhead</b> property.</dd>
+	 * <dt>maximumOffsetCount</dt><dd>Loaded from the <b>sprat.acquire.offset.count.maximum</b> property.</dd>
+	 * <dt>maxFrameReductionRetryCount</dt><dd>Loaded from the <b>sprat.acquire.frame.reduction.wcs.count.maximum</b> property.</dd>
 	 * </dl>
 	 * @exception NumberFormatException Thrown if the specified property is not a valid number.
 	 * @see #bin
@@ -347,6 +354,7 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * @see #status
 	 * @see #frameOverhead
 	 * @see #maximumOffsetCount
+	 * @see #maxFrameReductionRetryCount
 	 * @see #acquisitionMode
 	 * @see SpratStatus#getPropertyInteger
 	 */
@@ -359,6 +367,10 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 			exposureLength = status.getPropertyInteger("sprat.acquire.exposure_length.brightest");
 		frameOverhead = status.getPropertyInteger("sprat.acquire.frame_overhead");
 		maximumOffsetCount = status.getPropertyInteger("sprat.acquire.offset.count.maximum");
+		// Maximum number of times to retry taking a frame and reducing it (WCS fitting it)
+		// when the first reduction fails (presumed to be a WCS fitting failure).
+		// Only used for WCS reductions. 
+		maxFrameReductionRetryCount = status.getPropertyInteger("sprat.acquire.frame.reduction.wcs.count.maximum");
 	}
 
 	/**
@@ -494,11 +506,22 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * in a while loop, that is terminated when the specified RA and Dec lie close to the specified pixel.
 	 * <ul>
 	 * <li><b>sendBasicAck</b> is called to ensure the command does not time out during an exposure being taken.
-	 * <li><b>doFrame</b> is called to take an acquisition frame.
-	 * <li>An instance of ACQUIRE_ACK is sent back to the client using <b>sendAcquireAck</b>.
-	 * <li><b>reduceExpose</b> is called to pass the frame to the Real Time Data Pipeline for processing.
-	 *     WCS fitting is also attempted here.
-	 * <li><b>testAbort</b> is called to see if this command implementation has been aborted.
+	 * <li>We initialise <b>frameReductionRetryCount</b> to zero.
+	 * <li>We loop until we have successfully reduced an acquisition frame:
+	 *     <ul>
+	 *     <li><b>doFrame</b> is called to take an acquisition frame.
+	 *     <li>An instance of ACQUIRE_ACK is sent back to the client using <b>sendAcquireAck</b>.
+	 *     <li><b>reduceExpose</b> is called to pass the frame to the Real Time Data Pipeline for processing.
+	 *         WCS fitting is also attempted here.
+	 *     <li>If the <b>reduceExpose</b> method returned a successful fit, we set <b>successfulReduction</b> to exit the inner loop.
+	 *     <li>Otherwise we do the following:
+	 *         <ul>
+	 *         <li>We increment the <b>frameReductionRetryCount</b>.
+	 *         <li>If the <b>frameReductionRetryCount</b> equals/exceeds <b>maxFrameReductionRetryCount</b> (loaded by <b>loadConfig</b>),
+	 *             we throw an exception with the last reduction failure.
+	 *         </ul>
+	 *     <li><b>testAbort</b> is called to see if this command implementation has been aborted.
+	 *     </ul>
 	 * <li>We call <b>computeRADecOffset</b> to check whether we are in the correct position, 
 	 *     and calculate a new offset to apply if necessary.
 	 * <li>If a new offset is required we call <b>doXYPixelOffset</b>, with the 
@@ -520,6 +543,7 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * @see #frameOverhead
 	 * @see #reducedFITSFilename
 	 * @see #maximumOffsetCount
+	 * @see #maxFrameReductionRetryCount
 	 * @see #sendBasicAck
 	 * @see #sendAcquireAck
 	 * @see #reduceExpose
@@ -529,17 +553,22 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 */
 	protected void doAcquisitionWCS(ACQUIRE acquireCommand,ACQUIRE_DONE acquireDone) throws Exception
 	{
+		INST_TO_DP_DONE instToDpDone = null;
 		String filename = null;
 		long now;
 		boolean done;
-		int offsetCount;
+		boolean successfulReduction;
+		int offsetCount,frameReductionRetryCount;
 		
 		// initialise offset
 		xPixelOffset = 0.0;
 		yPixelOffset = 0.0;
 		// keep track of how many times we attempt to offset
 		offsetCount = 0;
-		// start loop
+		// start main loop,
+		// take an acquisition frame and successfully reduce it,
+		// compute an offset and
+		// move the telescope appropriately
 		done = false;
 		while(done == false)
 		{
@@ -549,19 +578,45 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 				throw new Exception(this.getClass().getName()+
 						    ":doAcquisitionWCS:SendBasicAck failed.");
 			}
-			// Take frame
-			filename = doFrame(acquireCommand,acquireDone);
-			// send Acquire ACK with filename back to client
-			// time to complete is reduction time, we will send another ACK after reduceCalibrate
-			sendAcquireAck(acquireCommand.getId(),frameOverhead,filename);
-			// Call pipeline to reduce data (and WCS fit).
-			reduceExpose(acquireCommand.getId(),filename,true);
-			// Test abort status.
-			if(testAbort(acquireCommand,acquireDone) == true)
-			{
-				throw new Exception(this.getClass().getName()+"ACQUIRE:"+acquireCommand.getId()+
+			// loop taking frames/wcs fitting them until we get a successful reduction
+			successfulReduction = false;
+			frameReductionRetryCount = 0;
+			while(successfulReduction == false)
+			{			
+				// Take frame
+				filename = doFrame(acquireCommand,acquireDone);
+				// send Acquire ACK with filename back to client
+				// time to complete is reduction time, we will send another ACK after reduceCalibrate
+				sendAcquireAck(acquireCommand.getId(),frameOverhead,filename);
+				// Call pipeline to reduce data (and WCS fit).
+				instToDpDone = reduceExpose(acquireCommand.getId(),filename,true);
+				if(instToDpDone.getSuccessful() == true)
+				{
+					successfulReduction = true;
+				}
+				else
+				{
+					sprat.log(Logging.VERBOSITY_VERBOSE,
+						  ":doAcquisitionWCS: Acquisition frame reduction attempt "+
+						  frameReductionRetryCount+" failed with error:"+instToDpDone.getErrorNum()+":"+
+						  instToDpDone.getErrorString()+".");
+					frameReductionRetryCount++;
+					if(frameReductionRetryCount >= maxFrameReductionRetryCount)
+					{
+						throw new Exception(this.getClass().getName()+"ACQUIRE:"+acquireCommand.getId()+
+					    	      ":doAcquisitionWCS:reduceExpose failed after "+
+						      frameReductionRetryCount+" attempts with:"+
+						      instToDpDone.getErrorNum()+":"+
+					    	      instToDpDone.getErrorString());
+					}
+				}
+				// Test abort status.
+				if(testAbort(acquireCommand,acquireDone) == true)
+				{
+					throw new Exception(this.getClass().getName()+"ACQUIRE:"+acquireCommand.getId()+
 						    ":doAcquisitionWCS:Aborted.");
-			}
+				}
+			}// end while successfulReduction not true
 			// log reduction
 			sprat.log(Logging.VERBOSITY_VERBOSE,
 				  "Command:"+acquireCommand.getId()+
@@ -630,6 +685,7 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	protected void doAcquisitionBrightest(ACQUIRE acquireCommand,ACQUIRE_DONE acquireDone) throws 
 		Exception
 	{
+		INST_TO_DP_DONE instToDpDone = null;
 		String filename = null;
 		long now;
 		boolean done;
@@ -656,7 +712,13 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 			// time to complete is reduction time, we will send another ACK after reduceCalibrate
 			sendAcquireAck(acquireCommand.getId(),frameOverhead,filename);
 			// Call pipeline to reduce data. Do NOT WCS fit.
-			reduceExpose(acquireCommand.getId(),filename,false);
+			instToDpDone = reduceExpose(acquireCommand.getId(),filename,false);
+			if(instToDpDone.getSuccessful() == false)
+			{
+				throw new Exception(this.getClass().getName()+"ACQUIRE:"+acquireCommand.getId()+
+				      	    ":doAcquisitionBrightest:reduceExpose failed:"+instToDpDone.getErrorNum()+":"+
+					    instToDpDone.getErrorString());
+			}
 			// Test abort status.
 			if(testAbort(acquireCommand,acquireDone) == true)
 			{
@@ -720,17 +782,17 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 					    ":doFrame:setFitsHeaders failed:"+acquireDone.getErrorNum()+
 					    ":"+acquireDone.getErrorString());
 		}
+		if(testAbort(acquireCommand,acquireDone) == true)
+		{
+			throw new Exception(this.getClass().getName()+":ACQUIRE:"+acquireCommand.getId()+
+					    ":doFrame:Aborted.");
+		}
 		if(getFitsHeadersFromISS(acquireCommand,acquireDone) == false)
 		{
 			throw new Exception(this.getClass().getName()+":ACQUIRE:"+acquireCommand.getId()+
 					    ":doFrame:getFitsHeadersFromISS failed:"+
 					    acquireDone.getErrorNum()+
 					    ":"+acquireDone.getErrorString());
-		}
-		if(testAbort(acquireCommand,acquireDone) == true)
-		{
-			throw new Exception(this.getClass().getName()+":ACQUIRE:"+acquireCommand.getId()+
-					    ":doFrame:Aborted.");
 		}
 		if(testAbort(acquireCommand,acquireDone) == true)
 		{
@@ -902,8 +964,9 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * @param id The identifier to ID the EXPOSE_REDUCE command with.
 	 * @param filename The raw FITS image to be reduced.
 	 * @param wcsFit Whether the DpRt should attempt a WCS fit.
-	 * @exception Exception Thrown if the EXPOSE_REDUCE_DONE is of the wrong class, 
-	 *                      or EXPOSE_REDUCE returns an error.
+	 * @return The instance of INST_TO_DP_DONE returned by EXPOSE_REDUCE. This can contain the successfully returned data, or
+	 *         the error code / error string if the data reduction failed.
+	 * @exception Exception Thrown if the EXPOSE_REDUCE_DONE is of the wrong class.
 	 * @see ngat.message.INST_DP.EXPOSE_REDUCE
 	 * @see #sprat
 	 * @see #serverConnectionThread
@@ -915,7 +978,7 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 	 * @see Sprat#sendDpRtCommand
 	 * @see #sendAcquireDpAck
 	 */
-	public void reduceExpose(String id,String filename,boolean wcsFit) throws Exception
+	public INST_TO_DP_DONE reduceExpose(String id,String filename,boolean wcsFit) throws Exception
 	{
 		EXPOSE_REDUCE reduce = new EXPOSE_REDUCE(id);
 		INST_TO_DP_DONE instToDPDone = null;
@@ -924,34 +987,32 @@ public class ACQUIREImplementationTweak extends FITSImplementation implements JM
 		reduce.setFilename(filename);
 		reduce.setWcsFit(wcsFit);
 		instToDPDone = sprat.sendDpRtCommand(reduce,serverConnectionThread);
-		if(instToDPDone.getSuccessful() == false)
+		if(instToDPDone.getSuccessful() == true)
 		{
-			throw new Exception(this.getClass().getName()+"ACQUIRE:"+id+
-					    "reduceExpose:EXPOSE_REDUCE failed:"+instToDPDone.getErrorNum()+":"+
-					    instToDPDone.getErrorString());
+			// Copy the DP REDUCE DONE parameters to the EXPOSE DONE parameters
+			if(instToDPDone instanceof EXPOSE_REDUCE_DONE)
+			{
+				reduceDone = (EXPOSE_REDUCE_DONE)instToDPDone;
+				// get reduced filename
+				reducedFITSFilename = reduceDone.getFilename();
+				// send DpAck
+				sendAcquireDpAck(id,frameOverhead,reducedFITSFilename,
+						 reduceDone.getSeeing(),reduceDone.getCounts(),
+						 reduceDone.getXpix(),reduceDone.getYpix(),
+						 reduceDone.getPhotometricity(),reduceDone.getSkyBrightness(), 
+						 reduceDone.getSaturation());
+				// retrieve X/Y pos of brightest object on frame
+				brightestObjectXPixel = (double)(reduceDone.getXpix());
+				brightestObjectYPixel = (double)(reduceDone.getYpix());
+			}
+			else
+			{
+				throw new Exception(this.getClass().getName()+
+						    ":reduceExpose:Wrong class returned from EXPOSE_REDUCE:"+
+						    instToDPDone.getClass().getName());
+			}
 		}
-		// Copy the DP REDUCE DONE parameters to the EXPOSE DONE parameters
-		if(instToDPDone instanceof EXPOSE_REDUCE_DONE)
-		{
-			reduceDone = (EXPOSE_REDUCE_DONE)instToDPDone;
-			// get reduced filename
-			reducedFITSFilename = reduceDone.getFilename();
-			// send DpAck
-			sendAcquireDpAck(id,frameOverhead,reducedFITSFilename,
-					 reduceDone.getSeeing(),reduceDone.getCounts(),
-					 reduceDone.getXpix(),reduceDone.getYpix(),
-					 reduceDone.getPhotometricity(),reduceDone.getSkyBrightness(), 
-					 reduceDone.getSaturation());
-			// retrieve X/Y pos of brightest object on frame
-			brightestObjectXPixel = (double)(reduceDone.getXpix());
-			brightestObjectYPixel = (double)(reduceDone.getYpix());
-		}
-		else
-		{
-			throw new Exception(this.getClass().getName()+
-					    ":reduceExpose:Wrong class returned from EXPOSE_REDUCE:"+
-					    instToDPDone.getClass().getName());
-		}
+		return instToDPDone;
 	}
 
 	/**
