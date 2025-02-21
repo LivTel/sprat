@@ -211,7 +211,7 @@ public class MULTBIASImplementation extends CALIBRATEImplementation implements J
 			index++;
 		}// end while on MULTRUN exposures
 		// setup return values.
-		// meanCounts and peakCounts set by pipelineProcess for last image reduced.
+		// meanCounts and peakCounts set by reduceCalibrate for last image reduced.
 		multBiasDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_NO_ERROR);
 		multBiasDone.setErrorString("");
 		multBiasDone.setSuccessful(true);

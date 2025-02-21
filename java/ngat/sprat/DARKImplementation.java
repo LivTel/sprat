@@ -182,7 +182,7 @@ public class DARKImplementation extends CALIBRATEImplementation implements JMSCo
 		if(reduceCalibrate(darkCommand,darkDone,filename) == false)
 			return darkDone;
 	// setup return values.
-	// meanCounts and peakCounts set by pipelineProcess for last image reduced.
+	// meanCounts and peakCounts set by reduceCalibrate for last image reduced.
 		darkDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_NO_ERROR);
 		darkDone.setErrorString("");
 		darkDone.setSuccessful(true);

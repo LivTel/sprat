@@ -196,7 +196,7 @@ public class MULTDARKImplementation extends CALIBRATEImplementation implements J
 			index++;
 		}// end while on MULTRUN exposures
 		// setup return values.
-		// meanCounts and peakCounts set by pipelineProcess for last image reduced.
+		// meanCounts and peakCounts set by reduceCalibrate for last image reduced.
 		multDarkDone.setErrorNum(SpratConstants.SPRAT_ERROR_CODE_NO_ERROR);
 		multDarkDone.setErrorString("");
 		multDarkDone.setSuccessful(true);

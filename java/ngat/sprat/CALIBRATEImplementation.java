@@ -53,7 +53,7 @@ public class CALIBRATEImplementation extends FITSImplementation implements JMSCo
 	}
 
 	/**
-	 * This method is a generic implementation for the EXPOSE command, that does nothing.
+	 * This method is a generic implementation for the CALIBRATE command, that does nothing.
 	 */
 	public COMMAND_DONE processCommand(COMMAND command)
 	{

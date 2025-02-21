@@ -109,6 +109,7 @@ public class Sprat
 	 * <li>Initialise implementation list.
 	 * <li>Retrieve port numbers from properties.
 	 * <li>Get ISS address from properties.
+	 * <li>We initialise the IP address of the DpRt (Data Pipeline (Real Time)) from the properties file.
 	 * <li>Configure acknowledge time from properties.
 	 * </ul>
 	 * @exception FileNotFoundException Thrown if an error occurs.
