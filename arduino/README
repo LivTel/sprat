@@ -1,3 +1,10 @@
+Following ingesting Sprat into github, I have now moved saved tarballs of the various arduino libraries to sprat-nogit:
+
+ltdevsrv:/home/dev/src/sprat-nogit/arduino/sprat_libraries_i2cdevlib_20140827.tar.gz
+ltdevsrv:/home/dev/src/sprat-nogit/arduino/sprat_libraries_messenger_20140827.tar.gz
+
+These need untarring in the arduino IDE's libraries directory. And then make the soft-links as described below.
+
 DHT library installed for SPRAT mechanism control. I think this is the default library (adafruit/DHT-sensor-library-master), rather than Zej's modified version.
 Messenger library modified with alternate cr/lf software for use with SPRAT mechanism control.
 i2cdevlib library installed for SPRAT mechanism control from jrowberg's tarball:
